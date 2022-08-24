@@ -1,5 +1,5 @@
-from enums.building_category import BuildingCategory
-from enums.item_categories import ItemCategory
+from sftools_service.domain.enums.building_category import BuildingCategory
+from sftools_service.domain.enums.item_categories import ItemCategory
 
 NAME_TO_BUILDING_CATEGORY_MAP = {
     'Extraction': BuildingCategory.EXTRACTION,

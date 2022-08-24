@@ -1,4 +1,4 @@
-from enums.building_category import BuildingCategory
+from sftools_service.domain.enums.building_category import BuildingCategory
 
 
 class Building:

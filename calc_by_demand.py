@@ -1,15 +1,15 @@
 import json
 import os.path
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Dict, Tuple
 
-from config.default import NAME_TO_BUILDING_CATEGORY_MAP, NAME_TO_ITEM_CATEGORY_MAP
-from enums.demand_type import DemandType
-from enums.recipe_type import RecipeType
-from models.building import Building
-from models.demand import Demand
-from models.item import Item
-from models.production_node import ProductionNode
-from models.recipe import Recipe
+from sftools_service.config.default import NAME_TO_BUILDING_CATEGORY_MAP, NAME_TO_ITEM_CATEGORY_MAP
+from sftools_service.domain.enums.demand_type import DemandType
+from sftools_service.domain.enums.recipe_type import RecipeType
+from sftools_service.domain.models.building import Building
+from sftools_service.domain.models.demand import Demand
+from sftools_service.domain.models.item import Item
+from sftools_service.domain.models.production_node import ProductionNode
+from sftools_service.domain.models.recipe import Recipe
 
 
 DATA_PATH = 'data'

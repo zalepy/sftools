@@ -1,5 +1,5 @@
-from enums.demand_type import DemandType
-from models.item import Item
+from sftools_service.domain.enums.demand_type import DemandType
+from sftools_service.domain.models.item import Item
 
 
 class Demand:

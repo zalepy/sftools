@@ -1,11 +1,11 @@
-from typing import List, Union
+from typing import List
 
-from enums.demand_type import DemandType
-from enums.recipe_type import RecipeType
-from models.building import Building
-from models.demand import Demand
-from models.item import Item
-from models.production_node import ProductionNode
+from sftools_service.domain.enums.demand_type import DemandType
+from sftools_service.domain.enums.recipe_type import RecipeType
+from sftools_service.domain.models.building import Building
+from sftools_service.domain.models.demand import Demand
+from sftools_service.domain.models.item import Item
+from sftools_service.domain.models.production_node import ProductionNode
 
 
 class Recipe:

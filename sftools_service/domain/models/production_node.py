@@ -1,4 +1,4 @@
-from models.building import Building
+from sftools_service.domain.models.building import Building
 
 
 class ProductionNode:

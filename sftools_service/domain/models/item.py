@@ -1,7 +1,5 @@
-from typing import List
-
-from enums.item_categories import ItemCategory
-from enums.recipe_type import RecipeType
+from sftools_service.domain.enums.item_categories import ItemCategory
+from sftools_service.domain.enums.recipe_type import RecipeType
 
 
 class Item:

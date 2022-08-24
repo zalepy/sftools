@@ -23,3 +23,7 @@ Notes on calculation:
   however demand that occurs on separate layers/iterations will be rounded up
   individually
 
+
+To start web server execute:
+`waitress-serve --port=8000 "sftools_service.main:app"`
+

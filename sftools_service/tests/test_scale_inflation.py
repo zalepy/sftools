@@ -4,7 +4,7 @@ from calc_by_demand import *
 class TestingIt:
 
     def test_scaling_does_not_inflate_sub_demands(self):
-        data = load_models('../data/')
+        data = load_models('../../data/')
         items, recipes, buildings = data
         root_demand = {'Concrete': Demand('Concrete', items['Concrete'], 20.0, DemandType.PRODUCE)}
         new_demand = root_demand
