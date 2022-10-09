@@ -1,2 +1,3 @@
 requests
 falcon
+networkx[default]  # https://github.com/boothby/networkx/blob/master/networkx/drawing/nx_pylab.py
