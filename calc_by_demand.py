@@ -303,8 +303,17 @@ def main():
     print('Recipes count:', len(recipes))
     print('Buildings count:', len(buildings))
 
-    root_demand_item = items['Smart Plating']
-    root_demand = {'Smart Plating': Demand('Smart Plating', root_demand_item, 2.0, DemandType.PRODUCE)}
+    # root_demand_item = items['Smart Plating']
+    # root_demand = {'Smart Plating': Demand('Smart Plating', root_demand_item, 2.0, DemandType.PRODUCE)}
+    root_demand = {
+        'HSCON': Demand('High-Speed Connector', items['High-Speed Connector'], 3.75, DemandType.PRODUCE),
+        'RCU': Demand('Radio Control Unit', items['Radio Control Unit'], 5.0, DemandType.PRODUCE),
+        'ALUCA': Demand('Aluminum Casing', items['Aluminum Casing'], 80.0, DemandType.PRODUCE),
+        'FUEL': Demand('Fuel', items['Fuel'], 60.0, DemandType.PRODUCE),
+        'PLSTC': Demand('Plastic', items['Plastic'], 15.0, DemandType.PRODUCE),
+        'ALING': Demand('Aluminum Ingot', items['Aluminum Ingot'], 30.0, DemandType.SINK),
+        'SILICA': Demand('Silica', items['Silica'], 100.0, DemandType.SINK),
+    }
     print('[]'*50)
     new_demand = root_demand
     final_demand = root_demand
@@ -320,7 +329,7 @@ def main():
     # print('[]'*10)
     for pn in final_production_nodes.values():
         print('>>> Production Node:', '\n        '.join(str(pn).split('\n')))
-        sd = final_demand[pn.name]
+        sd = final_demand.get(pn.name, 0)
         print('>>> Sub demands:', '\n        '.join(str(sd).split('\n')))
         print('-'*10)
 

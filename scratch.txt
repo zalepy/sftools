@@ -21,9 +21,13 @@ Flask to get a resource-like structure
 going falcon
 
 waitress is not requirement for the app, it's required in deployment
-pytest pylint & etc should be in the /development/requirements.txt
+pytest pylint & etc should be in the /develop
 
 CONCEPT
 [1] working of craw is mostly defined by regex patterns - abstract out the loops, and allow the specific patterns to be data
 this will allow the user to adjust them over REST API
 [2] push the data resulting from the craws into DB, rather than files
+
+The workflow doesn't allow for "on the fly" experience of the code/features because is aimed to run as a server
+need to come up with an approach that gives me a dev-server which does not require restart to run the new code
+

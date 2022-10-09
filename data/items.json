@@ -3625,5 +3625,43 @@
     "Category": "Special",
     "Stack size": "50",
     "Resource Sink Points": "543,424"
+  },
+  {
+    "name": "High-Speed Connector",
+    "Category": "Electronics",
+    "Stack size": "100",
+    "Resource Sink Points": "3,776",
+    "recipes": {
+      "High-Speed Connector": {
+        "building": "Manufacturer",
+        "ingredient1_rate": "210 / min",
+        "ingredient1_stack": "56",
+        "ingredient1_name": "Quickwire",
+        "ingredient2_rate": "37.5 / min",
+        "ingredient2_stack": "10",
+        "ingredient2_name": "Cable",
+        "ingredient3_rate": "3.75 / min",
+        "ingredient3_stack": "1",
+        "ingredient3_name": "Circuit Board",
+        "output1_rate": "2.75 / min",
+        "output1_stack": "1",
+        "output1_name": "High-Speed Connector"
+      },
+      "Alternate: Silicon High-Speed Connector": {
+        "building": "Manufacturer",
+        "ingredient1_rate": "90 / min",
+        "ingredient1_stack": "60",
+        "ingredient1_name": "Quickwire",
+        "ingredient2_rate": "37.5 / min",
+        "ingredient2_stack": "25",
+        "ingredient2_name": "Silica",
+        "ingredient3_rate": "3 / min",
+        "ingredient3_stack": "2",
+        "ingredient3_name": "Circuit Board",
+        "output1_rate": "3 / min",
+        "output1_stack": "2",
+        "output1_name": "High-Speed Connector"
+      }
+    }
   }
 ]
