@@ -8,6 +8,8 @@ import os.path
 from typing import Optional, Dict, Tuple
 
 from sftools_service.config.default import NAME_TO_BUILDING_CATEGORY_MAP, NAME_TO_ITEM_CATEGORY_MAP
+from sftools_service.domain.basic_scaler_calculator import BasicScalerCalculator
+from sftools_service.domain.demand_creator import DemandCreator
 from sftools_service.domain.enums.demand_type import DemandType
 from sftools_service.domain.enums.item_categories import ItemCategory
 from sftools_service.domain.enums.recipe_type import RecipeType
@@ -16,7 +18,9 @@ from sftools_service.domain.models.demand import Demand
 from sftools_service.domain.models.item import Item
 from sftools_service.domain.models.production_node import ProductionNode
 from sftools_service.domain.models.recipe import Recipe
-
+from sftools_service.domain.production_node_creator import ProductionNodeCreator
+from sftools_service.domain.recipe_selector import RecipeSelector
+from sftools_service.domain.roundup_scaler_calculator import RoundupScalerCalculator
 
 DATA_PATH = 'data'
 ROUND_UP_SCALER_FLAG = True
@@ -222,9 +226,15 @@ def load_models(path: str):
     return items, recipes, buildings
 
 
-def find_production_and_demand(parent_demands: Dict[str, Demand]) -> Tuple[Dict[str, ProductionNode], Dict[str, Demand]]:
+def find_production_and_demand(depth: int, parent_demands: Dict[str, Demand], preferred_recipes: Dict[str, str]) -> Tuple[Dict[str, ProductionNode], Dict[str, Demand]]:
     sub_demands = {}
     production_nodes = {}
+
+    if ROUND_UP_SCALER_FLAG:
+        scaler_calculator = RoundupScalerCalculator
+    else:
+        scaler_calculator = BasicScalerCalculator
+
     for demand_name, demand in parent_demands.items():
         if demand.type == DemandType.SINK:
             # TODO: process SINK demands
@@ -232,21 +242,13 @@ def find_production_and_demand(parent_demands: Dict[str, Demand]) -> Tuple[Dict[
             # this way we can utilize the SINK into the PROD
             continue
 
-        # # filter alt recipes
-        # non_alt_recipes = [r for r in demand.item.recipes if r.type == RecipeType.BASIC]
-        # # pick recipe
-        non_alt_recipe = demand.item.top_recipe
-        if not non_alt_recipe:
-            # print('!!!!!!!!!!!!!!!! Hit leaf recipe for', demand_name)
+        recipe = None
+        if demand.item.name in preferred_recipes:
+            recipe = RecipeSelector.get_recipe(demand.item.recipes, preferred_recipes.get(demand.item.name))
+        if not recipe:
+            recipe = RecipeSelector.auto_pick_recipe(demand.item.recipes, demand.item.name)
+        if not recipe:
             continue
-        #
-        # non_alt_recipe = non_alt_recipes[0]
-
-        # print('Demand recipe:', non_alt_recipe.name)
-
-        # determine scale
-        # ## round up demands -- this will result in surpluses
-        # ## replace with regular division to get float scaler
 
         # TODO: improve calculation margin by considering production rate of the ingredients and splitter options
         # TODO: add flow rate consideration
@@ -283,31 +285,20 @@ def find_production_and_demand(parent_demands: Dict[str, Demand]) -> Tuple[Dict[
         #           out2: prodB @ 45/m,
         #           out3: prodC @ 15/m,
 
-        if ROUND_UP_SCALER_FLAG:
-            buildings_needed = demand.rate // non_alt_recipe.output_rate
-            if demand.rate % non_alt_recipe.output_rate:
-                buildings_needed += 1
+        production_node_creator = ProductionNodeCreator(demand, recipe, scaler_calculator)
+        new_production_node = production_node_creator.generate_production_node(depth, demand.item.name)
+        if new_production_node.name in production_nodes:
+            production_nodes[new_production_node.name] += new_production_node
         else:
-            buildings_needed = demand.rate / non_alt_recipe.output_rate
+            production_nodes[new_production_node.name] = new_production_node
 
-        scaler = buildings_needed
-        # print('Scaler:', scaler, '(', demand.rate, '/', non_alt_recipe.output_rate, ')')
-
-        # generate production set (buildings (type, count), power)
-        new_production_node = non_alt_recipe.generate_production_node(scaler)
-        if production_nodes.get(non_alt_recipe.name):
-            production_nodes[non_alt_recipe.name] += new_production_node
-        else:
-            production_nodes[non_alt_recipe.name] = new_production_node
-
+        accu_prod_node = production_nodes[new_production_node.name]
         # generate sub demands
-        generated_demands = non_alt_recipe.generate_demands(scaler)
+        demand_creator = DemandCreator(accu_prod_node, accu_prod_node.recipe)
+        generated_demands = demand_creator.generate_demands(depth, production_node_creator.scaler)
         new_demands = {gd.name: gd for gd in generated_demands}
 
-        # for gd in new_demands.values():
-        #     print('    >>>', '\n        '.join(str(gd).split('\n')))
-
-        aggregate_models(sub_demands, new_demands)
+        sub_demands = aggregate_models(sub_demands, new_demands)
 
     return production_nodes, sub_demands
 
@@ -331,37 +322,34 @@ def main():
     print('Recipes count:', len(recipes))
     print('Buildings count:', len(buildings))
 
-    # root_demand_item = items['Smart Plating']
-    # root_demand = {'Smart Plating': Demand('Smart Plating', root_demand_item, 2.0, DemandType.PRODUCE)}
-    root_demand = {
-        'High-Speed Connector': Demand('High-Speed Connector', items['High-Speed Connector'], 3.75, DemandType.PRODUCE),
-        'Radio Control Unit': Demand('Radio Control Unit', items['Radio Control Unit'], 5.0, DemandType.PRODUCE),
-        'Aluminum Casing': Demand('Aluminum Casing', items['Aluminum Casing'], 80.0, DemandType.PRODUCE),
-        'Fuel': Demand('Fuel', items['Fuel'], 60.0, DemandType.PRODUCE),
-        'Plastic': Demand('Plastic', items['Plastic'], 15.0, DemandType.PRODUCE),
-        'Aluminum Ingot': Demand('Aluminum Ingot', items['Aluminum Ingot'], 30.0, DemandType.SINK),
-        'Silica': Demand('Silica', items['Silica'], 100.0, DemandType.SINK),
-    }
-
     # check missing recipes:
     # currently: gathering items (slugs, leaves, etc), ammo (rebars, nobelisk, ammo), waste, specials that can't be crafted (e.g. Superposition Oscillator)
     for item in items.values():
-        if not item.top_recipe:
-            print(item.name, 'has', len(item.recipes), 'recipes; ',
-                  len([r for r in item.recipes if r.type == RecipeType.BASIC]), 'BASIC recipes')
+        if not RecipeSelector.auto_pick_recipe(item.recipes, item.name):
+            print(item.name, 'has', len(item.recipes), 'recipes; ', len([r for r in item.recipes if r.type == RecipeType.BASIC]), 'BASIC recipes')
+
+    root_demand = {
+        'High-Speed Connector': Demand('High-Speed Connector', items['High-Speed Connector'], 3.75, DemandType.PRODUCE, 0),
+        'Radio Control Unit': Demand('Radio Control Unit', items['Radio Control Unit'], 5.0, DemandType.PRODUCE, 0),
+        'Aluminum Casing': Demand('Aluminum Casing', items['Aluminum Casing'], 80.0, DemandType.PRODUCE, 0),
+        'Fuel': Demand('Fuel', items['Fuel'], 60.0, DemandType.PRODUCE, 0),
+        'Plastic': Demand('Plastic', items['Plastic'], 15.0, DemandType.PRODUCE, 0),
+        'Aluminum Ingot': Demand('Aluminum Ingot', items['Aluminum Ingot'], 30.0, DemandType.SINK, 0),
+        'Silica': Demand('Silica', items['Silica'], 100.0, DemandType.SINK, 0),
+    }
+
+    preferred_recipes = {
+        'Fuel': 'Residual Fuel'
+    }
 
     print('[]'*50)
     new_demand = root_demand
     final_demand = root_demand
     final_production_nodes = {}
     demand_by_depth = {0: root_demand}
-    # root_vertical_step = 1 / len(root_demand)
-    # prod_nodes_by_depth = {0: {node: }}
     prod_nodes_by_depth = {0: {}}
     for depth in range(1, 10):
-        # print('-'*30)
-        # print('    >>> depth:', depth)
-        new_nodes, new_demand = find_production_and_demand(new_demand)
+        new_nodes, new_demand = find_production_and_demand(depth, new_demand, preferred_recipes)
         # by depth
         demand_by_depth[depth] = new_demand
         prod_nodes_by_depth[depth] = new_nodes
@@ -369,61 +357,21 @@ def main():
         final_demand = aggregate_models(final_demand, new_demand)
         final_production_nodes = aggregate_models(final_production_nodes, new_nodes)
 
-    # print('[]'*10)
-    ### show agregated ###
-    # production_graph = nx.DiGraph()
-    # node_labels = {}
-    # for node in final_production_nodes.values():
-    #     production_graph.add_node(node.name)
-    #     node_labels[node.name] = '{:6.2f}'.format(node.scaled_output) + ' of ' + node.output_item_name
-    # leaf_nodes = []
-    # for production_node in final_production_nodes.values():
-    #     sub_demand = final_demand.get(production_node.name, 0)
-    #     if sub_demand:
-    #         for ingredient_item in sub_demand.item.top_recipe.ingredients:
-    #             if ingredient_item.name not in final_production_nodes.keys():
-    #                 production_graph.add_node(ingredient_item.name)
-    # node_pos = nx.planar_layout(production_graph)
-    # label_pos = {node: (pos[0], pos[1] + 0.05) for node, pos in node_pos.items()}
-    # for production_node in final_production_nodes.values():
-    #     print('>>> Production Node:', '\n        '.join(str(production_node).split('\n')))
-    #     sub_demand = final_demand.get(production_node.name, 0)
-    #     if sub_demand:
-    #         for ingredient_item in sub_demand.item.top_recipe.ingredients:
-    #             production_graph.add_edge(ingredient_item.name, production_node.name)
-    #     print('>>> Sub demands:', '\n        '.join(str(sub_demand).split('\n')))
-    #     print('-'*10)
-    #
-    # # nx.draw(production_graph, pos=node_pos, with_labels=True)
-    # nx.draw_random(production_graph, with_labels=True)
-    # plt.savefig("aggregated.png")
-    # plt.show()
-
     production_graph = nx.DiGraph()
+
     node_labels = {}
     node_positions = {}
     for depth in range(10):
         prod_nodes = prod_nodes_by_depth[depth]
+        demand_nodes = demand_by_depth[depth]
         print('!!!', depth, prod_nodes)
-        if not prod_nodes:
-            continue
-        vertical_step = 1 / len(prod_nodes)
-        for vertical_index, node in enumerate(prod_nodes.values()):
-            graph_node_name = f'[{depth}] {node.name}'
-            production_graph.add_node(graph_node_name)
-            node_labels[graph_node_name] = '{:6.2f}'.format(node.scaled_output) + ' of ' + node.output_item_name
-            node_positions[graph_node_name] = (1 - depth * 0.1, vertical_step * vertical_index)
-
-    # add leaf nodes (raw/base ingredients)
-    for production_node in final_production_nodes.values():
-        sub_demand = final_demand.get(production_node.name, 0)
-        if sub_demand:
-            for ingredient_item in sub_demand.item.top_recipe.ingredients:
-                if ingredient_item.name not in final_production_nodes.keys():
-                    production_graph.add_node(ingredient_item.name)
-                    node_labels[ingredient_item.name] = 'base ingredient'
-                    node_positions[ingredient_item.name] = (0.001, random.uniform(0, 1))
-                    print('>>>>>>>>>>>', 'base ingredient', ingredient_item.name, node_positions[ingredient_item.name])
+        if prod_nodes:
+            vertical_step = 1 / len(prod_nodes)
+            for vertical_index, node in enumerate(prod_nodes.values()):
+                graph_node_name = f'[{depth}] {node.name}'
+                production_graph.add_node(graph_node_name)
+                node_labels[graph_node_name] = '{:6.2f}'.format(node.scaled_output) + ' of ' + node.output_item.name
+                node_positions[graph_node_name] = (1 - depth * 0.1, vertical_step * vertical_index)
 
     for depth in range(10):
         prod_nodes = prod_nodes_by_depth[depth]
@@ -432,11 +380,12 @@ def main():
             continue
 
         for prod_node in prod_nodes.values():
-            sub_demand = demand_by_depth.get(depth).get(prod_node.name, 0)
-            if sub_demand:
-                for ingredient_item in sub_demand.item.top_recipe.ingredients:
-                    production_graph.add_edge(f'[{depth + 1}] {ingredient_item.name}', f'[{depth}] {prod_node.name}')
-                    print('???????',  (f'[{depth + 1}] {ingredient_item.name}', f'[{depth}] {prod_node.name}'))
+
+            for ingredient in prod_node.recipe.ingredients:
+                supplier = final_production_nodes.get(ingredient.name)
+                if supplier:
+                    production_graph.add_edge(f'[{supplier.depth}] {supplier.name}', f'[{depth}] {prod_node.name}')
+                    print('???????', (f'[{supplier.depth}] {supplier.name}', f'[{depth}] {prod_node.name}'))
 
     nx.draw(production_graph, pos=node_positions, with_labels=True)
     plt.savefig("depth.png")

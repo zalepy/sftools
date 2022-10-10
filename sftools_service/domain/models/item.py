@@ -33,20 +33,6 @@ class Item:
     def recipes(self):
         return self._recipes
 
-    @property
-    def top_recipe(self):
-        named = [r for r in self.recipes if r.name == self.name]
-        if named:
-            return named[0]
-        typed = [r for r in self.recipes if r.type == RecipeType.BASIC]
-        if typed:
-            return typed[0]
-
-        if self.recipes:
-            return self.recipes[0]
-
-        return None
-
     def add_recipe(self, recipe):
         self._recipes.append(recipe)
 

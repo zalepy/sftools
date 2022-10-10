@@ -1,11 +1,8 @@
 from typing import List
 
-from sftools_service.domain.enums.demand_type import DemandType
 from sftools_service.domain.enums.recipe_type import RecipeType
 from sftools_service.domain.models.building import Building
-from sftools_service.domain.models.demand import Demand
 from sftools_service.domain.models.item import Item
-from sftools_service.domain.models.production_node import ProductionNode
 
 
 class Recipe:
@@ -98,23 +95,20 @@ class Recipe:
         else:
             return self._output1_rate
 
-    def generate_demands(self, scaler: float = 1.0) -> List[Demand]:
-        demands = []
-        if self._ingredient1_item:
-            demands.append(Demand(self._ingredient1_item.name, self._ingredient1_item, self._ingredient1_rate * scaler, DemandType.PRODUCE))
-        if self._ingredient2_item:
-            demands.append(Demand(self._ingredient2_item.name, self._ingredient2_item, self._ingredient2_rate * scaler, DemandType.PRODUCE))
-        if self._ingredient3_item:
-            demands.append(Demand(self._ingredient3_item.name, self._ingredient3_item, self._ingredient3_rate * scaler, DemandType.PRODUCE))
-        if self._ingredient4_item:
-            demands.append(Demand(self._ingredient4_item.name, self._ingredient4_item, self._ingredient4_rate * scaler, DemandType.PRODUCE))
-        if self.sink_item:
-            demands.append(Demand(self.sink_item.name, self.sink_item, self.sink_rate * scaler, DemandType.SINK))
-
-        return demands
-
-    def generate_production_node(self, scaler: float = 1.0):
-        return ProductionNode(self._name, self.building, scaler, self.output1_rate * scaler, self.name, self.building.power_generated * scaler)
+    # def generate_demands(self, depth: int, scaler: float = 1.0) -> List[Demand]:
+    #     demands = []
+    #     if self._ingredient1_item:
+    #         demands.append(Demand(self._ingredient1_item.name, self._ingredient1_item, self._ingredient1_rate * scaler, DemandType.PRODUCE, depth))
+    #     if self._ingredient2_item:
+    #         demands.append(Demand(self._ingredient2_item.name, self._ingredient2_item, self._ingredient2_rate * scaler, DemandType.PRODUCE, depth))
+    #     if self._ingredient3_item:
+    #         demands.append(Demand(self._ingredient3_item.name, self._ingredient3_item, self._ingredient3_rate * scaler, DemandType.PRODUCE, depth))
+    #     if self._ingredient4_item:
+    #         demands.append(Demand(self._ingredient4_item.name, self._ingredient4_item, self._ingredient4_rate * scaler, DemandType.PRODUCE, depth))
+    #     if self.sink_item:
+    #         demands.append(Demand(self.sink_item.name, self.sink_item, self.sink_rate * scaler, DemandType.SINK, depth))
+    #
+    #     return demands
 
     # ----------------------------------------------------------------------------------------------------------------
 
