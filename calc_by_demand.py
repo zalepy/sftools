@@ -353,10 +353,11 @@ def main():
         # by depth
         demand_by_depth[depth] = new_demand
         prod_nodes_by_depth[depth] = new_nodes
-        # aggregate
-        final_demand = aggregate_models(final_demand, new_demand)
-        final_production_nodes = aggregate_models(final_production_nodes, new_nodes)
+        # # aggregate
+        # final_demand = aggregate_models(final_demand, new_demand)
+        # final_production_nodes = aggregate_models(final_production_nodes, new_nodes)
 
+    mplfig = plt.figure(figsize=(16.8, 9.6))
     production_graph = nx.DiGraph()
 
     node_labels = {}
@@ -371,7 +372,7 @@ def main():
                 graph_node_name = f'[{depth}] {node.name}'
                 production_graph.add_node(graph_node_name)
                 node_labels[graph_node_name] = '{:6.2f}'.format(node.scaled_output) + ' of ' + node.output_item.name
-                node_positions[graph_node_name] = (1 - depth * 0.1, vertical_step * vertical_index)
+                node_positions[graph_node_name] = (1 - depth * 0.1 + random.uniform(-0.05, 0.05), vertical_step * vertical_index)
 
     for depth in range(10):
         prod_nodes = prod_nodes_by_depth[depth]
@@ -382,15 +383,21 @@ def main():
         for prod_node in prod_nodes.values():
 
             for ingredient in prod_node.recipe.ingredients:
-                supplier = final_production_nodes.get(ingredient.name)
-                if supplier:
-                    production_graph.add_edge(f'[{supplier.depth}] {supplier.name}', f'[{depth}] {prod_node.name}')
-                    print('???????', (f'[{supplier.depth}] {supplier.name}', f'[{depth}] {prod_node.name}'))
+                # supplier = final_production_nodes.get(ingredient.name)
+                supplier_nodes = prod_nodes_by_depth.get(depth + 1)
+                if supplier_nodes:
+                    supplier = supplier_nodes.get(ingredient.name)
+
+                    if supplier:
+                        production_graph.add_edge(f'[{supplier.depth}] {supplier.name}', f'[{depth}] {prod_node.name}')
+                        print('???????', (f'[{supplier.depth}] {supplier.name}', f'[{depth}] {prod_node.name}'))
 
     nx.draw(production_graph, pos=node_positions, with_labels=True)
+    label_pos = {n: (p[0], p[1] - 0.02) for n, p in node_positions.items()}
+    nx.draw_networkx_labels(production_graph, pos=label_pos, labels=node_labels, font_size=6, font_color='r')
+
     plt.savefig("depth.png")
     plt.show()
-
 
 
 if __name__ == "__main__":
