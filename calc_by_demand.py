@@ -1,3 +1,6 @@
+import networkx as nx
+import matplotlib.pyplot as plt
+
 import json
 import os.path
 from typing import Optional, Dict, Tuple
@@ -306,13 +309,13 @@ def main():
     # root_demand_item = items['Smart Plating']
     # root_demand = {'Smart Plating': Demand('Smart Plating', root_demand_item, 2.0, DemandType.PRODUCE)}
     root_demand = {
-        'HSCON': Demand('High-Speed Connector', items['High-Speed Connector'], 3.75, DemandType.PRODUCE),
-        'RCU': Demand('Radio Control Unit', items['Radio Control Unit'], 5.0, DemandType.PRODUCE),
-        'ALUCA': Demand('Aluminum Casing', items['Aluminum Casing'], 80.0, DemandType.PRODUCE),
-        'FUEL': Demand('Fuel', items['Fuel'], 60.0, DemandType.PRODUCE),
-        'PLSTC': Demand('Plastic', items['Plastic'], 15.0, DemandType.PRODUCE),
-        'ALING': Demand('Aluminum Ingot', items['Aluminum Ingot'], 30.0, DemandType.SINK),
-        'SILICA': Demand('Silica', items['Silica'], 100.0, DemandType.SINK),
+        'High-Speed Connector': Demand('High-Speed Connector', items['High-Speed Connector'], 3.75, DemandType.PRODUCE),
+        'Radio Control Unit': Demand('Radio Control Unit', items['Radio Control Unit'], 5.0, DemandType.PRODUCE),
+        'Aluminum Casing': Demand('Aluminum Casing', items['Aluminum Casing'], 80.0, DemandType.PRODUCE),
+        'Fuel': Demand('Fuel', items['Fuel'], 60.0, DemandType.PRODUCE),
+        'Plastic': Demand('Plastic', items['Plastic'], 15.0, DemandType.PRODUCE),
+        'Aluminum Ingot': Demand('Aluminum Ingot', items['Aluminum Ingot'], 30.0, DemandType.SINK),
+        'Silica': Demand('Silica', items['Silica'], 100.0, DemandType.SINK),
     }
     print('[]'*50)
     new_demand = root_demand
@@ -327,11 +330,33 @@ def main():
         final_production_nodes = aggregate_models(final_production_nodes, new_nodes)
 
     # print('[]'*10)
-    for pn in final_production_nodes.values():
-        print('>>> Production Node:', '\n        '.join(str(pn).split('\n')))
-        sd = final_demand.get(pn.name, 0)
-        print('>>> Sub demands:', '\n        '.join(str(sd).split('\n')))
+
+    production_graph = nx.DiGraph()
+    node_labels = {}
+    for node in final_production_nodes.values():
+        production_graph.add_node(node.name)
+        node_labels[node.name] = '{:6.2f}'.format(node.scaled_output) + ' of ' + node.output_item_name
+    leaf_nodes = []
+    for production_node in final_production_nodes.values():
+        sub_demand = final_demand.get(production_node.name, 0)
+        if sub_demand:
+            for ingredient_item in sub_demand.item.basic_recipe.ingredients:
+                if ingredient_item.name not in final_production_nodes.keys():
+                    production_graph.add_node(ingredient_item.name)
+    node_pos = nx.planar_layout(production_graph)
+    label_pos = {node: (pos[0], pos[1] + 0.05) for node, pos in node_pos.items()}
+    for production_node in final_production_nodes.values():
+        print('>>> Production Node:', '\n        '.join(str(production_node).split('\n')))
+        sub_demand = final_demand.get(production_node.name, 0)
+        if sub_demand:
+            for ingredient_item in sub_demand.item.basic_recipe.ingredients:
+                production_graph.add_edge(ingredient_item.name, production_node.name)
+        print('>>> Sub demands:', '\n        '.join(str(sub_demand).split('\n')))
         print('-'*10)
+
+    # nx.draw(production_graph, pos=node_pos, with_labels=True)
+    nx.draw_random(production_graph, with_labels=True)
+    plt.show()
 
 
 if __name__ == "__main__":

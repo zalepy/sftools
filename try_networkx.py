@@ -46,12 +46,17 @@ nx.draw_shell(G, nlist=[range(5, 10), range(5)], with_labels=True, font_weight='
 f3 = plt.figure()
 gp = nx.petersen_graph()
 positions = {}
+labels = {}
 arc = 2 * np.pi / len(gp.nodes)
 radius = 0.8
 for i, node in enumerate(gp.nodes):
     positions[node] = (radius * np.cos(i * arc), radius * np.sin(i * arc),)
+    labels[node] = '({:6.2f}'.format(np.cos(i * arc)) + ', {:6.2f}'.format(np.sin(i * arc)) + ')'
 
+# ax = plt.gca()
 nx.draw(gp, pos=positions, with_labels=True, font_weight='bold', width=2, node_size=500)
+label_pos = {n: (p[0], p[1] + 0.1) for n, p in positions.items()}
+nx.draw_networkx_labels(gp, pos=label_pos, labels=labels)
 
 plt.savefig("path.png")
 plt.show()

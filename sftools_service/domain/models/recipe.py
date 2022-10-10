@@ -190,6 +190,10 @@ class Recipe:
     def ingredient4_stack(self):
         return self._ingredient4_stack
 
+    @property
+    def ingredients(self) -> List[Item]:
+        return [item for item in [self._ingredient1_item, self._ingredient2_item, self._ingredient3_item, self._ingredient4_item,] if item]
+
     def __repr_ingredients(self):
         result = ''
         if self._ingredient1_item:

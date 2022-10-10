@@ -1,5 +1,8 @@
+from typing import List
+
 from sftools_service.domain.enums.item_categories import ItemCategory
 from sftools_service.domain.enums.recipe_type import RecipeType
+# from sftools_service.domain.models.recipe import Recipe  # creates circular import
 
 
 class Item:
@@ -29,6 +32,10 @@ class Item:
     @property
     def recipes(self):
         return self._recipes
+
+    @property
+    def basic_recipe(self):
+        return [r for r in self.recipes if r.type == RecipeType.BASIC][0]
 
     def add_recipe(self, recipe):
         self._recipes.append(recipe)

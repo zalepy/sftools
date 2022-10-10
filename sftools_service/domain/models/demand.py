@@ -39,7 +39,7 @@ class Demand:
 
         # handle negative rate
         if self._rate < 0:
-            self._rate = -self.rate
+            self._rate = abs(self._rate)
             if self._type == DemandType.PRODUCE:
                 self._type = DemandType.SINK
             else:
