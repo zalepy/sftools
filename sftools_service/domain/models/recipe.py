@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from sftools_service.domain.enums.recipe_type import RecipeType
 from sftools_service.domain.models.building import Building
@@ -187,6 +187,19 @@ class Recipe:
     @property
     def ingredients(self) -> List[Item]:
         return [item for item in [self._ingredient1_item, self._ingredient2_item, self._ingredient3_item, self._ingredient4_item,] if item]
+
+    @property
+    def ingredient_rates_by_ingredient_name(self) -> Dict[str, float]:
+        rates = {}
+        if self._ingredient1_item:
+            rates[self._ingredient1_item.name] = self.ingredient1_rate
+        if self._ingredient2_item:
+            rates[self._ingredient2_item.name] = self.ingredient2_rate
+        if self._ingredient3_item:
+            rates[self._ingredient3_item.name] = self.ingredient3_rate
+        if self._ingredient4_item:
+            rates[self._ingredient4_item.name] = self.ingredient4_rate
+        return {item.name: rates[item.name] for item in [self._ingredient1_item, self._ingredient2_item, self._ingredient3_item, self._ingredient4_item,] if item}
 
     def __repr_ingredients(self):
         result = ''

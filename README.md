@@ -27,3 +27,10 @@ Notes on calculation:
 To start web server execute:
 `waitress-serve --port=8000 "sftools_service.main:app"`
 
+ATM issue: ProdNode has single output, while we want single node, tied to a recipe with two outputs, to show/link two outputs
+
+Experiment with:
+* generate without round up, then pass over backwards to aggregate and round up
+* sub graphs based on building type
+* add recipe property for depth based on the place in the longest prod line
+* 

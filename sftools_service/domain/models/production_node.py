@@ -59,6 +59,7 @@ class ProductionNode:
             raise TypeError('Cannot add ProductionNodes with different buildings')
 
         self._building_scale += other._building_scale
+        self._scaled_output += other._scaled_output
         self._scaled_power += other._scaled_power
         return self
 

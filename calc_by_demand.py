@@ -360,41 +360,70 @@ def main():
     mplfig = plt.figure(figsize=(16.8, 9.6))
     production_graph = nx.DiGraph()
 
+    # reverse aggregate
+    for depth in range(10, 0, -1):
+        prod_nodes = prod_nodes_by_depth.get(depth)
+        if prod_nodes:
+            print('-----', final_production_nodes, '|||||||||||', prod_nodes)
+            final_production_nodes = aggregate_models(final_production_nodes, prod_nodes)
+            print('+++++', final_production_nodes)
+
     node_labels = {}
     node_positions = {}
-    for depth in range(10):
-        prod_nodes = prod_nodes_by_depth[depth]
-        demand_nodes = demand_by_depth[depth]
-        print('!!!', depth, prod_nodes)
-        if prod_nodes:
-            vertical_step = 1 / len(prod_nodes)
-            for vertical_index, node in enumerate(prod_nodes.values()):
-                graph_node_name = f'[{depth}] {node.name}'
-                production_graph.add_node(graph_node_name)
-                node_labels[graph_node_name] = '{:6.2f}'.format(node.scaled_output) + ' of ' + node.output_item.name
-                node_positions[graph_node_name] = (1 - depth * 0.1 + random.uniform(-0.05, 0.05), vertical_step * vertical_index)
 
-    for depth in range(10):
-        prod_nodes = prod_nodes_by_depth[depth]
-        print(']]]', prod_nodes)
-        if not prod_nodes:
-            continue
+    # for depth in range(10):
+    #     prod_nodes = prod_nodes_by_depth[depth]
+    #     demand_nodes = demand_by_depth[depth]
+    #     print('!!!', depth, prod_nodes)
+    #     if prod_nodes:
+    #         vertical_step = 1 / len(prod_nodes)
+    #         for vertical_index, node in enumerate(prod_nodes.values()):
+    #             graph_node_name = f'[{depth}] {node.name}'
+    #             production_graph.add_node(graph_node_name)
+    #             node_labels[graph_node_name] = '{:6.2f}'.format(node.scaled_output) + ' of ' + node.output_item.name
+    #             node_positions[graph_node_name] = (1 - depth * 0.1 + random.uniform(-0.05, 0.05), vertical_step * vertical_index)
 
-        for prod_node in prod_nodes.values():
+    vertical_step_by_depth = {d: 1 / (len(nodes)+1) for d, nodes in prod_nodes_by_depth.items()}
+    vertical_index_by_depth = {d: vertical_step_by_depth.get(d) for d in prod_nodes_by_depth.keys()}
+    for node in final_production_nodes.values():
+        graph_node_name = node.name
+        production_graph.add_node(graph_node_name)
+        node_labels[graph_node_name] = '{:6.2f}'.format(node.building_scale) + 'x' + node.building.name + ' -> {:6.2f}'.format(node.scaled_output) + ' of ' + node.output_item.name
+        node_positions[graph_node_name] = (1 - node.depth * 0.1 + random.uniform(-0.03, 0.03), vertical_index_by_depth.get(node.depth))
+        vertical_index_by_depth[node.depth] += vertical_step_by_depth.get(node.depth)
 
-            for ingredient in prod_node.recipe.ingredients:
-                # supplier = final_production_nodes.get(ingredient.name)
-                supplier_nodes = prod_nodes_by_depth.get(depth + 1)
-                if supplier_nodes:
-                    supplier = supplier_nodes.get(ingredient.name)
+    # for depth in range(10):
+    #     prod_nodes = prod_nodes_by_depth[depth]
+    #     print(']]]', prod_nodes)
+    #     if not prod_nodes:
+    #         continue
+    #
+    #     for prod_node in prod_nodes.values():
+    #
+    #         for ingredient in prod_node.recipe.ingredients:
+    #             # supplier = final_production_nodes.get(ingredient.name)
+    #             supplier_nodes = prod_nodes_by_depth.get(depth + 1)
+    #             if supplier_nodes:
+    #                 supplier = supplier_nodes.get(ingredient.name)
+    #
+    #                 if supplier:
+    #                     production_graph.add_edge(f'[{supplier.depth}] {supplier.name}', f'[{depth}] {prod_node.name}')
+    #                     print('???????', (f'[{supplier.depth}] {supplier.name}', f'[{depth}] {prod_node.name}'))
 
-                    if supplier:
-                        production_graph.add_edge(f'[{supplier.depth}] {supplier.name}', f'[{depth}] {prod_node.name}')
-                        print('???????', (f'[{supplier.depth}] {supplier.name}', f'[{depth}] {prod_node.name}'))
+    edge_labels = {}
+    for node in final_production_nodes.values():
+        ingredient_rates_by_ingredient_name = node.recipe.ingredient_rates_by_ingredient_name
+        for ingredient in node.recipe.ingredients:
+            supplier = final_production_nodes.get(ingredient.name)
+            if supplier:
+                production_graph.add_edge(supplier.name, node.name)
+                edge_labels[(supplier.name, node.name)] = node.building_scale * ingredient_rates_by_ingredient_name.get(ingredient.name)
+        #                     print('???????', (f'[{supplier.depth}] {supplier.name}', f'[{depth}] {prod_node.name}'))
 
     nx.draw(production_graph, pos=node_positions, with_labels=True)
     label_pos = {n: (p[0], p[1] - 0.02) for n, p in node_positions.items()}
     nx.draw_networkx_labels(production_graph, pos=label_pos, labels=node_labels, font_size=6, font_color='r')
+    nx.draw_networkx_edge_labels(production_graph, pos=label_pos, edge_labels=edge_labels, font_size=6, font_color='g')
 
     plt.savefig("depth.png")
     plt.show()

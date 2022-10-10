@@ -53,10 +53,16 @@ for i, node in enumerate(gp.nodes):
     positions[node] = (radius * np.cos(i * arc), radius * np.sin(i * arc),)
     labels[node] = '({:6.2f}'.format(np.cos(i * arc)) + ', {:6.2f}'.format(np.sin(i * arc)) + ')'
 
+edge_labels = {}
+for i, edge in enumerate(gp.edges):
+    # print(i, edge) # edge.data())
+    edge_labels[edge] = str(edge)
+
 # ax = plt.gca()
 nx.draw(gp, pos=positions, with_labels=True, font_weight='bold', width=2, node_size=500)
 label_pos = {n: (p[0], p[1] + 0.1) for n, p in positions.items()}
 nx.draw_networkx_labels(gp, pos=label_pos, labels=labels)
+nx.draw_networkx_edge_labels(gp, positions, edge_labels=edge_labels, font_color='r')
 
 plt.savefig("path.png")
 plt.show()
