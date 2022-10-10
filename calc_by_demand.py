@@ -155,7 +155,6 @@ def load_items(path: str, buildings: Dict[str, Building]) -> Tuple[Dict[str, Ite
                 output2_name = recipe_details.get('output2_name')  # "Heavy Oil Residue"
 
                 output1_item = None
-                print('>>>>> DDDDDDDDD', output1_name)
                 if item_recipe_json_by_name.get(output1_name):
                     output1_item = item_recipe_json_by_name.get(output1_name)[0]
 
@@ -341,6 +340,14 @@ def main():
         'Aluminum Ingot': Demand('Aluminum Ingot', items['Aluminum Ingot'], 30.0, DemandType.SINK),
         'Silica': Demand('Silica', items['Silica'], 100.0, DemandType.SINK),
     }
+
+    # check missing recipes:
+    # currently: gathering items (slugs, leaves, etc), ammo (rebars, nobelisk, ammo), waste, specials that can't be crafted (e.g. Superposition Oscillator)
+    for item in items.values():
+        if not item.top_recipe:
+            print(item.name, 'has', len(item.recipes), 'recipes; ',
+                  len([r for r in item.recipes if r.type == RecipeType.BASIC]), 'BASIC recipes')
+
     print('[]'*50)
     new_demand = root_demand
     final_demand = root_demand
@@ -382,11 +389,6 @@ def main():
     nx.draw_random(production_graph, with_labels=True)
     plt.savefig("demand.png")
     plt.show()
-
-    # for item in items.values():
-    #     print(item.name, 'has', len(item.recipes), 'recipes', end='; ')
-    #     print(item.name, len([r for r in item.recipes if r.type == RecipeType.BASIC]), 'BASIC recipes', end='; ')
-    #     print(item.name, 'has', len([r for r in item.recipes if r.name == item.name]), 'name match recipes')
 
 
 if __name__ == "__main__":

@@ -3104,14 +3104,14 @@
     "Stack size": "50",
     "Resource Sink Points": "8",
     "recipes": {
-      "Spiked Rebar": {
+      "Iron Rebar": {
         "building": "Constructor",
         "ingredient1_rate": "15 / min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Iron Rod",
         "output1_rate": "15 / min",
         "output1_stack": "1",
-        "output1_name": "Spiked Rebar"
+        "output1_name": "Iron Rebar"
       }
     }
   },
@@ -3146,7 +3146,7 @@
         "ingredient4_name": "Rubber",
         "output1_rate": "15 / min",
         "output1_stack": "5",
-        "output1_name": "Rifle Cartridge"
+        "output1_name": "Rifle Ammo"
       }
     }
   },
