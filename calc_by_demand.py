@@ -1,3 +1,5 @@
+import random
+
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -352,43 +354,94 @@ def main():
     new_demand = root_demand
     final_demand = root_demand
     final_production_nodes = {}
-    for depth in range(10):
+    demand_by_depth = {0: root_demand}
+    # root_vertical_step = 1 / len(root_demand)
+    # prod_nodes_by_depth = {0: {node: }}
+    prod_nodes_by_depth = {0: {}}
+    for depth in range(1, 10):
         # print('-'*30)
         # print('    >>> depth:', depth)
         new_nodes, new_demand = find_production_and_demand(new_demand)
+        # by depth
+        demand_by_depth[depth] = new_demand
+        prod_nodes_by_depth[depth] = new_nodes
         # aggregate
         final_demand = aggregate_models(final_demand, new_demand)
         final_production_nodes = aggregate_models(final_production_nodes, new_nodes)
 
     # print('[]'*10)
+    ### show agregated ###
+    # production_graph = nx.DiGraph()
+    # node_labels = {}
+    # for node in final_production_nodes.values():
+    #     production_graph.add_node(node.name)
+    #     node_labels[node.name] = '{:6.2f}'.format(node.scaled_output) + ' of ' + node.output_item_name
+    # leaf_nodes = []
+    # for production_node in final_production_nodes.values():
+    #     sub_demand = final_demand.get(production_node.name, 0)
+    #     if sub_demand:
+    #         for ingredient_item in sub_demand.item.top_recipe.ingredients:
+    #             if ingredient_item.name not in final_production_nodes.keys():
+    #                 production_graph.add_node(ingredient_item.name)
+    # node_pos = nx.planar_layout(production_graph)
+    # label_pos = {node: (pos[0], pos[1] + 0.05) for node, pos in node_pos.items()}
+    # for production_node in final_production_nodes.values():
+    #     print('>>> Production Node:', '\n        '.join(str(production_node).split('\n')))
+    #     sub_demand = final_demand.get(production_node.name, 0)
+    #     if sub_demand:
+    #         for ingredient_item in sub_demand.item.top_recipe.ingredients:
+    #             production_graph.add_edge(ingredient_item.name, production_node.name)
+    #     print('>>> Sub demands:', '\n        '.join(str(sub_demand).split('\n')))
+    #     print('-'*10)
+    #
+    # # nx.draw(production_graph, pos=node_pos, with_labels=True)
+    # nx.draw_random(production_graph, with_labels=True)
+    # plt.savefig("aggregated.png")
+    # plt.show()
 
     production_graph = nx.DiGraph()
     node_labels = {}
-    for node in final_production_nodes.values():
-        production_graph.add_node(node.name)
-        node_labels[node.name] = '{:6.2f}'.format(node.scaled_output) + ' of ' + node.output_item_name
-    leaf_nodes = []
+    node_positions = {}
+    for depth in range(10):
+        prod_nodes = prod_nodes_by_depth[depth]
+        print('!!!', depth, prod_nodes)
+        if not prod_nodes:
+            continue
+        vertical_step = 1 / len(prod_nodes)
+        for vertical_index, node in enumerate(prod_nodes.values()):
+            graph_node_name = f'[{depth}] {node.name}'
+            production_graph.add_node(graph_node_name)
+            node_labels[graph_node_name] = '{:6.2f}'.format(node.scaled_output) + ' of ' + node.output_item_name
+            node_positions[graph_node_name] = (1 - depth * 0.1, vertical_step * vertical_index)
+
+    # add leaf nodes (raw/base ingredients)
     for production_node in final_production_nodes.values():
         sub_demand = final_demand.get(production_node.name, 0)
         if sub_demand:
             for ingredient_item in sub_demand.item.top_recipe.ingredients:
                 if ingredient_item.name not in final_production_nodes.keys():
                     production_graph.add_node(ingredient_item.name)
-    node_pos = nx.planar_layout(production_graph)
-    label_pos = {node: (pos[0], pos[1] + 0.05) for node, pos in node_pos.items()}
-    for production_node in final_production_nodes.values():
-        print('>>> Production Node:', '\n        '.join(str(production_node).split('\n')))
-        sub_demand = final_demand.get(production_node.name, 0)
-        if sub_demand:
-            for ingredient_item in sub_demand.item.top_recipe.ingredients:
-                production_graph.add_edge(ingredient_item.name, production_node.name)
-        print('>>> Sub demands:', '\n        '.join(str(sub_demand).split('\n')))
-        print('-'*10)
+                    node_labels[ingredient_item.name] = 'base ingredient'
+                    node_positions[ingredient_item.name] = (0.001, random.uniform(0, 1))
+                    print('>>>>>>>>>>>', 'base ingredient', ingredient_item.name, node_positions[ingredient_item.name])
 
-    # nx.draw(production_graph, pos=node_pos, with_labels=True)
-    nx.draw_random(production_graph, with_labels=True)
-    plt.savefig("demand.png")
+    for depth in range(10):
+        prod_nodes = prod_nodes_by_depth[depth]
+        print(']]]', prod_nodes)
+        if not prod_nodes:
+            continue
+
+        for prod_node in prod_nodes.values():
+            sub_demand = demand_by_depth.get(depth).get(prod_node.name, 0)
+            if sub_demand:
+                for ingredient_item in sub_demand.item.top_recipe.ingredients:
+                    production_graph.add_edge(f'[{depth + 1}] {ingredient_item.name}', f'[{depth}] {prod_node.name}')
+                    print('???????',  (f'[{depth + 1}] {ingredient_item.name}', f'[{depth}] {prod_node.name}'))
+
+    nx.draw(production_graph, pos=node_positions, with_labels=True)
+    plt.savefig("depth.png")
     plt.show()
+
 
 
 if __name__ == "__main__":
