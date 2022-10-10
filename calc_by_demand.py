@@ -7,6 +7,7 @@ from typing import Optional, Dict, Tuple
 
 from sftools_service.config.default import NAME_TO_BUILDING_CATEGORY_MAP, NAME_TO_ITEM_CATEGORY_MAP
 from sftools_service.domain.enums.demand_type import DemandType
+from sftools_service.domain.enums.item_categories import ItemCategory
 from sftools_service.domain.enums.recipe_type import RecipeType
 from sftools_service.domain.models.building import Building
 from sftools_service.domain.models.demand import Demand
@@ -154,6 +155,7 @@ def load_items(path: str, buildings: Dict[str, Building]) -> Tuple[Dict[str, Ite
                 output2_name = recipe_details.get('output2_name')  # "Heavy Oil Residue"
 
                 output1_item = None
+                print('>>>>> DDDDDDDDD', output1_name)
                 if item_recipe_json_by_name.get(output1_name):
                     output1_item = item_recipe_json_by_name.get(output1_name)[0]
 
@@ -161,31 +163,51 @@ def load_items(path: str, buildings: Dict[str, Building]) -> Tuple[Dict[str, Ite
                 if item_recipe_json_by_name.get(output2_name):
                     output2_item = item_recipe_json_by_name.get(output2_name)[0]
 
-                recipe = Recipe(
-                    recipe_name,
-                    buildings.get(building_name),
-                    output1_item,
-                    output1_rate,
-                    output1_stack,
-                    output2_item=output2_item,
-                    output2_rate=output2_rate,
-                    output2_stack=output2_stack,
-                    ingredient1_item=ingredient1_item,
-                    ingredient1_rate=ingredient1_rate,
-                    ingredient1_stack=ingredient1_stack,
-                    ingredient2_item=ingredient2_item,
-                    ingredient2_rate=ingredient2_rate,
-                    ingredient2_stack=ingredient2_stack,
-                    ingredient3_item=ingredient3_item,
-                    ingredient3_rate=ingredient3_rate,
-                    ingredient3_stack=ingredient3_stack,
-                    ingredient4_item=ingredient4_item,
-                    ingredient4_rate=ingredient4_rate,
-                    ingredient4_stack=ingredient4_stack,
-                )
+                if output1_item:  # when output1_name is only referred inside recipes, and lacks entry in items.json
+                    recipe = Recipe(
+                        recipe_name,
+                        buildings.get(building_name),
+                        output1_item,
+                        output1_rate,
+                        output1_stack,
+                        output2_item=output2_item,
+                        output2_rate=output2_rate,
+                        output2_stack=output2_stack,
+                        ingredient1_item=ingredient1_item,
+                        ingredient1_rate=ingredient1_rate,
+                        ingredient1_stack=ingredient1_stack,
+                        ingredient2_item=ingredient2_item,
+                        ingredient2_rate=ingredient2_rate,
+                        ingredient2_stack=ingredient2_stack,
+                        ingredient3_item=ingredient3_item,
+                        ingredient3_rate=ingredient3_rate,
+                        ingredient3_stack=ingredient3_stack,
+                        ingredient4_item=ingredient4_item,
+                        ingredient4_rate=ingredient4_rate,
+                        ingredient4_stack=ingredient4_stack,
+                    )
 
-                recipe_models[recipe_name] = recipe
-                item.add_recipe(recipe)
+                    recipe_models[recipe_name] = recipe
+                    item.add_recipe(recipe)
+
+        # hack to add ore mining recipes
+        if item.category == ItemCategory.ORES:
+            item.add_recipe(Recipe(item.name, buildings.get('Miner Mk.1'), item, 60.0, item.stack_size))
+            item.add_recipe(Recipe('Poor ' + item.name, buildings.get('Miner Mk.1'), item, 30.0, item.stack_size))
+            item.add_recipe(Recipe('Rich ' + item.name, buildings.get('Miner Mk.1'), item, 120.0, item.stack_size))
+
+        if item.name == 'Water':
+            item.add_recipe(Recipe(item.name, buildings.get('Water Extractor'), item, 120.0, 1))
+
+        if item.name == 'Crude Oil':
+            item.add_recipe(Recipe(item.name, buildings.get('Oil Extractor'), item, 120.0, 1))
+            item.add_recipe(Recipe('Poor ' + item.name, buildings.get('Oil Extractor'), item, 60.0, 1))
+            item.add_recipe(Recipe('Rich ' + item.name, buildings.get('Oil Extractor'), item, 240.0, 1))
+
+        if item.name == 'Nitrogen Gas':
+            item.add_recipe(Recipe(item.name, buildings.get('Resource Well Extractor'), item, 60.0, 1))
+            # add poor node
+            # add rich node
 
         items_models[item.name] = item
 
@@ -209,14 +231,16 @@ def find_production_and_demand(parent_demands: Dict[str, Demand]) -> Tuple[Dict[
             # this way we can utilize the SINK into the PROD
             continue
 
-        # filter alt recipes
-        non_alt_recipes = [r for r in demand.item.recipes if r.type == RecipeType.BASIC]
-        # pick recipe
-        if not non_alt_recipes:
+        # # filter alt recipes
+        # non_alt_recipes = [r for r in demand.item.recipes if r.type == RecipeType.BASIC]
+        # # pick recipe
+        non_alt_recipe = demand.item.top_recipe
+        if not non_alt_recipe:
             # print('!!!!!!!!!!!!!!!! Hit leaf recipe for', demand_name)
             continue
+        #
+        # non_alt_recipe = non_alt_recipes[0]
 
-        non_alt_recipe = non_alt_recipes[0]
         # print('Demand recipe:', non_alt_recipe.name)
 
         # determine scale
@@ -340,7 +364,7 @@ def main():
     for production_node in final_production_nodes.values():
         sub_demand = final_demand.get(production_node.name, 0)
         if sub_demand:
-            for ingredient_item in sub_demand.item.basic_recipe.ingredients:
+            for ingredient_item in sub_demand.item.top_recipe.ingredients:
                 if ingredient_item.name not in final_production_nodes.keys():
                     production_graph.add_node(ingredient_item.name)
     node_pos = nx.planar_layout(production_graph)
@@ -349,14 +373,20 @@ def main():
         print('>>> Production Node:', '\n        '.join(str(production_node).split('\n')))
         sub_demand = final_demand.get(production_node.name, 0)
         if sub_demand:
-            for ingredient_item in sub_demand.item.basic_recipe.ingredients:
+            for ingredient_item in sub_demand.item.top_recipe.ingredients:
                 production_graph.add_edge(ingredient_item.name, production_node.name)
         print('>>> Sub demands:', '\n        '.join(str(sub_demand).split('\n')))
         print('-'*10)
 
     # nx.draw(production_graph, pos=node_pos, with_labels=True)
     nx.draw_random(production_graph, with_labels=True)
+    plt.savefig("demand.png")
     plt.show()
+
+    # for item in items.values():
+    #     print(item.name, 'has', len(item.recipes), 'recipes', end='; ')
+    #     print(item.name, len([r for r in item.recipes if r.type == RecipeType.BASIC]), 'BASIC recipes', end='; ')
+    #     print(item.name, 'has', len([r for r in item.recipes if r.name == item.name]), 'name match recipes')
 
 
 if __name__ == "__main__":

@@ -3,27 +3,7 @@
     "name": "Limestone",
     "Category": "Ores",
     "Stack size": "100",
-    "Resource Sink Points": "2",
-    "recipes": {
-      "Limestone": {
-        "building": "Miner Mk.1",
-        "output1_rate": "60 / min",
-        "output1_stack": "100",
-        "output1_name": "Limestone"
-      },
-      "Limestone poor": {
-        "building": "Miner Mk.1",
-        "output1_rate": "30 / min",
-        "output1_stack": "1",
-        "output1_name": "Limestone"
-      },
-      "Limestone rich": {
-        "building": "Miner Mk.1",
-        "output1_rate": "120 / min",
-        "output1_stack": "1",
-        "output1_name": "Limestone"
-      }
-    }
+    "Resource Sink Points": "2"
   },
   {
     "name": "Iron Ore",

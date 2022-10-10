@@ -111,7 +111,7 @@ def main():
 
         items.append(item_dict)
 
-    with open('../data/buildings.json', 'w') as f:
+    with open('../data/buildingz.json', 'w') as f:
         json.dump(items, f)
     print(items)
 
