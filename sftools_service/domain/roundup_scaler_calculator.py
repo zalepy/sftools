@@ -7,8 +7,9 @@ class RoundupScalerCalculator(ScalerCalculator):
 
     @classmethod
     def get_scaler(cls, demand: Demand, recipe: Recipe) -> float:
-        buildings_needed = demand.rate // recipe.output_rate
-        if demand.rate % recipe.output_rate:
+        target_recipe_product = recipe.get_product_by_name(demand.item.name)
+        buildings_needed = demand.rate // target_recipe_product.rate
+        if demand.rate % target_recipe_product.rate:
             buildings_needed += 1
 
         return buildings_needed

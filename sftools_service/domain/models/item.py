@@ -1,17 +1,16 @@
 from typing import List
 
 from sftools_service.domain.enums.item_categories import ItemCategory
-from sftools_service.domain.enums.recipe_type import RecipeType
-# from sftools_service.domain.models.recipe import Recipe  # creates circular import
+# from sftools_service.domain.models.recipe import Recipe  # (most likely due to a circular import)
 
 
 class Item:
-    def __init__(self, name: str, category: ItemCategory, stack_size: int, sink_points: int, recipes: list):
+    def __init__(self, name: str, category: ItemCategory, stack_size: int, sink_points: int, recipe_names: list):
         self._name = name
         self._category = category
         self._stack_size = stack_size
         self._sink_points = sink_points
-        self._recipes = recipes
+        self._recipes = recipe_names
 
     @property
     def name(self):
@@ -37,4 +36,4 @@ class Item:
         self._recipes.append(recipe)
 
     def __repr__(self):
-        return 'name: ' + self._name + '; category: ' + self._category.name + '; recipes: \n' + '\n'.join([str(r) for r in self._recipes if r.type == RecipeType.BASIC])
+        return 'name: ' + self.name + '; category: ' + self.category.name + '; recipes: \n' + '\n'.join([r.name for r in self.recipes])

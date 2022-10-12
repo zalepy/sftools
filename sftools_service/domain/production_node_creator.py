@@ -25,17 +25,6 @@ class ProductionNodeCreator:
     def scaler(self) -> float:
         return self._scaler
 
-    def generate_production_node(self, depth: int, target_output_name: str):
-        if self.recipe.output2_item and self.recipe.output2_item.name == target_output_name:
-            target_output_item = self.recipe.output2_item
-            target_output_rate = self.recipe.output2_rate
-        else:
-            target_output_item = self.recipe.output1_item
-            target_output_rate = self.recipe.output1_rate
-
-        # if target_output_name not in (self.recipe.output1_item.name, self.recipe.output2_item.name):
-        #     print(f'Warning: provided target output name {target_output_name} does not match any of the recipe outputs {self.recipe}')
-        #     target_output_name = self.recipe.output1_item.name
-
-        return ProductionNode(target_output_name, self.recipe.building, self.scaler, target_output_rate * self.scaler,
-                              target_output_item, self.recipe.building.power_generated * self.scaler, depth, self.recipe)
+    def generate_production_node(self, depth: int, y_pos: float):
+        target_recipe_product = self.recipe.get_product_by_name(self.demand.item.name)
+        return ProductionNode(target_recipe_product.item.name, target_recipe_product.item, self.recipe, self.scaler, depth, y_pos, [self.demand.uuid])

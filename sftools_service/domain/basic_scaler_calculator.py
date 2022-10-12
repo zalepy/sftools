@@ -7,4 +7,5 @@ class BasicScalerCalculator(ScalerCalculator):
 
     @classmethod
     def get_scaler(cls, demand: Demand, recipe: Recipe) -> float:
-        return demand.rate / recipe.output_rate
+        target_recipe_product = recipe.get_product_by_name(demand.item.name)
+        return demand.rate / target_recipe_product.rate
