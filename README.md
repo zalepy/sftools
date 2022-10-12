@@ -47,11 +47,17 @@ ProductionNode
 Notes on calculation:
 * number of buildings needed to satisfy the demand could be shown as `float` if no rounding is used
 * rounding up is optional and controlled by ROUND_UP_SCALER_FLAG and selection of `ScalerCalculator`
-* aggregation of production nodes, and pending demand is done after each step,
-  however demand that occurs on separate layers/iterations will be rounded up
-  individually
 
+Notes on drawing graph:
+* Networx lib doesn't use conventional models for nodes/edges, but dict of dicts. Provided drawing methods operates on full list of elements, rather than a single element.
+<br>Example: attribute `pos` is added via the `add_to_nx`/`add_node` method. To use that detail, have to call `poses = nx.get_node_attributes(production_graph, 'pos')`
+which is then used in draw - `nx.draw(production_graph, pos=poses, with_labels=True)`
+* The default labels referred to in `with_labels=True` are the node names. Adding extra "sub" labels has to be an extra draw call with:
+`nx.draw_networkx_labels(production_graph, pos=label_poses, labels={pn.name: pn.label for pn in all_prod_nodes.values()}, font_size=6, font_color='r')`
+where `label_poses` are derived by node positions with vertical offset of -0.05
+* similar for edge labels
 
+---
 To start web server execute:
 `waitress-serve --port=8000 "sftools_service.main:app"`
 
