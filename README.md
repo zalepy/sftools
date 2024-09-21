@@ -2,7 +2,8 @@
 tools for satisfactory
 
 Current operation:
-* scripts under `craw` scraped data from 'https://satisfactory-calculator.com' and store it under the `data` directory
+* scripts under `craw` were used to scrape data from 'https://satisfactory-calculator.com' and store it under the `data` directory. 
+  You can re-run if data is outdated, but be sure to make a copy of the current data, as the scrape may be outdated too. 
 * setup root demand in `calc_by_demand`
   ```
     root_demand_item = items['Smart Plating']
@@ -26,4 +27,10 @@ Notes on calculation:
 
 To start web server execute:
 `waitress-serve --port=8000 "sftools_service.main:app"`
+
+Plans are:
+* once full graph of the "round-up" demand is available, show it in a web page
+* allow tweaks via web interface to adjust _production nodes_ e.g. by using power shards to overclock a building
+* allow representation of lines, and consideration of splitting limitations
+
 
