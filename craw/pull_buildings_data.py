@@ -29,13 +29,14 @@ def grep_recipe(item_dict: dict, data: str) -> dict:
                 # This doesn't write back to the variables, need to do it explicitly or use a helper
                 pass
             
+
             # Helper to clean string
             def clean_str(val):
                 val = re.sub(r'<[^>]+>', '', val)
                 val = " ".join(val.split())
-                val = val.replace(" MW", "MW").replace(" m", "m")
-                val = val.replace("\u00b3", "3")
-                return val
+                val = val.replace(" MW", "").replace(" MJ", "").replace(" m", "")
+                val = val.replace("\u00b3", "").replace("/ min", "")
+                return val.strip()
 
             match_rate = clean_str(match_rate)
             match_stack = clean_str(match_stack)
@@ -79,10 +80,11 @@ def parse_item_details(item_dict: dict, data: str) -> Dict:
             val = re.sub(r'<[^>]+>', '', val)
             # Normalize whitespace
             val = " ".join(val.split())
-            # Fix unit spacing to match legacy format
-            val = val.replace(" MW", "MW").replace(" m", "m")
+
+            # Strip units
+            val = val.replace(" MW", "").replace(" m", "").replace(" MJ", "")
             # Fix unicode units
-            val = val.replace("\u00b3", "3")
+            val = val.replace("\u00b3", "").replace("/ min", "")
             item_dict[key] = val
 
     return item_dict
@@ -139,7 +141,8 @@ def main():
 
         items.append(item_dict)
 
-    with open('../data/buildings.json', 'w') as f:
+
+    with open('data/buildings.json', 'w') as f:
         json.dump(items, f, indent=2)
     print(items)
 

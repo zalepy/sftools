@@ -51,14 +51,15 @@ def load_buildings(path: str) -> Dict[str, Building]:
     for entry in buildings_json:
         name = entry.get('name')
         category = NAME_TO_BUILDING_CATEGORY_MAP.get(entry.get('Category'))
-        power = None
+
+        power = 0
         power_used = entry.get('Power used')
         if power_used:
             try:
-                power = - int(power_used.strip('MW'))
-            except TypeError as ex:
+                power = - int(power_used.strip('MW').replace(',', ''))
+            except (ValueError, TypeError) as ex:
                 print('failed converting power', power_used, ' to int')
-                power = None
+                power = 0
         power_used_plutonium = entry.get('Power used (Plutonium Pellet)')
         power_used_nuclear = entry.get('Power used (Nuclear Pasta)')
         if power_used_nuclear:
@@ -68,9 +69,9 @@ def load_buildings(path: str) -> Dict[str, Building]:
         if power_generated:
             try:
                 power = int(power_generated.strip('MW').replace(',', ''))
-            except TypeError as ex:
-                print('failed converting power', power_used, ' to int')
-                power = None
+            except (ValueError, TypeError) as ex:
+                print('failed converting power', power_generated, ' to int')
+                power = 0
         power_impure = entry.get('Power generated (MAP\\Impure)')
         power_normal = entry.get('Power generated (MAP\\Normal)')
         power_pure = entry.get('Power generated (MAP\\Pure)')
@@ -318,10 +319,14 @@ def main():
         final_production_nodes = aggregate_models(final_production_nodes, new_nodes)
 
     # print('[]'*10)
+
     for pn in final_production_nodes.values():
         print('>>> Production Node:', '\n        '.join(str(pn).split('\n')))
-        sd = final_demand[pn.name]
-        print('>>> Sub demands:', '\n        '.join(str(sd).split('\n')))
+        sd = final_demand.get(pn.output_item_name)
+        if sd:
+            print('>>> Sub demands:', '\n        '.join(str(sd).split('\n')))
+        else:
+            print('>>> Sub demands: None (KeyError avoided for', pn.output_item_name, ')')
         print('-'*10)
 
 

@@ -113,8 +113,9 @@ class Recipe:
 
         return demands
 
+
     def generate_production_node(self, scaler: float = 1.0):
-        return ProductionNode(self._name, self.building, scaler, self.output1_rate * scaler, self.name, self.building.power_generated * scaler)
+        return ProductionNode(self._name, self.building, scaler, self.output1_rate * scaler, self.output_item.name, self.building.power_generated * scaler)
 
     # ----------------------------------------------------------------------------------------------------------------
 
