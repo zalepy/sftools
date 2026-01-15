@@ -5,21 +5,15 @@
     "Stack size": "100",
     "Resource Sink Points": "2",
     "recipes": {
-      "Limestone": {
-        "building": "Miner Mk.1",
-        "output1_rate": "60 / min",
-        "output1_stack": "100",
-        "output1_name": "Limestone"
-      },
-      "Limestone poor": {
-        "building": "Miner Mk.1",
-        "output1_rate": "30 / min",
-        "output1_stack": "1",
-        "output1_name": "Limestone"
-      },
-      "Limestone rich": {
-        "building": "Miner Mk.1",
-        "output1_rate": "120 / min",
+      "Limestone (Sulfur)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "20 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Sulfur",
+        "output1_rate": "120 /min",
         "output1_stack": "1",
         "output1_name": "Limestone"
       }
@@ -29,19 +23,85 @@
     "name": "Iron Ore",
     "Category": "Ores",
     "Stack size": "100",
-    "Resource Sink Points": "1"
+    "Resource Sink Points": "1",
+    "recipes": {
+      "Iron Ore (Limestone)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "240 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Limestone",
+        "output1_rate": "120 /min",
+        "output1_stack": "1",
+        "output1_name": "Iron Ore"
+      }
+    }
   },
   {
     "name": "Copper Ore",
     "Category": "Ores",
     "Stack size": "100",
-    "Resource Sink Points": "3"
+    "Resource Sink Points": "3",
+    "recipes": {
+      "Copper Ore (Quartz)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "100 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Raw Quartz",
+        "output1_rate": "120 /min",
+        "output1_stack": "1",
+        "output1_name": "Copper Ore"
+      },
+      "Copper Ore (Sulfur)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "120 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Sulfur",
+        "output1_rate": "120 /min",
+        "output1_stack": "1",
+        "output1_name": "Copper Ore"
+      }
+    }
   },
   {
     "name": "Caterium Ore",
     "Category": "Ores",
     "Stack size": "100",
-    "Resource Sink Points": "7"
+    "Resource Sink Points": "7",
+    "recipes": {
+      "Caterium Ore (Copper)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "150 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Copper Ore",
+        "output1_rate": "120 /min",
+        "output1_stack": "1",
+        "output1_name": "Caterium Ore"
+      },
+      "Caterium Ore (Quartz)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "120 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Raw Quartz",
+        "output1_rate": "120 /min",
+        "output1_stack": "1",
+        "output1_name": "Caterium Ore"
+      }
+    }
   },
   {
     "name": "Coal",
@@ -52,19 +112,43 @@
     "recipes": {
       "Alternate: Biocoal": {
         "building": "Constructor",
-        "ingredient1_rate": "37.5 / min",
+        "ingredient1_rate": "37.5 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Biomass",
-        "output1_rate": "45 / min",
+        "output1_rate": "45 /min",
         "output1_stack": "6",
         "output1_name": "Coal"
       },
       "Alternate: Charcoal": {
         "building": "Constructor",
-        "ingredient1_rate": "15 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Wood",
-        "output1_rate": "150 / min",
+        "output1_rate": "150 /min",
+        "output1_stack": "1",
+        "output1_name": "Coal"
+      },
+      "Coal (Iron)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "180 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Iron Ore",
+        "output1_rate": "120 /min",
+        "output1_stack": "1",
+        "output1_name": "Coal"
+      },
+      "Coal (Limestone)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "360 /min",
+        "ingredient2_stack": "3",
+        "ingredient2_name": "Limestone",
+        "output1_rate": "120 /min",
         "output1_stack": "1",
         "output1_name": "Coal"
       }
@@ -74,25 +158,123 @@
     "name": "Raw Quartz",
     "Category": "Ores",
     "Stack size": "100",
-    "Resource Sink Points": "15"
+    "Resource Sink Points": "15",
+    "recipes": {
+      "Raw Quartz (Bauxite)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "100 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Bauxite",
+        "output1_rate": "120 /min",
+        "output1_stack": "1",
+        "output1_name": "Raw Quartz"
+      },
+      "Raw Quartz (Coal)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "240 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Coal",
+        "output1_rate": "120 /min",
+        "output1_stack": "1",
+        "output1_name": "Raw Quartz"
+      }
+    }
   },
   {
     "name": "Sulfur",
     "Category": "Ores",
     "Stack size": "100",
-    "Resource Sink Points": "11"
+    "Resource Sink Points": "11",
+    "recipes": {
+      "Sulfur (Coal)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "200 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Coal",
+        "output1_rate": "120 /min",
+        "output1_stack": "1",
+        "output1_name": "Sulfur"
+      },
+      "Sulfur (Iron)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "300 /min",
+        "ingredient2_stack": "3",
+        "ingredient2_name": "Iron Ore",
+        "output1_rate": "120 /min",
+        "output1_stack": "1",
+        "output1_name": "Sulfur"
+      }
+    }
   },
   {
     "name": "Bauxite",
     "Category": "Ores",
     "Stack size": "100",
-    "Resource Sink Points": "8"
+    "Resource Sink Points": "8",
+    "recipes": {
+      "Bauxite (Caterium)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "150 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Caterium Ore",
+        "output1_rate": "120 /min",
+        "output1_stack": "1",
+        "output1_name": "Bauxite"
+      },
+      "Bauxite (Copper)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "180 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Copper Ore",
+        "output1_rate": "120 /min",
+        "output1_stack": "1",
+        "output1_name": "Bauxite"
+      }
+    }
+  },
+  {
+    "name": "SAM",
+    "Category": "Ores",
+    "Stack size": "100",
+    "Resource Sink Points": "20"
   },
   {
     "name": "Uranium",
     "Category": "Ores",
     "Stack size": "100",
-    "Resource Sink Points": "35"
+    "Resource Sink Points": "35",
+    "recipes": {
+      "Uranium Ore (Bauxite)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "480 /min",
+        "ingredient2_stack": "4",
+        "ingredient2_name": "Bauxite",
+        "output1_rate": "120 /min",
+        "output1_stack": "1",
+        "output1_name": "Uranium"
+      }
+    }
   },
   {
     "name": "Iron Ingot",
@@ -102,34 +284,58 @@
     "recipes": {
       "Iron Ingot": {
         "building": "Smelter",
-        "ingredient1_rate": "30 / min",
+        "ingredient1_rate": "30 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Iron Ore",
-        "output1_rate": "30 / min",
+        "output1_rate": "30 /min",
+        "output1_stack": "1",
+        "output1_name": "Iron Ingot"
+      },
+      "Alternate: Basic Iron Ingot": {
+        "building": "Foundry",
+        "ingredient1_rate": "25 /min",
+        "ingredient1_stack": "5",
+        "ingredient1_name": "Iron Ore",
+        "ingredient2_rate": "40 /min",
+        "ingredient2_stack": "8",
+        "ingredient2_name": "Limestone",
+        "output1_rate": "50 /min",
         "output1_stack": "1",
         "output1_name": "Iron Ingot"
       },
       "Alternate: Iron Alloy Ingot": {
         "building": "Foundry",
-        "ingredient1_rate": "20 / min",
-        "ingredient1_stack": "2",
+        "ingredient1_rate": "40 /min",
+        "ingredient1_stack": "8",
         "ingredient1_name": "Iron Ore",
-        "ingredient2_rate": "20 / min",
+        "ingredient2_rate": "10 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Copper Ore",
-        "output1_rate": "50 / min",
-        "output1_stack": "5",
+        "output1_rate": "75 /min",
+        "output1_stack": "1",
+        "output1_name": "Iron Ingot"
+      },
+      "Alternate: Leached Iron Ingot": {
+        "building": "Refinery",
+        "ingredient1_rate": "50 /min",
+        "ingredient1_stack": "5",
+        "ingredient1_name": "Iron Ore",
+        "ingredient2_rate": "10m3 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Sulfuric Acid",
+        "output1_rate": "100 /min",
+        "output1_stack": "1",
         "output1_name": "Iron Ingot"
       },
       "Alternate: Pure Iron Ingot": {
         "building": "Refinery",
-        "ingredient1_rate": "35 / min",
+        "ingredient1_rate": "35 /min",
         "ingredient1_stack": "7",
         "ingredient1_name": "Iron Ore",
-        "ingredient2_rate": "20m³ / min",
+        "ingredient2_rate": "20m3 /min",
         "ingredient2_stack": "4",
         "ingredient2_name": "Water",
-        "output1_rate": "65 / min",
+        "output1_rate": "65 /min",
         "output1_stack": "1",
         "output1_name": "Iron Ingot"
       }
@@ -143,34 +349,58 @@
     "recipes": {
       "Copper Ingot": {
         "building": "Smelter",
-        "ingredient1_rate": "30 / min",
+        "ingredient1_rate": "30 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Copper Ore",
-        "output1_rate": "30 / min",
+        "output1_rate": "30 /min",
         "output1_stack": "1",
         "output1_name": "Copper Ingot"
       },
       "Alternate: Copper Alloy Ingot": {
         "building": "Foundry",
-        "ingredient1_rate": "50 / min",
-        "ingredient1_stack": "1",
+        "ingredient1_rate": "50 /min",
+        "ingredient1_stack": "5",
         "ingredient1_name": "Copper Ore",
-        "ingredient2_rate": "25 / min",
+        "ingredient2_rate": "50 /min",
         "ingredient2_stack": "5",
         "ingredient2_name": "Iron Ore",
-        "output1_rate": "100 / min",
+        "output1_rate": "100 /min",
+        "output1_stack": "1",
+        "output1_name": "Copper Ingot"
+      },
+      "Alternate: Leached Copper Ingot": {
+        "building": "Refinery",
+        "ingredient1_rate": "45 /min",
+        "ingredient1_stack": "9",
+        "ingredient1_name": "Copper Ore",
+        "ingredient2_rate": "25m3 /min",
+        "ingredient2_stack": "5",
+        "ingredient2_name": "Sulfuric Acid",
+        "output1_rate": "110 /min",
         "output1_stack": "2",
         "output1_name": "Copper Ingot"
       },
       "Alternate: Pure Copper Ingot": {
         "building": "Refinery",
-        "ingredient1_rate": "15 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "6",
         "ingredient1_name": "Copper Ore",
-        "ingredient2_rate": "10m³ / min",
+        "ingredient2_rate": "10m3 /min",
         "ingredient2_stack": "4",
         "ingredient2_name": "Water",
-        "output1_rate": "37.5 / min",
+        "output1_rate": "37.5 /min",
+        "output1_stack": "1",
+        "output1_name": "Copper Ingot"
+      },
+      "Alternate: Tempered Copper Ingot": {
+        "building": "Foundry",
+        "ingredient1_rate": "25 /min",
+        "ingredient1_stack": "5",
+        "ingredient1_name": "Copper Ore",
+        "ingredient2_rate": "40 /min",
+        "ingredient2_stack": "8",
+        "ingredient2_name": "Petroleum Coke",
+        "output1_rate": "60 /min",
         "output1_stack": "1",
         "output1_name": "Copper Ingot"
       }
@@ -184,23 +414,47 @@
     "recipes": {
       "Caterium Ingot": {
         "building": "Smelter",
-        "ingredient1_rate": "45 / min",
+        "ingredient1_rate": "45 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Caterium Ore",
-        "output1_rate": "15 / min",
+        "output1_rate": "15 /min",
         "output1_stack": "1",
+        "output1_name": "Caterium Ingot"
+      },
+      "Alternate: Leached Caterium Ingot": {
+        "building": "Refinery",
+        "ingredient1_rate": "54 /min",
+        "ingredient1_stack": "9",
+        "ingredient1_name": "Caterium Ore",
+        "ingredient2_rate": "30m3 /min",
+        "ingredient2_stack": "5",
+        "ingredient2_name": "Sulfuric Acid",
+        "output1_rate": "36 /min",
+        "output1_stack": "6",
         "output1_name": "Caterium Ingot"
       },
       "Alternate: Pure Caterium Ingot": {
         "building": "Refinery",
-        "ingredient1_rate": "24 / min",
+        "ingredient1_rate": "24 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Caterium Ore",
-        "ingredient2_rate": "24m³ / min",
+        "ingredient2_rate": "24m3 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Water",
-        "output1_rate": "12 / min",
+        "output1_rate": "12 /min",
         "output1_stack": "1",
+        "output1_name": "Caterium Ingot"
+      },
+      "Alternate: Tempered Caterium Ingot": {
+        "building": "Foundry",
+        "ingredient1_rate": "45 /min",
+        "ingredient1_stack": "6",
+        "ingredient1_name": "Caterium Ore",
+        "ingredient2_rate": "15 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Petroleum Coke",
+        "output1_rate": "22.5 /min",
+        "output1_stack": "3",
         "output1_name": "Caterium Ingot"
       }
     }
@@ -213,49 +467,49 @@
     "recipes": {
       "Steel Ingot": {
         "building": "Foundry",
-        "ingredient1_rate": "45 / min",
+        "ingredient1_rate": "45 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Iron Ore",
-        "ingredient2_rate": "45 / min",
+        "ingredient2_rate": "45 /min",
         "ingredient2_stack": "3",
         "ingredient2_name": "Coal",
-        "output1_rate": "45 / min",
+        "output1_rate": "45 /min",
         "output1_stack": "3",
         "output1_name": "Steel Ingot"
       },
       "Alternate: Coke Steel Ingot": {
         "building": "Foundry",
-        "ingredient1_rate": "75 / min",
+        "ingredient1_rate": "75 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Iron Ore",
-        "ingredient2_rate": "75 / min",
+        "ingredient2_rate": "75 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Petroleum Coke",
-        "output1_rate": "100 / min",
+        "output1_rate": "100 /min",
         "output1_stack": "2",
         "output1_name": "Steel Ingot"
       },
       "Alternate: Compacted Steel Ingot": {
         "building": "Foundry",
-        "ingredient1_rate": "22.5 / min",
-        "ingredient1_stack": "6",
+        "ingredient1_rate": "5 /min",
+        "ingredient1_stack": "2",
         "ingredient1_name": "Iron Ore",
-        "ingredient2_rate": "11.25 / min",
-        "ingredient2_stack": "3",
+        "ingredient2_rate": "2.5 /min",
+        "ingredient2_stack": "1",
         "ingredient2_name": "Compacted Coal",
-        "output1_rate": "37.5 / min",
-        "output1_stack": "1",
+        "output1_rate": "10 /min",
+        "output1_stack": "4",
         "output1_name": "Steel Ingot"
       },
       "Alternate: Solid Steel Ingot": {
         "building": "Foundry",
-        "ingredient1_rate": "40 / min",
+        "ingredient1_rate": "40 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Iron Ingot",
-        "ingredient2_rate": "40 / min",
+        "ingredient2_rate": "40 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Coal",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "3",
         "output1_name": "Steel Ingot"
       }
@@ -269,24 +523,68 @@
     "recipes": {
       "Aluminum Ingot": {
         "building": "Foundry",
-        "ingredient1_rate": "90 / min",
+        "ingredient1_rate": "90 /min",
         "ingredient1_stack": "6",
         "ingredient1_name": "Aluminum Scrap",
-        "ingredient2_rate": "75 / min",
+        "ingredient2_rate": "75 /min",
         "ingredient2_stack": "5",
         "ingredient2_name": "Silica",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "4",
         "output1_name": "Aluminum Ingot"
       },
       "Alternate: Pure Aluminum Ingot": {
         "building": "Smelter",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Aluminum Scrap",
-        "output1_rate": "30 / min",
+        "output1_rate": "30 /min",
         "output1_stack": "1",
         "output1_name": "Aluminum Ingot"
+      }
+    }
+  },
+  {
+    "name": "Ficsite Ingot",
+    "Category": "Ingots",
+    "Stack size": "100",
+    "Resource Sink Points": "1,936",
+    "recipes": {
+      "Ficsite Ingot (Aluminum)": {
+        "building": "Converter",
+        "ingredient1_rate": "60 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "120 /min",
+        "ingredient2_stack": "4",
+        "ingredient2_name": "Aluminum Ingot",
+        "output1_rate": "30 /min",
+        "output1_stack": "1",
+        "output1_name": "Ficsite Ingot"
+      },
+      "Ficsite Ingot (Caterium)": {
+        "building": "Converter",
+        "ingredient1_rate": "45 /min",
+        "ingredient1_stack": "3",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "60 /min",
+        "ingredient2_stack": "4",
+        "ingredient2_name": "Caterium Ingot",
+        "output1_rate": "15 /min",
+        "output1_stack": "1",
+        "output1_name": "Ficsite Ingot"
+      },
+      "Ficsite Ingot (Iron)": {
+        "building": "Converter",
+        "ingredient1_rate": "40 /min",
+        "ingredient1_stack": "4",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "240 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Iron Ingot",
+        "output1_rate": "10 /min",
+        "output1_stack": "1",
+        "output1_name": "Ficsite Ingot"
       }
     }
   },
@@ -298,46 +596,46 @@
     "recipes": {
       "Concrete": {
         "building": "Constructor",
-        "ingredient1_rate": "45 / min",
+        "ingredient1_rate": "45 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Limestone",
-        "output1_rate": "15 / min",
+        "output1_rate": "15 /min",
         "output1_stack": "1",
         "output1_name": "Concrete"
       },
       "Alternate: Fine Concrete": {
         "building": "Assembler",
-        "ingredient1_rate": "7.5 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Silica",
-        "ingredient2_rate": "30 / min",
+        "ingredient2_rate": "60 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Limestone",
-        "output1_rate": "25 / min",
+        "output1_rate": "50 /min",
         "output1_stack": "1",
         "output1_name": "Concrete"
       },
       "Alternate: Rubber Concrete": {
         "building": "Assembler",
-        "ingredient1_rate": "50 / min",
+        "ingredient1_rate": "100 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Limestone",
-        "ingredient2_rate": "10 / min",
+        "ingredient2_rate": "20 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Rubber",
-        "output1_rate": "45 / min",
+        "output1_rate": "90 /min",
         "output1_stack": "9",
         "output1_name": "Concrete"
       },
       "Alternate: Wet Concrete": {
         "building": "Refinery",
-        "ingredient1_rate": "120 / min",
+        "ingredient1_rate": "120 /min",
         "ingredient1_stack": "6",
         "ingredient1_name": "Limestone",
-        "ingredient2_rate": "100m³ / min",
+        "ingredient2_rate": "100m3 /min",
         "ingredient2_stack": "5",
         "ingredient2_name": "Water",
-        "output1_rate": "80 / min",
+        "output1_rate": "80 /min",
         "output1_stack": "4",
         "output1_name": "Concrete"
       }
@@ -346,29 +644,56 @@
   {
     "name": "Quartz Crystal",
     "Category": "Minerals",
-    "Stack size": "100",
+    "Stack size": "200",
     "Resource Sink Points": "50",
     "recipes": {
       "Quartz Crystal": {
         "building": "Constructor",
-        "ingredient1_rate": "37.5 / min",
+        "ingredient1_rate": "37.5 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Raw Quartz",
-        "output1_rate": "22.5 / min",
+        "output1_rate": "22.5 /min",
         "output1_stack": "3",
+        "output1_name": "Quartz Crystal"
+      },
+      "Alternate: Fused Quartz Crystal": {
+        "building": "Foundry",
+        "ingredient1_rate": "75 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Raw Quartz",
+        "ingredient2_rate": "36 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Coal",
+        "output1_rate": "54 /min",
+        "output1_stack": "1",
         "output1_name": "Quartz Crystal"
       },
       "Alternate: Pure Quartz Crystal": {
         "building": "Refinery",
-        "ingredient1_rate": "67.5 / min",
+        "ingredient1_rate": "67.5 /min",
         "ingredient1_stack": "9",
         "ingredient1_name": "Raw Quartz",
-        "ingredient2_rate": "37.5m³ / min",
+        "ingredient2_rate": "37.5m3 /min",
         "ingredient2_stack": "5",
         "ingredient2_name": "Water",
-        "output1_rate": "52.5 / min",
+        "output1_rate": "52.5 /min",
         "output1_stack": "7",
         "output1_name": "Quartz Crystal"
+      },
+      "Alternate: Quartz Purification": {
+        "building": "Refinery",
+        "ingredient1_rate": "120 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Raw Quartz",
+        "ingredient2_rate": "10m3 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Nitric Acid",
+        "output1_rate": "75 /min",
+        "output1_stack": "1",
+        "output1_name": "Quartz Crystal",
+        "output2_rate": "60m3 /min",
+        "output2_stack": "1",
+        "output2_name": "Dissolved Silica"
       }
     }
   },
@@ -380,39 +705,57 @@
     "recipes": {
       "Alumina Solution": {
         "building": "Refinery",
-        "ingredient1_rate": "120 / min",
+        "ingredient1_rate": "120 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Bauxite",
-        "ingredient2_rate": "180m³ / min",
+        "ingredient2_rate": "180m3 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Water",
-        "output1_rate": "120m³ / min",
+        "output1_rate": "120m3 /min",
         "output1_stack": "1",
         "output1_name": "Alumina Solution",
-        "output2_rate": "50 / min",
+        "output2_rate": "50 /min",
         "output2_stack": "5",
         "output2_name": "Silica"
       },
       "Silica": {
         "building": "Constructor",
-        "ingredient1_rate": "22.5 / min",
+        "ingredient1_rate": "22.5 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Raw Quartz",
-        "output1_rate": "37.5 / min",
+        "output1_rate": "37.5 /min",
         "output1_stack": "5",
         "output1_name": "Silica"
       },
       "Alternate: Cheap Silica": {
         "building": "Assembler",
-        "ingredient1_rate": "11.25 / min",
+        "ingredient1_rate": "22.5 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Raw Quartz",
-        "ingredient2_rate": "18.75 / min",
+        "ingredient2_rate": "37.5 /min",
         "ingredient2_stack": "5",
         "ingredient2_name": "Limestone",
-        "output1_rate": "26.25 / min",
+        "output1_rate": "52.5 /min",
         "output1_stack": "7",
         "output1_name": "Silica"
+      },
+      "Alternate: Distilled Silica": {
+        "building": "Blender",
+        "ingredient1_rate": "120m3 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Dissolved Silica",
+        "ingredient2_rate": "50 /min",
+        "ingredient2_stack": "5",
+        "ingredient2_name": "Limestone",
+        "ingredient3_rate": "100m3 /min",
+        "ingredient3_stack": "1",
+        "ingredient3_name": "Water",
+        "output1_rate": "270 /min",
+        "output1_stack": "2",
+        "output1_name": "Silica",
+        "output2_rate": "80m3 /min",
+        "output2_stack": "8",
+        "output2_name": "Water"
       }
     }
   },
@@ -424,10 +767,10 @@
     "recipes": {
       "Copper Powder": {
         "building": "Constructor",
-        "ingredient1_rate": "300 / min",
+        "ingredient1_rate": "300 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Copper Ingot",
-        "output1_rate": "50 / min",
+        "output1_rate": "50 /min",
         "output1_stack": "5",
         "output1_name": "Copper Powder"
       }
@@ -441,37 +784,37 @@
     "recipes": {
       "Fuel": {
         "building": "Refinery",
-        "ingredient1_rate": "60m³ / min",
+        "ingredient1_rate": "60m3 /min",
         "ingredient1_stack": "6",
         "ingredient1_name": "Crude Oil",
-        "output1_rate": "40m³ / min",
+        "output1_rate": "40m3 /min",
         "output1_stack": "4",
         "output1_name": "Fuel",
-        "output2_rate": "30 / min",
+        "output2_rate": "30 /min",
         "output2_stack": "3",
         "output2_name": "Polymer Resin"
       },
       "Alternate: Heavy Oil Residue": {
         "building": "Refinery",
-        "ingredient1_rate": "30m³ / min",
+        "ingredient1_rate": "30m3 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Crude Oil",
-        "output1_rate": "40m³ / min",
+        "output1_rate": "40m3 /min",
         "output1_stack": "4",
         "output1_name": "Heavy Oil Residue",
-        "output2_rate": "20 / min",
+        "output2_rate": "20 /min",
         "output2_stack": "2",
         "output2_name": "Polymer Resin"
       },
       "Alternate: Polymer Resin": {
         "building": "Refinery",
-        "ingredient1_rate": "60m³ / min",
+        "ingredient1_rate": "60m3 /min",
         "ingredient1_stack": "6",
         "ingredient1_name": "Crude Oil",
-        "output1_rate": "130 / min",
+        "output1_rate": "130 /min",
         "output1_stack": "1",
         "output1_name": "Polymer Resin",
-        "output2_rate": "20m³ / min",
+        "output2_rate": "20m3 /min",
         "output2_stack": "2",
         "output2_name": "Heavy Oil Residue"
       }
@@ -486,10 +829,10 @@
     "recipes": {
       "Petroleum Coke": {
         "building": "Refinery",
-        "ingredient1_rate": "40m³ / min",
+        "ingredient1_rate": "40m3 /min",
         "ingredient1_stack": "4",
         "ingredient1_name": "Heavy Oil Residue",
-        "output1_rate": "120 / min",
+        "output1_rate": "120 /min",
         "output1_stack": "1",
         "output1_name": "Petroleum Coke"
       }
@@ -503,62 +846,117 @@
     "recipes": {
       "Aluminum Scrap": {
         "building": "Refinery",
-        "ingredient1_rate": "240m³ / min",
+        "ingredient1_rate": "240m3 /min",
         "ingredient1_stack": "4",
         "ingredient1_name": "Alumina Solution",
-        "ingredient2_rate": "120 / min",
+        "ingredient2_rate": "120 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Coal",
-        "output1_rate": "360 / min",
+        "output1_rate": "360 /min",
         "output1_stack": "6",
         "output1_name": "Aluminum Scrap",
-        "output2_rate": "120m³ / min",
+        "output2_rate": "120m3 /min",
         "output2_stack": "2",
         "output2_name": "Water"
       },
-      "Alternate: Electrode - Aluminum Scrap": {
+      "Alternate: Electrode Aluminum Scrap": {
         "building": "Refinery",
-        "ingredient1_rate": "180m³ / min",
+        "ingredient1_rate": "180m3 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Alumina Solution",
-        "ingredient2_rate": "60 / min",
+        "ingredient2_rate": "60 /min",
         "ingredient2_stack": "4",
         "ingredient2_name": "Petroleum Coke",
-        "output1_rate": "300 / min",
+        "output1_rate": "300 /min",
         "output1_stack": "2",
         "output1_name": "Aluminum Scrap",
-        "output2_rate": "105m³ / min",
+        "output2_rate": "105m3 /min",
         "output2_stack": "7",
         "output2_name": "Water"
       },
       "Alternate: Instant Scrap": {
         "building": "Blender",
-        "ingredient1_rate": "150 / min",
+        "ingredient1_rate": "150 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Bauxite",
-        "ingredient2_rate": "100 / min",
+        "ingredient2_rate": "100 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Coal",
-        "ingredient3_rate": "50m³ / min",
+        "ingredient3_rate": "50m3 /min",
         "ingredient3_stack": "5",
         "ingredient3_name": "Sulfuric Acid",
-        "ingredient4_rate": "60m³ / min",
+        "ingredient4_rate": "60m3 /min",
         "ingredient4_stack": "6",
         "ingredient4_name": "Water",
-        "output1_rate": "300 / min",
+        "output1_rate": "300 /min",
         "output1_stack": "3",
         "output1_name": "Aluminum Scrap",
-        "output2_rate": "50m³ / min",
+        "output2_rate": "50m3 /min",
         "output2_stack": "5",
         "output2_name": "Water"
       }
     }
   },
   {
-    "name": "Alien Protein"
+    "name": "Alien Protein",
+    "Category": "Aliens",
+    "Stack size": "100",
+    "Resource Sink Points": "Cannot be put into the sink.",
+    "recipes": {
+      "Hatcher Protein": {
+        "building": "Constructor",
+        "ingredient1_rate": "20 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Hatcher Remains",
+        "output1_rate": "20 /min",
+        "output1_stack": "1",
+        "output1_name": "Alien Protein"
+      },
+      "Hog Protein": {
+        "building": "Constructor",
+        "ingredient1_rate": "20 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Hog Remains",
+        "output1_rate": "20 /min",
+        "output1_stack": "1",
+        "output1_name": "Alien Protein"
+      },
+      "Spitter Protein": {
+        "building": "Constructor",
+        "ingredient1_rate": "20 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Spitter Remains",
+        "output1_rate": "20 /min",
+        "output1_stack": "1",
+        "output1_name": "Alien Protein"
+      },
+      "Stinger Protein": {
+        "building": "Constructor",
+        "ingredient1_rate": "20 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Stinger Remains",
+        "output1_rate": "20 /min",
+        "output1_stack": "1",
+        "output1_name": "Alien Protein"
+      }
+    }
   },
   {
-    "name": "Organic Data Capsule"
+    "name": "Alien DNA Capsule",
+    "Category": "Aliens",
+    "Stack size": "50",
+    "Resource Sink Points": "Cannot be put into the sink.",
+    "recipes": {
+      "Alien DNA Capsule": {
+        "building": "Constructor",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Alien Protein",
+        "output1_rate": "10 /min",
+        "output1_stack": "1",
+        "output1_name": "Alien DNA Capsule"
+      }
+    }
   },
   {
     "name": "Water",
@@ -567,124 +965,142 @@
     "recipes": {
       "Aluminum Scrap": {
         "building": "Refinery",
-        "ingredient1_rate": "240m³ / min",
+        "ingredient1_rate": "240m3 /min",
         "ingredient1_stack": "4",
         "ingredient1_name": "Alumina Solution",
-        "ingredient2_rate": "120 / min",
+        "ingredient2_rate": "120 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Coal",
-        "output1_rate": "360 / min",
+        "output1_rate": "360 /min",
         "output1_stack": "6",
         "output1_name": "Aluminum Scrap",
-        "output2_rate": "120m³ / min",
+        "output2_rate": "120m3 /min",
         "output2_stack": "2",
         "output2_name": "Water"
       },
       "Battery": {
         "building": "Blender",
-        "ingredient1_rate": "50m³ / min",
+        "ingredient1_rate": "50m3 /min",
         "ingredient1_stack": "2.",
         "ingredient1_name": "Sulfuric Acid",
-        "ingredient2_rate": "40m³ / min",
+        "ingredient2_rate": "40m3 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Alumina Solution",
-        "ingredient3_rate": "20 / min",
+        "ingredient3_rate": "20 /min",
         "ingredient3_stack": "1",
         "ingredient3_name": "Aluminum Casing",
-        "output1_rate": "20 / min",
+        "output1_rate": "20 /min",
         "output1_stack": "1",
         "output1_name": "Battery",
-        "output2_rate": "30m³ / min",
+        "output2_rate": "30m3 /min",
         "output2_stack": "1.",
         "output2_name": "Water"
       },
-      "Non-fissile Uranium": {
+      "Non-Fissile Uranium": {
         "building": "Blender",
-        "ingredient1_rate": "37.5 / min",
+        "ingredient1_rate": "37.5 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Uranium Waste",
-        "ingredient2_rate": "25 / min",
+        "ingredient2_rate": "25 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Silica",
-        "ingredient3_rate": "15m³ / min",
+        "ingredient3_rate": "15m3 /min",
         "ingredient3_stack": "6",
         "ingredient3_name": "Nitric Acid",
-        "ingredient4_rate": "15m³ / min",
+        "ingredient4_rate": "15m3 /min",
         "ingredient4_stack": "6",
         "ingredient4_name": "Sulfuric Acid",
-        "output1_rate": "50 / min",
+        "output1_rate": "50 /min",
         "output1_stack": "2",
-        "output1_name": "Non-fissile Uranium",
-        "output2_rate": "15m³ / min",
+        "output1_name": "Non-Fissile Uranium",
+        "output2_rate": "15m3 /min",
         "output2_stack": "6",
         "output2_name": "Water"
       },
       "Unpackage Water": {
         "building": "Packager",
-        "ingredient1_rate": "120 / min",
+        "ingredient1_rate": "120 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Water",
-        "output1_rate": "120m³ / min",
+        "output1_rate": "120m3 /min",
         "output1_stack": "2",
         "output1_name": "Water",
-        "output2_rate": "120 / min",
+        "output2_rate": "120 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       },
-      "Alternate: Electrode - Aluminum Scrap": {
+      "Alternate: Distilled Silica": {
+        "building": "Blender",
+        "ingredient1_rate": "120m3 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Dissolved Silica",
+        "ingredient2_rate": "50 /min",
+        "ingredient2_stack": "5",
+        "ingredient2_name": "Limestone",
+        "ingredient3_rate": "100m3 /min",
+        "ingredient3_stack": "1",
+        "ingredient3_name": "Water",
+        "output1_rate": "270 /min",
+        "output1_stack": "2",
+        "output1_name": "Silica",
+        "output2_rate": "80m3 /min",
+        "output2_stack": "8",
+        "output2_name": "Water"
+      },
+      "Alternate: Electrode Aluminum Scrap": {
         "building": "Refinery",
-        "ingredient1_rate": "180m³ / min",
+        "ingredient1_rate": "180m3 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Alumina Solution",
-        "ingredient2_rate": "60 / min",
+        "ingredient2_rate": "60 /min",
         "ingredient2_stack": "4",
         "ingredient2_name": "Petroleum Coke",
-        "output1_rate": "300 / min",
+        "output1_rate": "300 /min",
         "output1_stack": "2",
         "output1_name": "Aluminum Scrap",
-        "output2_rate": "105m³ / min",
+        "output2_rate": "105m3 /min",
         "output2_stack": "7",
         "output2_name": "Water"
       },
       "Alternate: Fertile Uranium": {
         "building": "Blender",
-        "ingredient1_rate": "25 / min",
+        "ingredient1_rate": "25 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Uranium",
-        "ingredient2_rate": "25 / min",
+        "ingredient2_rate": "25 /min",
         "ingredient2_stack": "5",
         "ingredient2_name": "Uranium Waste",
-        "ingredient3_rate": "15m³ / min",
+        "ingredient3_rate": "15m3 /min",
         "ingredient3_stack": "3",
         "ingredient3_name": "Nitric Acid",
-        "ingredient4_rate": "25m³ / min",
+        "ingredient4_rate": "25m3 /min",
         "ingredient4_stack": "5",
         "ingredient4_name": "Sulfuric Acid",
-        "output1_rate": "100 / min",
+        "output1_rate": "100 /min",
         "output1_stack": "2",
-        "output1_name": "Non-fissile Uranium",
-        "output2_rate": "40m³ / min",
+        "output1_name": "Non-Fissile Uranium",
+        "output2_rate": "40m3 /min",
         "output2_stack": "8",
         "output2_name": "Water"
       },
       "Alternate: Instant Scrap": {
         "building": "Blender",
-        "ingredient1_rate": "150 / min",
+        "ingredient1_rate": "150 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Bauxite",
-        "ingredient2_rate": "100 / min",
+        "ingredient2_rate": "100 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Coal",
-        "ingredient3_rate": "50m³ / min",
+        "ingredient3_rate": "50m3 /min",
         "ingredient3_stack": "5",
         "ingredient3_name": "Sulfuric Acid",
-        "ingredient4_rate": "60m³ / min",
+        "ingredient4_rate": "60m3 /min",
         "ingredient4_stack": "6",
         "ingredient4_name": "Water",
-        "output1_rate": "300 / min",
+        "output1_rate": "300 /min",
         "output1_stack": "3",
         "output1_name": "Aluminum Scrap",
-        "output2_rate": "50m³ / min",
+        "output2_rate": "50m3 /min",
         "output2_stack": "5",
         "output2_name": "Water"
       }
@@ -693,18 +1109,18 @@
   {
     "name": "Crude Oil",
     "Category": "Liquids",
-    "Energy": "0.32MJ",
+    "Energy": "320MJ",
     "Resource Sink Points": "30",
     "recipes": {
       "Unpackage Oil": {
         "building": "Packager",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Oil",
-        "output1_rate": "60m³ / min",
+        "output1_rate": "60m3 /min",
         "output1_stack": "2",
         "output1_name": "Crude Oil",
-        "output2_rate": "60 / min",
+        "output2_rate": "60 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       }
@@ -713,66 +1129,66 @@
   {
     "name": "Heavy Oil Residue",
     "Category": "Liquids",
-    "Energy": "0.4MJ",
+    "Energy": "400MJ",
     "Resource Sink Points": "30",
     "recipes": {
       "Plastic": {
         "building": "Refinery",
-        "ingredient1_rate": "30m³ / min",
+        "ingredient1_rate": "30m3 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Crude Oil",
-        "output1_rate": "20 / min",
+        "output1_rate": "20 /min",
         "output1_stack": "2",
         "output1_name": "Plastic",
-        "output2_rate": "10m³ / min",
+        "output2_rate": "10m3 /min",
         "output2_stack": "1",
         "output2_name": "Heavy Oil Residue"
       },
       "Rubber": {
         "building": "Refinery",
-        "ingredient1_rate": "30m³ / min",
+        "ingredient1_rate": "30m3 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Crude Oil",
-        "output1_rate": "20 / min",
+        "output1_rate": "20 /min",
         "output1_stack": "2",
         "output1_name": "Rubber",
-        "output2_rate": "20m³ / min",
+        "output2_rate": "20m3 /min",
         "output2_stack": "2",
         "output2_name": "Heavy Oil Residue"
       },
       "Unpackage Heavy Oil Residue": {
         "building": "Packager",
-        "ingredient1_rate": "20 / min",
+        "ingredient1_rate": "20 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Heavy Oil Residue",
-        "output1_rate": "20m³ / min",
+        "output1_rate": "20m3 /min",
         "output1_stack": "2",
         "output1_name": "Heavy Oil Residue",
-        "output2_rate": "20 / min",
+        "output2_rate": "20 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       },
       "Alternate: Heavy Oil Residue": {
         "building": "Refinery",
-        "ingredient1_rate": "30m³ / min",
+        "ingredient1_rate": "30m3 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Crude Oil",
-        "output1_rate": "40m³ / min",
+        "output1_rate": "40m3 /min",
         "output1_stack": "4",
         "output1_name": "Heavy Oil Residue",
-        "output2_rate": "20 / min",
+        "output2_rate": "20 /min",
         "output2_stack": "2",
         "output2_name": "Polymer Resin"
       },
       "Alternate: Polymer Resin": {
         "building": "Refinery",
-        "ingredient1_rate": "60m³ / min",
+        "ingredient1_rate": "60m3 /min",
         "ingredient1_stack": "6",
         "ingredient1_name": "Crude Oil",
-        "output1_rate": "130 / min",
+        "output1_rate": "130 /min",
         "output1_stack": "1",
         "output1_name": "Polymer Resin",
-        "output2_rate": "20m³ / min",
+        "output2_rate": "20m3 /min",
         "output2_stack": "2",
         "output2_name": "Heavy Oil Residue"
       }
@@ -781,52 +1197,52 @@
   {
     "name": "Fuel",
     "Category": "Liquids",
-    "Energy": "0.75MJ",
+    "Energy": "750MJ",
     "Resource Sink Points": "75",
     "recipes": {
       "Fuel": {
         "building": "Refinery",
-        "ingredient1_rate": "60m³ / min",
+        "ingredient1_rate": "60m3 /min",
         "ingredient1_stack": "6",
         "ingredient1_name": "Crude Oil",
-        "output1_rate": "40m³ / min",
+        "output1_rate": "40m3 /min",
         "output1_stack": "4",
         "output1_name": "Fuel",
-        "output2_rate": "30 / min",
+        "output2_rate": "30 /min",
         "output2_stack": "3",
         "output2_name": "Polymer Resin"
       },
-      "Residual Fuel": {
-        "building": "Refinery",
-        "ingredient1_rate": "60m³ / min",
-        "ingredient1_stack": "6",
-        "ingredient1_name": "Heavy Oil Residue",
-        "output1_rate": "40m³ / min",
-        "output1_stack": "4",
-        "output1_name": "Fuel"
-      },
       "Unpackage Fuel": {
         "building": "Packager",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Fuel",
-        "output1_rate": "60m³ / min",
+        "output1_rate": "60m3 /min",
         "output1_stack": "2",
         "output1_name": "Fuel",
-        "output2_rate": "60 / min",
+        "output2_rate": "60 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       },
       "Alternate: Diluted Fuel": {
         "building": "Blender",
-        "ingredient1_rate": "50m³ / min",
+        "ingredient1_rate": "50m3 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Heavy Oil Residue",
-        "ingredient2_rate": "100m³ / min",
+        "ingredient2_rate": "100m3 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Water",
-        "output1_rate": "100m³ / min",
+        "output1_rate": "100m3 /min",
         "output1_stack": "1",
+        "output1_name": "Fuel"
+      },
+      "Residual Fuel": {
+        "building": "Refinery",
+        "ingredient1_rate": "60m3 /min",
+        "ingredient1_stack": "6",
+        "ingredient1_name": "Heavy Oil Residue",
+        "output1_rate": "40m3 /min",
+        "output1_stack": "4",
         "output1_name": "Fuel"
       }
     }
@@ -834,30 +1250,30 @@
   {
     "name": "Liquid Biofuel",
     "Category": "Liquids",
-    "Energy": "0.75MJ",
+    "Energy": "750MJ",
     "Resource Sink Points": "261",
     "recipes": {
       "Liquid Biofuel": {
         "building": "Refinery",
-        "ingredient1_rate": "90 / min",
+        "ingredient1_rate": "90 /min",
         "ingredient1_stack": "6",
         "ingredient1_name": "Solid Biofuel",
-        "ingredient2_rate": "45m³ / min",
+        "ingredient2_rate": "45m3 /min",
         "ingredient2_stack": "3",
         "ingredient2_name": "Water",
-        "output1_rate": "60m³ / min",
+        "output1_rate": "60m3 /min",
         "output1_stack": "4",
         "output1_name": "Liquid Biofuel"
       },
       "Unpackage Liquid Biofuel": {
         "building": "Packager",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Liquid Biofuel",
-        "output1_rate": "60m³ / min",
+        "output1_rate": "60m3 /min",
         "output1_stack": "2",
         "output1_name": "Liquid Biofuel",
-        "output2_rate": "60 / min",
+        "output2_rate": "60 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       }
@@ -866,61 +1282,61 @@
   {
     "name": "Turbofuel",
     "Category": "Liquids",
-    "Energy": "2MJ",
+    "Energy": "2,000MJ",
     "Resource Sink Points": "225",
     "recipes": {
+      "Turbofuel": {
+        "building": "Refinery",
+        "ingredient1_rate": "22.5m3 /min",
+        "ingredient1_stack": "6",
+        "ingredient1_name": "Fuel",
+        "ingredient2_rate": "15 /min",
+        "ingredient2_stack": "4",
+        "ingredient2_name": "Compacted Coal",
+        "output1_rate": "18.75m3 /min",
+        "output1_stack": "5",
+        "output1_name": "Turbofuel"
+      },
       "Unpackage Turbofuel": {
         "building": "Packager",
-        "ingredient1_rate": "20 / min",
+        "ingredient1_rate": "20 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Turbofuel",
-        "output1_rate": "20m³ / min",
+        "output1_rate": "20m3 /min",
         "output1_stack": "2",
         "output1_name": "Turbofuel",
-        "output2_rate": "20 / min",
+        "output2_rate": "20 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       },
       "Alternate: Turbo Blend Fuel": {
         "building": "Blender",
-        "ingredient1_rate": "15m³ / min",
+        "ingredient1_rate": "15m3 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Fuel",
-        "ingredient2_rate": "30m³ / min",
+        "ingredient2_rate": "30m3 /min",
         "ingredient2_stack": "4",
         "ingredient2_name": "Heavy Oil Residue",
-        "ingredient3_rate": "22.5 / min",
+        "ingredient3_rate": "22.5 /min",
         "ingredient3_stack": "3",
         "ingredient3_name": "Sulfur",
-        "ingredient4_rate": "22.5 / min",
+        "ingredient4_rate": "22.5 /min",
         "ingredient4_stack": "3",
         "ingredient4_name": "Petroleum Coke",
-        "output1_rate": "45m³ / min",
+        "output1_rate": "45m3 /min",
         "output1_stack": "6",
         "output1_name": "Turbofuel"
       },
       "Alternate: Turbo Heavy Fuel": {
         "building": "Refinery",
-        "ingredient1_rate": "37.5m³ / min",
+        "ingredient1_rate": "37.5m3 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Heavy Oil Residue",
-        "ingredient2_rate": "30 / min",
+        "ingredient2_rate": "30 /min",
         "ingredient2_stack": "4",
         "ingredient2_name": "Compacted Coal",
-        "output1_rate": "30m³ / min",
+        "output1_rate": "30m3 /min",
         "output1_stack": "4",
-        "output1_name": "Turbofuel"
-      },
-      "Turbofuel": {
-        "building": "Refinery",
-        "ingredient1_rate": "22.5m³ / min",
-        "ingredient1_stack": "6",
-        "ingredient1_name": "Fuel",
-        "ingredient2_rate": "15 / min",
-        "ingredient2_stack": "4",
-        "ingredient2_name": "Compacted Coal",
-        "output1_rate": "18.75m³ / min",
-        "output1_stack": "5",
         "output1_name": "Turbofuel"
       }
     }
@@ -932,40 +1348,40 @@
     "recipes": {
       "Alumina Solution": {
         "building": "Refinery",
-        "ingredient1_rate": "120 / min",
+        "ingredient1_rate": "120 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Bauxite",
-        "ingredient2_rate": "180m³ / min",
+        "ingredient2_rate": "180m3 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Water",
-        "output1_rate": "120m³ / min",
+        "output1_rate": "120m3 /min",
         "output1_stack": "1",
         "output1_name": "Alumina Solution",
-        "output2_rate": "50 / min",
+        "output2_rate": "50 /min",
         "output2_stack": "5",
         "output2_name": "Silica"
       },
       "Unpackage Alumina Solution": {
         "building": "Packager",
-        "ingredient1_rate": "120 / min",
+        "ingredient1_rate": "120 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Alumina Solution",
-        "output1_rate": "120m³ / min",
+        "output1_rate": "120m3 /min",
         "output1_stack": "2",
         "output1_name": "Alumina Solution",
-        "output2_rate": "120 / min",
+        "output2_rate": "120 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       },
       "Alternate: Sloppy Alumina": {
         "building": "Refinery",
-        "ingredient1_rate": "200 / min",
+        "ingredient1_rate": "200 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Bauxite",
-        "ingredient2_rate": "200m³ / min",
+        "ingredient2_rate": "200m3 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Water",
-        "output1_rate": "240m³ / min",
+        "output1_rate": "240m3 /min",
         "output1_stack": "1",
         "output1_name": "Alumina Solution"
       }
@@ -978,43 +1394,43 @@
     "recipes": {
       "Encased Uranium Cell": {
         "building": "Blender",
-        "ingredient1_rate": "50 / min",
+        "ingredient1_rate": "50 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Uranium",
-        "ingredient2_rate": "15 / min",
+        "ingredient2_rate": "15 /min",
         "ingredient2_stack": "3",
         "ingredient2_name": "Concrete",
-        "ingredient3_rate": "40m³ / min",
+        "ingredient3_rate": "40m3 /min",
         "ingredient3_stack": "8",
         "ingredient3_name": "Sulfuric Acid",
-        "output1_rate": "25 / min",
+        "output1_rate": "25 /min",
         "output1_stack": "5",
         "output1_name": "Encased Uranium Cell",
-        "output2_rate": "10m³ / min",
+        "output2_rate": "10m3 /min",
         "output2_stack": "2",
         "output2_name": "Sulfuric Acid"
       },
       "Sulfuric Acid": {
         "building": "Refinery",
-        "ingredient1_rate": "50 / min",
+        "ingredient1_rate": "50 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Sulfur",
-        "ingredient2_rate": "50m³ / min",
+        "ingredient2_rate": "50m3 /min",
         "ingredient2_stack": "5",
         "ingredient2_name": "Water",
-        "output1_rate": "50m³ / min",
+        "output1_rate": "50m3 /min",
         "output1_stack": "5",
         "output1_name": "Sulfuric Acid"
       },
       "Unpackage Sulfuric Acid": {
         "building": "Packager",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Packaged Sulfuric Acid",
-        "output1_rate": "60m³ / min",
+        "output1_rate": "60m3 /min",
         "output1_stack": "1",
         "output1_name": "Sulfuric Acid",
-        "output2_rate": "60 / min",
+        "output2_rate": "60 /min",
         "output2_stack": "1",
         "output2_name": "Empty Canister"
       }
@@ -1027,30 +1443,52 @@
     "recipes": {
       "Nitric Acid": {
         "building": "Blender",
-        "ingredient1_rate": "120m³ / min",
+        "ingredient1_rate": "120m3 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Nitrogen Gas",
-        "ingredient2_rate": "30m³ / min",
+        "ingredient2_rate": "30m3 /min",
         "ingredient2_stack": "3",
         "ingredient2_name": "Water",
-        "ingredient3_rate": "10 / min",
+        "ingredient3_rate": "10 /min",
         "ingredient3_stack": "1",
         "ingredient3_name": "Iron Plate",
-        "output1_rate": "30m³ / min",
+        "output1_rate": "30m3 /min",
         "output1_stack": "3",
         "output1_name": "Nitric Acid"
       },
       "Unpackage Nitric Acid": {
         "building": "Packager",
-        "ingredient1_rate": "20 / min",
+        "ingredient1_rate": "20 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Packaged Nitric Acid",
-        "output1_rate": "20m³ / min",
+        "output1_rate": "20m3 /min",
         "output1_stack": "1",
         "output1_name": "Nitric Acid",
-        "output2_rate": "20 / min",
+        "output2_rate": "20 /min",
         "output2_stack": "1",
         "output2_name": "Empty Fluid Tank"
+      }
+    }
+  },
+  {
+    "name": "Dissolved Silica",
+    "Category": "Liquids",
+    "Resource Sink Points": "Cannot be put into the sink.",
+    "recipes": {
+      "Alternate: Quartz Purification": {
+        "building": "Refinery",
+        "ingredient1_rate": "120 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Raw Quartz",
+        "ingredient2_rate": "10m3 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Nitric Acid",
+        "output1_rate": "75 /min",
+        "output1_stack": "1",
+        "output1_name": "Quartz Crystal",
+        "output2_rate": "60m3 /min",
+        "output2_stack": "1",
+        "output2_name": "Dissolved Silica"
       }
     }
   },
@@ -1061,15 +1499,178 @@
     "recipes": {
       "Unpackage Nitrogen Gas": {
         "building": "Packager",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Packaged Nitrogen Gas",
-        "output1_rate": "240m³ / min",
+        "output1_rate": "240m3 /min",
         "output1_stack": "4",
         "output1_name": "Nitrogen Gas",
-        "output2_rate": "60 / min",
+        "output2_rate": "60 /min",
         "output2_stack": "1",
         "output2_name": "Empty Fluid Tank"
+      },
+      "Nitrogen Gas (Bauxite)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "100 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Bauxite",
+        "output1_rate": "120m3 /min",
+        "output1_stack": "1",
+        "output1_name": "Nitrogen Gas"
+      },
+      "Nitrogen Gas (Caterium)": {
+        "building": "Converter",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "120 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Caterium Ore",
+        "output1_rate": "120m3 /min",
+        "output1_stack": "1",
+        "output1_name": "Nitrogen Gas"
+      }
+    }
+  },
+  {
+    "name": "Rocket Fuel",
+    "Category": "Gas",
+    "Stack size": "100",
+    "Energy": "3,600MJ",
+    "Resource Sink Points": "289",
+    "recipes": {
+      "Rocket Fuel": {
+        "building": "Blender",
+        "ingredient1_rate": "60m3 /min",
+        "ingredient1_stack": "6",
+        "ingredient1_name": "Turbofuel",
+        "ingredient2_rate": "10m3 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Nitric Acid",
+        "output1_rate": "100m3 /min",
+        "output1_stack": "1",
+        "output1_name": "Rocket Fuel",
+        "output2_rate": "10 /min",
+        "output2_stack": "1",
+        "output2_name": "Compacted Coal"
+      },
+      "Unpackage Rocket Fuel": {
+        "building": "Packager",
+        "ingredient1_rate": "60 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Packaged Rocket Fuel",
+        "output1_rate": "120m3 /min",
+        "output1_stack": "2",
+        "output1_name": "Rocket Fuel",
+        "output2_rate": "60 /min",
+        "output2_stack": "1",
+        "output2_name": "Empty Fluid Tank"
+      },
+      "Alternate: Nitro Rocket Fuel": {
+        "building": "Blender",
+        "ingredient1_rate": "100m3 /min",
+        "ingredient1_stack": "4",
+        "ingredient1_name": "Fuel",
+        "ingredient2_rate": "75m3 /min",
+        "ingredient2_stack": "3",
+        "ingredient2_name": "Nitrogen Gas",
+        "ingredient3_rate": "100 /min",
+        "ingredient3_stack": "4",
+        "ingredient3_name": "Sulfur",
+        "ingredient4_rate": "50 /min",
+        "ingredient4_stack": "2",
+        "ingredient4_name": "Coal",
+        "output1_rate": "150m3 /min",
+        "output1_stack": "6",
+        "output1_name": "Rocket Fuel",
+        "output2_rate": "25 /min",
+        "output2_stack": "1",
+        "output2_name": "Compacted Coal"
+      }
+    }
+  },
+  {
+    "name": "Ionized Fuel",
+    "Category": "Gas",
+    "Stack size": "100",
+    "Energy": "5,000MJ",
+    "Resource Sink Points": "2,398",
+    "recipes": {
+      "Ionized Fuel": {
+        "building": "Refinery",
+        "ingredient1_rate": "40m3 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Rocket Fuel",
+        "ingredient2_rate": "2.5 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Power Shard",
+        "output1_rate": "40m3 /min",
+        "output1_stack": "1",
+        "output1_name": "Ionized Fuel",
+        "output2_rate": "5 /min",
+        "output2_stack": "2",
+        "output2_name": "Compacted Coal"
+      },
+      "Unpackage Ionized Fuel": {
+        "building": "Packager",
+        "ingredient1_rate": "40 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Packaged Ionized Fuel",
+        "output1_rate": "80m3 /min",
+        "output1_stack": "4",
+        "output1_name": "Ionized Fuel",
+        "output2_rate": "40 /min",
+        "output2_stack": "2",
+        "output2_name": "Empty Fluid Tank"
+      },
+      "Alternate: Dark-Ion Fuel": {
+        "building": "Converter",
+        "ingredient1_rate": "240 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Packaged Rocket Fuel",
+        "ingredient2_rate": "80 /min",
+        "ingredient2_stack": "4",
+        "ingredient2_name": "Dark Matter Crystal",
+        "output1_rate": "200m3 /min",
+        "output1_stack": "1",
+        "output1_name": "Ionized Fuel",
+        "output2_rate": "40 /min",
+        "output2_stack": "2",
+        "output2_name": "Compacted Coal"
+      }
+    }
+  },
+  {
+    "name": "Dark Matter Residue",
+    "Category": "Gas",
+    "Stack size": "200",
+    "Resource Sink Points": "130",
+    "recipes": {
+      "Dark Matter Residue": {
+        "building": "Converter",
+        "ingredient1_rate": "50 /min",
+        "ingredient1_stack": "5",
+        "ingredient1_name": "Reanimated SAM",
+        "output1_rate": "100m3 /min",
+        "output1_stack": "1",
+        "output1_name": "Dark Matter Residue"
+      }
+    }
+  },
+  {
+    "name": "Excited Photonic Matter",
+    "Category": "Gas",
+    "Stack size": "200",
+    "Resource Sink Points": "100",
+    "recipes": {
+      "Excited Photonic Matter": {
+        "building": "Converter",
+        "ingredient1_rate": "200m3 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Excited Photonic Matter"
       }
     }
   },
@@ -1081,56 +1682,65 @@
     "recipes": {
       "Iron Rod": {
         "building": "Constructor",
-        "ingredient1_rate": "15 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Iron Ingot",
-        "output1_rate": "15 / min",
+        "output1_rate": "15 /min",
         "output1_stack": "1",
+        "output1_name": "Iron Rod"
+      },
+      "Alternate: Aluminum Rod": {
+        "building": "Constructor",
+        "ingredient1_rate": "7.5 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Aluminum Ingot",
+        "output1_rate": "52.5 /min",
+        "output1_stack": "7",
         "output1_name": "Iron Rod"
       },
       "Alternate: Steel Rod": {
         "building": "Constructor",
-        "ingredient1_rate": "12 / min",
+        "ingredient1_rate": "12 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Steel Ingot",
-        "output1_rate": "48 / min",
+        "output1_rate": "48 /min",
         "output1_stack": "4",
         "output1_name": "Iron Rod"
       }
     }
   },
   {
-    "name": "Screw",
+    "name": "Screws",
     "Category": "Standard Parts",
     "Stack size": "500",
     "Resource Sink Points": "2",
     "recipes": {
-      "Screw": {
+      "Screws": {
         "building": "Constructor",
-        "ingredient1_rate": "10 / min",
+        "ingredient1_rate": "10 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Iron Rod",
-        "output1_rate": "40 / min",
+        "output1_rate": "40 /min",
         "output1_stack": "4",
-        "output1_name": "Screw"
+        "output1_name": "Screws"
       },
-      "Alternate: Cast Screw": {
+      "Alternate: Cast Screws": {
         "building": "Constructor",
-        "ingredient1_rate": "12.5 / min",
+        "ingredient1_rate": "12.5 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Iron Ingot",
-        "output1_rate": "50 / min",
+        "output1_rate": "50 /min",
         "output1_stack": "2",
-        "output1_name": "Screw"
+        "output1_name": "Screws"
       },
-      "Alternate: Steel Screw": {
+      "Alternate: Steel Screws": {
         "building": "Constructor",
-        "ingredient1_rate": "5 / min",
+        "ingredient1_rate": "5 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Steel Beam",
-        "output1_rate": "260 / min",
+        "output1_rate": "260 /min",
         "output1_stack": "5",
-        "output1_name": "Screw"
+        "output1_name": "Screws"
       }
     }
   },
@@ -1142,35 +1752,35 @@
     "recipes": {
       "Iron Plate": {
         "building": "Constructor",
-        "ingredient1_rate": "30 / min",
+        "ingredient1_rate": "30 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Iron Ingot",
-        "output1_rate": "20 / min",
+        "output1_rate": "20 /min",
         "output1_stack": "2",
         "output1_name": "Iron Plate"
       },
       "Alternate: Coated Iron Plate": {
         "building": "Assembler",
-        "ingredient1_rate": "50 / min",
-        "ingredient1_stack": "1",
+        "ingredient1_rate": "37.5 /min",
+        "ingredient1_stack": "5",
         "ingredient1_name": "Iron Ingot",
-        "ingredient2_rate": "10 / min",
-        "ingredient2_stack": "2",
+        "ingredient2_rate": "7.5 /min",
+        "ingredient2_stack": "1",
         "ingredient2_name": "Plastic",
-        "output1_rate": "75 / min",
+        "output1_rate": "75 /min",
         "output1_stack": "1",
         "output1_name": "Iron Plate"
       },
-      "Alternate: Steel Coated Plate": {
-        "building": "Assembler",
-        "ingredient1_rate": "7.5 / min",
-        "ingredient1_stack": "3",
-        "ingredient1_name": "Steel Ingot",
-        "ingredient2_rate": "5 / min",
-        "ingredient2_stack": "2",
-        "ingredient2_name": "Plastic",
-        "output1_rate": "45 / min",
-        "output1_stack": "1",
+      "Alternate: Steel Cast Plate": {
+        "building": "Foundry",
+        "ingredient1_rate": "15 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Iron Ingot",
+        "ingredient2_rate": "15 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Steel Ingot",
+        "output1_rate": "45 /min",
+        "output1_stack": "3",
         "output1_name": "Iron Plate"
       }
     }
@@ -1183,49 +1793,49 @@
     "recipes": {
       "Reinforced Iron Plate": {
         "building": "Assembler",
-        "ingredient1_rate": "30 / min",
+        "ingredient1_rate": "30 /min",
         "ingredient1_stack": "6",
         "ingredient1_name": "Iron Plate",
-        "ingredient2_rate": "60 / min",
+        "ingredient2_rate": "60 /min",
         "ingredient2_stack": "1",
-        "ingredient2_name": "Screw",
-        "output1_rate": "5 / min",
+        "ingredient2_name": "Screws",
+        "output1_rate": "5 /min",
         "output1_stack": "1",
         "output1_name": "Reinforced Iron Plate"
       },
       "Alternate: Adhered Iron Plate": {
         "building": "Assembler",
-        "ingredient1_rate": "11.25 / min",
+        "ingredient1_rate": "11.25 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Iron Plate",
-        "ingredient2_rate": "3.75 / min",
+        "ingredient2_rate": "3.75 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Rubber",
-        "output1_rate": "3.75 / min",
+        "output1_rate": "3.75 /min",
         "output1_stack": "1",
         "output1_name": "Reinforced Iron Plate"
       },
       "Alternate: Bolted Iron Plate": {
         "building": "Assembler",
-        "ingredient1_rate": "90 / min",
+        "ingredient1_rate": "90 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Iron Plate",
-        "ingredient2_rate": "250 / min",
+        "ingredient2_rate": "250 /min",
         "ingredient2_stack": "5",
-        "ingredient2_name": "Screw",
-        "output1_rate": "15 / min",
+        "ingredient2_name": "Screws",
+        "output1_rate": "15 /min",
         "output1_stack": "3",
         "output1_name": "Reinforced Iron Plate"
       },
       "Alternate: Stitched Iron Plate": {
         "building": "Assembler",
-        "ingredient1_rate": "18.75 / min",
+        "ingredient1_rate": "18.75 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Iron Plate",
-        "ingredient2_rate": "37.5 / min",
+        "ingredient2_rate": "37.5 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Wire",
-        "output1_rate": "5.63 / min",
+        "output1_rate": "5.63 /min",
         "output1_stack": "3",
         "output1_name": "Reinforced Iron Plate"
       }
@@ -1239,22 +1849,22 @@
     "recipes": {
       "Copper Sheet": {
         "building": "Constructor",
-        "ingredient1_rate": "20 / min",
+        "ingredient1_rate": "20 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Copper Ingot",
-        "output1_rate": "10 / min",
+        "output1_rate": "10 /min",
         "output1_stack": "1",
         "output1_name": "Copper Sheet"
       },
       "Alternate: Steamed Copper Sheet": {
         "building": "Refinery",
-        "ingredient1_rate": "22.5 / min",
+        "ingredient1_rate": "22.5 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Copper Ingot",
-        "ingredient2_rate": "22.5m³ / min",
+        "ingredient2_rate": "22.5m3 /min",
         "ingredient2_stack": "3",
         "ingredient2_name": "Water",
-        "output1_rate": "22.5 / min",
+        "output1_rate": "22.5 /min",
         "output1_stack": "3",
         "output1_name": "Copper Sheet"
       }
@@ -1268,13 +1878,13 @@
     "recipes": {
       "Alclad Aluminum Sheet": {
         "building": "Assembler",
-        "ingredient1_rate": "30 / min",
+        "ingredient1_rate": "30 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Aluminum Ingot",
-        "ingredient2_rate": "10 / min",
+        "ingredient2_rate": "10 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Copper Ingot",
-        "output1_rate": "30 / min",
+        "output1_rate": "30 /min",
         "output1_stack": "3",
         "output1_name": "Alclad Aluminum Sheet"
       }
@@ -1288,22 +1898,22 @@
     "recipes": {
       "Aluminum Casing": {
         "building": "Constructor",
-        "ingredient1_rate": "90 / min",
+        "ingredient1_rate": "90 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Aluminum Ingot",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "2",
         "output1_name": "Aluminum Casing"
       },
       "Alternate: Alclad Casing": {
         "building": "Assembler",
-        "ingredient1_rate": "150 / min",
+        "ingredient1_rate": "150 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Aluminum Ingot",
-        "ingredient2_rate": "75 / min",
+        "ingredient2_rate": "75 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Copper Ingot",
-        "output1_rate": "112.5 / min",
+        "output1_rate": "112.5 /min",
         "output1_stack": "1",
         "output1_name": "Aluminum Casing"
       }
@@ -1317,11 +1927,32 @@
     "recipes": {
       "Steel Pipe": {
         "building": "Constructor",
-        "ingredient1_rate": "30 / min",
+        "ingredient1_rate": "30 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Steel Ingot",
-        "output1_rate": "20 / min",
+        "output1_rate": "20 /min",
         "output1_stack": "2",
+        "output1_name": "Steel Pipe"
+      },
+      "Alternate: Iron Pipe": {
+        "building": "Constructor",
+        "ingredient1_rate": "100 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Iron Ingot",
+        "output1_rate": "25 /min",
+        "output1_stack": "5",
+        "output1_name": "Steel Pipe"
+      },
+      "Alternate: Molded Steel Pipe": {
+        "building": "Foundry",
+        "ingredient1_rate": "50 /min",
+        "ingredient1_stack": "5",
+        "ingredient1_name": "Steel Ingot",
+        "ingredient2_rate": "30 /min",
+        "ingredient2_stack": "3",
+        "ingredient2_name": "Concrete",
+        "output1_rate": "50 /min",
+        "output1_stack": "5",
         "output1_name": "Steel Pipe"
       }
     }
@@ -1334,11 +1965,32 @@
     "recipes": {
       "Steel Beam": {
         "building": "Constructor",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "4",
         "ingredient1_name": "Steel Ingot",
-        "output1_rate": "15 / min",
+        "output1_rate": "15 /min",
         "output1_stack": "1",
+        "output1_name": "Steel Beam"
+      },
+      "Alternate: Aluminum Beam": {
+        "building": "Constructor",
+        "ingredient1_rate": "22.5 /min",
+        "ingredient1_stack": "3",
+        "ingredient1_name": "Aluminum Ingot",
+        "output1_rate": "22.5 /min",
+        "output1_stack": "3",
+        "output1_name": "Steel Beam"
+      },
+      "Alternate: Molded Beam": {
+        "building": "Foundry",
+        "ingredient1_rate": "120 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Steel Ingot",
+        "ingredient2_rate": "80 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Concrete",
+        "output1_rate": "45 /min",
+        "output1_stack": "9",
         "output1_name": "Steel Beam"
       }
     }
@@ -1347,29 +1999,29 @@
     "name": "Encased Industrial Beam",
     "Category": "Standard Parts",
     "Stack size": "100",
-    "Resource Sink Points": "632",
+    "Resource Sink Points": "528",
     "recipes": {
       "Encased Industrial Beam": {
         "building": "Assembler",
-        "ingredient1_rate": "24 / min",
-        "ingredient1_stack": "4",
+        "ingredient1_rate": "18 /min",
+        "ingredient1_stack": "3",
         "ingredient1_name": "Steel Beam",
-        "ingredient2_rate": "30 / min",
-        "ingredient2_stack": "5",
+        "ingredient2_rate": "36 /min",
+        "ingredient2_stack": "6",
         "ingredient2_name": "Concrete",
-        "output1_rate": "6 / min",
+        "output1_rate": "6 /min",
         "output1_stack": "1",
         "output1_name": "Encased Industrial Beam"
       },
       "Alternate: Encased Industrial Pipe": {
         "building": "Assembler",
-        "ingredient1_rate": "28 / min",
-        "ingredient1_stack": "7",
+        "ingredient1_rate": "24 /min",
+        "ingredient1_stack": "6",
         "ingredient1_name": "Steel Pipe",
-        "ingredient2_rate": "20 / min",
+        "ingredient2_rate": "20 /min",
         "ingredient2_stack": "5",
         "ingredient2_name": "Concrete",
-        "output1_rate": "4 / min",
+        "output1_rate": "4 /min",
         "output1_stack": "1",
         "output1_name": "Encased Industrial Beam"
       }
@@ -1383,37 +2035,37 @@
     "recipes": {
       "Modular Frame": {
         "building": "Assembler",
-        "ingredient1_rate": "3 / min",
+        "ingredient1_rate": "3 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Reinforced Iron Plate",
-        "ingredient2_rate": "12 / min",
+        "ingredient2_rate": "12 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Iron Rod",
-        "output1_rate": "2 / min",
+        "output1_rate": "2 /min",
         "output1_stack": "2",
         "output1_name": "Modular Frame"
       },
       "Alternate: Bolted Frame": {
         "building": "Assembler",
-        "ingredient1_rate": "7.5 / min",
+        "ingredient1_rate": "7.5 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Reinforced Iron Plate",
-        "ingredient2_rate": "140 / min",
+        "ingredient2_rate": "140 /min",
         "ingredient2_stack": "5",
-        "ingredient2_name": "Screw",
-        "output1_rate": "5 / min",
+        "ingredient2_name": "Screws",
+        "output1_rate": "5 /min",
         "output1_stack": "2",
         "output1_name": "Modular Frame"
       },
       "Alternate: Steeled Frame": {
         "building": "Assembler",
-        "ingredient1_rate": "2 / min",
+        "ingredient1_rate": "2 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Reinforced Iron Plate",
-        "ingredient2_rate": "10 / min",
+        "ingredient2_rate": "10 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Steel Pipe",
-        "output1_rate": "3 / min",
+        "output1_rate": "3 /min",
         "output1_stack": "3",
         "output1_name": "Modular Frame"
       }
@@ -1423,59 +2075,59 @@
     "name": "Heavy Modular Frame",
     "Category": "Standard Parts",
     "Stack size": "50",
-    "Resource Sink Points": "11,520",
+    "Resource Sink Points": "10,800",
     "recipes": {
       "Heavy Modular Frame": {
         "building": "Manufacturer",
-        "ingredient1_rate": "10 / min",
+        "ingredient1_rate": "10 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Modular Frame",
-        "ingredient2_rate": "30 / min",
-        "ingredient2_stack": "1",
+        "ingredient2_rate": "40 /min",
+        "ingredient2_stack": "2",
         "ingredient2_name": "Steel Pipe",
-        "ingredient3_rate": "10 / min",
+        "ingredient3_rate": "10 /min",
         "ingredient3_stack": "5",
         "ingredient3_name": "Encased Industrial Beam",
-        "ingredient4_rate": "200 / min",
+        "ingredient4_rate": "240 /min",
         "ingredient4_stack": "1",
-        "ingredient4_name": "Screw",
-        "output1_rate": "2 / min",
+        "ingredient4_name": "Screws",
+        "output1_rate": "2 /min",
         "output1_stack": "1",
         "output1_name": "Heavy Modular Frame"
       },
       "Alternate: Heavy Encased Frame": {
         "building": "Manufacturer",
-        "ingredient1_rate": "7.5 / min",
+        "ingredient1_rate": "7.5 /min",
         "ingredient1_stack": "8",
         "ingredient1_name": "Modular Frame",
-        "ingredient2_rate": "9.38 / min",
+        "ingredient2_rate": "9.38 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Encased Industrial Beam",
-        "ingredient3_rate": "33.75 / min",
+        "ingredient3_rate": "33.75 /min",
         "ingredient3_stack": "3",
         "ingredient3_name": "Steel Pipe",
-        "ingredient4_rate": "20.63 / min",
+        "ingredient4_rate": "20.63 /min",
         "ingredient4_stack": "2",
         "ingredient4_name": "Concrete",
-        "output1_rate": "2.81 / min",
+        "output1_rate": "2.81 /min",
         "output1_stack": "3",
         "output1_name": "Heavy Modular Frame"
       },
       "Alternate: Heavy Flexible Frame": {
         "building": "Manufacturer",
-        "ingredient1_rate": "18.75 / min",
+        "ingredient1_rate": "18.75 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Modular Frame",
-        "ingredient2_rate": "11.25 / min",
+        "ingredient2_rate": "11.25 /min",
         "ingredient2_stack": "3",
         "ingredient2_name": "Encased Industrial Beam",
-        "ingredient3_rate": "75 / min",
+        "ingredient3_rate": "75 /min",
         "ingredient3_stack": "2",
         "ingredient3_name": "Rubber",
-        "ingredient4_rate": "390 / min",
+        "ingredient4_rate": "390 /min",
         "ingredient4_stack": "1",
-        "ingredient4_name": "Screw",
-        "output1_rate": "3.75 / min",
+        "ingredient4_name": "Screws",
+        "output1_rate": "3.75 /min",
         "output1_stack": "1",
         "output1_name": "Heavy Modular Frame"
       }
@@ -1489,36 +2141,53 @@
     "recipes": {
       "Fused Modular Frame": {
         "building": "Blender",
-        "ingredient1_rate": "1.5 / min",
+        "ingredient1_rate": "1.5 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Heavy Modular Frame",
-        "ingredient2_rate": "75 / min",
+        "ingredient2_rate": "75 /min",
         "ingredient2_stack": "5",
         "ingredient2_name": "Aluminum Casing",
-        "ingredient3_rate": "37.5m³ / min",
+        "ingredient3_rate": "37.5m3 /min",
         "ingredient3_stack": "2",
         "ingredient3_name": "Nitrogen Gas",
-        "output1_rate": "1.5 / min",
+        "output1_rate": "1.5 /min",
         "output1_stack": "1",
         "output1_name": "Fused Modular Frame"
       },
       "Alternate: Heat-Fused Frame": {
         "building": "Blender",
-        "ingredient1_rate": "3 / min",
+        "ingredient1_rate": "3 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Heavy Modular Frame",
-        "ingredient2_rate": "150 / min",
+        "ingredient2_rate": "150 /min",
         "ingredient2_stack": "5",
         "ingredient2_name": "Aluminum Ingot",
-        "ingredient3_rate": "24m³ / min",
+        "ingredient3_rate": "24m3 /min",
         "ingredient3_stack": "8",
         "ingredient3_name": "Nitric Acid",
-        "ingredient4_rate": "30m³ / min",
+        "ingredient4_rate": "30m3 /min",
         "ingredient4_stack": "1",
         "ingredient4_name": "Fuel",
-        "output1_rate": "3 / min",
+        "output1_rate": "3 /min",
         "output1_stack": "1",
         "output1_name": "Fused Modular Frame"
+      }
+    }
+  },
+  {
+    "name": "Ficsite Trigon",
+    "Category": "Standard Parts",
+    "Stack size": "200",
+    "Resource Sink Points": "1,291",
+    "recipes": {
+      "Ficsite Trigon": {
+        "building": "Constructor",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Ficsite Ingot",
+        "output1_rate": "30 /min",
+        "output1_stack": "3",
+        "output1_name": "Ficsite Trigon"
       }
     }
   },
@@ -1531,25 +2200,25 @@
     "recipes": {
       "Fabric": {
         "building": "Assembler",
-        "ingredient1_rate": "15 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Mycelia",
-        "ingredient2_rate": "75 / min",
+        "ingredient2_rate": "75 /min",
         "ingredient2_stack": "5",
         "ingredient2_name": "Biomass",
-        "output1_rate": "15 / min",
+        "output1_rate": "15 /min",
         "output1_stack": "1",
         "output1_name": "Fabric"
       },
       "Alternate: Polyester Fabric": {
         "building": "Refinery",
-        "ingredient1_rate": "80 / min",
+        "ingredient1_rate": "30 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Polymer Resin",
-        "ingredient2_rate": "50m³ / min",
+        "ingredient2_rate": "30m3 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Water",
-        "output1_rate": "5 / min",
+        "output1_rate": "30 /min",
         "output1_stack": "1",
         "output1_name": "Fabric"
       }
@@ -1563,38 +2232,38 @@
     "recipes": {
       "Plastic": {
         "building": "Refinery",
-        "ingredient1_rate": "30m³ / min",
+        "ingredient1_rate": "30m3 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Crude Oil",
-        "output1_rate": "20 / min",
+        "output1_rate": "20 /min",
         "output1_stack": "2",
         "output1_name": "Plastic",
-        "output2_rate": "10m³ / min",
+        "output2_rate": "10m3 /min",
         "output2_stack": "1",
         "output2_name": "Heavy Oil Residue"
       },
-      "Residual Plastic": {
-        "building": "Refinery",
-        "ingredient1_rate": "60 / min",
-        "ingredient1_stack": "6",
-        "ingredient1_name": "Polymer Resin",
-        "ingredient2_rate": "20m³ / min",
-        "ingredient2_stack": "2",
-        "ingredient2_name": "Water",
-        "output1_rate": "20 / min",
-        "output1_stack": "2",
-        "output1_name": "Plastic"
-      },
       "Alternate: Recycled Plastic": {
         "building": "Refinery",
-        "ingredient1_rate": "30 / min",
+        "ingredient1_rate": "30 /min",
         "ingredient1_stack": "6",
         "ingredient1_name": "Rubber",
-        "ingredient2_rate": "30m³ / min",
+        "ingredient2_rate": "30m3 /min",
         "ingredient2_stack": "6",
         "ingredient2_name": "Fuel",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "1",
+        "output1_name": "Plastic"
+      },
+      "Residual Plastic": {
+        "building": "Refinery",
+        "ingredient1_rate": "60 /min",
+        "ingredient1_stack": "6",
+        "ingredient1_name": "Polymer Resin",
+        "ingredient2_rate": "20m3 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Water",
+        "output1_rate": "20 /min",
+        "output1_stack": "2",
         "output1_name": "Plastic"
       }
     }
@@ -1605,40 +2274,40 @@
     "Stack size": "200",
     "Resource Sink Points": "60",
     "recipes": {
-      "Residual Rubber": {
-        "building": "Refinery",
-        "ingredient1_rate": "40 / min",
-        "ingredient1_stack": "4",
-        "ingredient1_name": "Polymer Resin",
-        "ingredient2_rate": "40m³ / min",
-        "ingredient2_stack": "4",
-        "ingredient2_name": "Water",
-        "output1_rate": "20 / min",
-        "output1_stack": "2",
-        "output1_name": "Rubber"
-      },
       "Rubber": {
         "building": "Refinery",
-        "ingredient1_rate": "30m³ / min",
+        "ingredient1_rate": "30m3 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Crude Oil",
-        "output1_rate": "20 / min",
+        "output1_rate": "20 /min",
         "output1_stack": "2",
         "output1_name": "Rubber",
-        "output2_rate": "20m³ / min",
+        "output2_rate": "20m3 /min",
         "output2_stack": "2",
         "output2_name": "Heavy Oil Residue"
       },
       "Alternate: Recycled Rubber": {
         "building": "Refinery",
-        "ingredient1_rate": "30 / min",
+        "ingredient1_rate": "30 /min",
         "ingredient1_stack": "6",
         "ingredient1_name": "Plastic",
-        "ingredient2_rate": "30m³ / min",
+        "ingredient2_rate": "30m3 /min",
         "ingredient2_stack": "6",
         "ingredient2_name": "Fuel",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "1",
+        "output1_name": "Rubber"
+      },
+      "Residual Rubber": {
+        "building": "Refinery",
+        "ingredient1_rate": "40 /min",
+        "ingredient1_stack": "4",
+        "ingredient1_name": "Polymer Resin",
+        "ingredient2_rate": "40m3 /min",
+        "ingredient2_stack": "4",
+        "ingredient2_name": "Water",
+        "output1_rate": "20 /min",
+        "output1_stack": "2",
         "output1_name": "Rubber"
       }
     }
@@ -1651,37 +2320,37 @@
     "recipes": {
       "Rotor": {
         "building": "Assembler",
-        "ingredient1_rate": "20 / min",
+        "ingredient1_rate": "20 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Iron Rod",
-        "ingredient2_rate": "100 / min",
+        "ingredient2_rate": "100 /min",
         "ingredient2_stack": "2",
-        "ingredient2_name": "Screw",
-        "output1_rate": "4 / min",
+        "ingredient2_name": "Screws",
+        "output1_rate": "4 /min",
         "output1_stack": "1",
         "output1_name": "Rotor"
       },
       "Alternate: Copper Rotor": {
         "building": "Assembler",
-        "ingredient1_rate": "22.5 / min",
+        "ingredient1_rate": "22.5 /min",
         "ingredient1_stack": "6",
         "ingredient1_name": "Copper Sheet",
-        "ingredient2_rate": "195 / min",
+        "ingredient2_rate": "195 /min",
         "ingredient2_stack": "5",
-        "ingredient2_name": "Screw",
-        "output1_rate": "11.25 / min",
+        "ingredient2_name": "Screws",
+        "output1_rate": "11.25 /min",
         "output1_stack": "3",
         "output1_name": "Rotor"
       },
       "Alternate: Steel Rotor": {
         "building": "Assembler",
-        "ingredient1_rate": "10 / min",
+        "ingredient1_rate": "10 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Steel Pipe",
-        "ingredient2_rate": "30 / min",
+        "ingredient2_rate": "30 /min",
         "ingredient2_stack": "6",
         "ingredient2_name": "Wire",
-        "output1_rate": "5 / min",
+        "output1_rate": "5 /min",
         "output1_stack": "1",
         "output1_name": "Rotor"
       }
@@ -1695,25 +2364,25 @@
     "recipes": {
       "Stator": {
         "building": "Assembler",
-        "ingredient1_rate": "15 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Steel Pipe",
-        "ingredient2_rate": "40 / min",
+        "ingredient2_rate": "40 /min",
         "ingredient2_stack": "8",
         "ingredient2_name": "Wire",
-        "output1_rate": "5 / min",
+        "output1_rate": "5 /min",
         "output1_stack": "1",
         "output1_name": "Stator"
       },
       "Alternate: Quickwire Stator": {
         "building": "Assembler",
-        "ingredient1_rate": "16 / min",
+        "ingredient1_rate": "16 /min",
         "ingredient1_stack": "4",
         "ingredient1_name": "Steel Pipe",
-        "ingredient2_rate": "60 / min",
+        "ingredient2_rate": "60 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Quickwire",
-        "output1_rate": "8 / min",
+        "output1_rate": "8 /min",
         "output1_stack": "2",
         "output1_name": "Stator"
       }
@@ -1728,37 +2397,37 @@
     "recipes": {
       "Battery": {
         "building": "Blender",
-        "ingredient1_rate": "50m³ / min",
+        "ingredient1_rate": "50m3 /min",
         "ingredient1_stack": "2.",
         "ingredient1_name": "Sulfuric Acid",
-        "ingredient2_rate": "40m³ / min",
+        "ingredient2_rate": "40m3 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Alumina Solution",
-        "ingredient3_rate": "20 / min",
+        "ingredient3_rate": "20 /min",
         "ingredient3_stack": "1",
         "ingredient3_name": "Aluminum Casing",
-        "output1_rate": "20 / min",
+        "output1_rate": "20 /min",
         "output1_stack": "1",
         "output1_name": "Battery",
-        "output2_rate": "30m³ / min",
+        "output2_rate": "30m3 /min",
         "output2_stack": "1.",
         "output2_name": "Water"
       },
       "Alternate: Classic Battery": {
         "building": "Manufacturer",
-        "ingredient1_rate": "45 / min",
+        "ingredient1_rate": "45 /min",
         "ingredient1_stack": "6",
         "ingredient1_name": "Sulfur",
-        "ingredient2_rate": "52.5 / min",
+        "ingredient2_rate": "52.5 /min",
         "ingredient2_stack": "7",
         "ingredient2_name": "Alclad Aluminum Sheet",
-        "ingredient3_rate": "60 / min",
+        "ingredient3_rate": "60 /min",
         "ingredient3_stack": "8",
         "ingredient3_name": "Plastic",
-        "ingredient4_rate": "90 / min",
+        "ingredient4_rate": "90 /min",
         "ingredient4_stack": "1",
         "ingredient4_name": "Wire",
-        "output1_rate": "30 / min",
+        "output1_rate": "30 /min",
         "output1_stack": "4",
         "output1_name": "Battery"
       }
@@ -1772,40 +2441,40 @@
     "recipes": {
       "Motor": {
         "building": "Assembler",
-        "ingredient1_rate": "10 / min",
+        "ingredient1_rate": "10 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Rotor",
-        "ingredient2_rate": "10 / min",
+        "ingredient2_rate": "10 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Stator",
-        "output1_rate": "5 / min",
+        "output1_rate": "5 /min",
         "output1_stack": "1",
         "output1_name": "Motor"
       },
       "Alternate: Electric Motor": {
         "building": "Assembler",
-        "ingredient1_rate": "3.75 / min",
+        "ingredient1_rate": "3.75 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Electromagnetic Control Rod",
-        "ingredient2_rate": "7.5 / min",
+        "ingredient2_rate": "7.5 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Rotor",
-        "output1_rate": "7.5 / min",
+        "output1_rate": "7.5 /min",
         "output1_stack": "2",
         "output1_name": "Motor"
       },
-      "Alternate: Rigour Motor": {
+      "Alternate: Rigor Motor": {
         "building": "Manufacturer",
-        "ingredient1_rate": "3.75 / min",
+        "ingredient1_rate": "3.75 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Rotor",
-        "ingredient2_rate": "3.75 / min",
+        "ingredient2_rate": "3.75 /min",
         "ingredient2_stack": "3",
         "ingredient2_name": "Stator",
-        "ingredient3_rate": "1.25 / min",
+        "ingredient3_rate": "1.25 /min",
         "ingredient3_stack": "1",
         "ingredient3_name": "Crystal Oscillator",
-        "output1_rate": "7.5 / min",
+        "output1_rate": "7.5 /min",
         "output1_stack": "6",
         "output1_name": "Motor"
       }
@@ -1819,25 +2488,25 @@
     "recipes": {
       "Heat Sink": {
         "building": "Assembler",
-        "ingredient1_rate": "37.5 / min",
+        "ingredient1_rate": "37.5 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Alclad Aluminum Sheet",
-        "ingredient2_rate": "22.5 / min",
+        "ingredient2_rate": "22.5 /min",
         "ingredient2_stack": "3",
         "ingredient2_name": "Copper Sheet",
-        "output1_rate": "7.5 / min",
+        "output1_rate": "7.5 /min",
         "output1_stack": "1",
         "output1_name": "Heat Sink"
       },
       "Alternate: Heat Exchanger": {
         "building": "Assembler",
-        "ingredient1_rate": "30 / min",
+        "ingredient1_rate": "30 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Aluminum Casing",
-        "ingredient2_rate": "30 / min",
+        "ingredient2_rate": "30 /min",
         "ingredient2_stack": "3",
         "ingredient2_name": "Rubber",
-        "output1_rate": "10 / min",
+        "output1_rate": "10 /min",
         "output1_stack": "1",
         "output1_name": "Heat Sink"
       }
@@ -1851,34 +2520,34 @@
     "recipes": {
       "Cooling System": {
         "building": "Blender",
-        "ingredient1_rate": "12 / min",
+        "ingredient1_rate": "12 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Heat Sink",
-        "ingredient2_rate": "12 / min",
+        "ingredient2_rate": "12 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Rubber",
-        "ingredient3_rate": "30m³ / min",
+        "ingredient3_rate": "30m3 /min",
         "ingredient3_stack": "5",
         "ingredient3_name": "Water",
-        "ingredient4_rate": "150m³ / min",
+        "ingredient4_rate": "150m3 /min",
         "ingredient4_stack": "2",
         "ingredient4_name": "Nitrogen Gas",
-        "output1_rate": "6 / min",
+        "output1_rate": "6 /min",
         "output1_stack": "1",
         "output1_name": "Cooling System"
       },
       "Alternate: Cooling Device": {
         "building": "Blender",
-        "ingredient1_rate": "9.38 / min",
-        "ingredient1_stack": "5",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "4",
         "ingredient1_name": "Heat Sink",
-        "ingredient2_rate": "1.88 / min",
+        "ingredient2_rate": "2.5 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Motor",
-        "ingredient3_rate": "45m³ / min",
+        "ingredient3_rate": "60m3 /min",
         "ingredient3_stack": "2",
         "ingredient3_name": "Nitrogen Gas",
-        "output1_rate": "3.75 / min",
+        "output1_rate": "5 /min",
         "output1_stack": "2",
         "output1_name": "Cooling System"
       }
@@ -1888,59 +2557,59 @@
     "name": "Turbo Motor",
     "Category": "Industrial Parts",
     "Stack size": "50",
-    "Resource Sink Points": "242,720",
+    "Resource Sink Points": "240,496",
     "recipes": {
       "Turbo Motor": {
         "building": "Manufacturer",
-        "ingredient1_rate": "7.5 / min",
+        "ingredient1_rate": "7.5 /min",
         "ingredient1_stack": "4",
         "ingredient1_name": "Cooling System",
-        "ingredient2_rate": "3.75 / min",
+        "ingredient2_rate": "3.75 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Radio Control Unit",
-        "ingredient3_rate": "7.5 / min",
+        "ingredient3_rate": "7.5 /min",
         "ingredient3_stack": "4",
         "ingredient3_name": "Motor",
-        "ingredient4_rate": "45 / min",
+        "ingredient4_rate": "45 /min",
         "ingredient4_stack": "2",
         "ingredient4_name": "Rubber",
-        "output1_rate": "1.88 / min",
+        "output1_rate": "1.88 /min",
         "output1_stack": "1",
         "output1_name": "Turbo Motor"
       },
       "Alternate: Turbo Electric Motor": {
         "building": "Manufacturer",
-        "ingredient1_rate": "6.56 / min",
+        "ingredient1_rate": "6.56 /min",
         "ingredient1_stack": "7",
         "ingredient1_name": "Motor",
-        "ingredient2_rate": "8.44 / min",
+        "ingredient2_rate": "8.44 /min",
         "ingredient2_stack": "9",
         "ingredient2_name": "Radio Control Unit",
-        "ingredient3_rate": "4.69 / min",
+        "ingredient3_rate": "4.69 /min",
         "ingredient3_stack": "5",
         "ingredient3_name": "Electromagnetic Control Rod",
-        "ingredient4_rate": "6.56 / min",
+        "ingredient4_rate": "6.56 /min",
         "ingredient4_stack": "7",
         "ingredient4_name": "Rotor",
-        "output1_rate": "2.81 / min",
+        "output1_rate": "2.81 /min",
         "output1_stack": "3",
         "output1_name": "Turbo Motor"
       },
       "Alternate: Turbo Pressure Motor": {
         "building": "Manufacturer",
-        "ingredient1_rate": "7.5 / min",
+        "ingredient1_rate": "7.5 /min",
         "ingredient1_stack": "4",
         "ingredient1_name": "Motor",
-        "ingredient2_rate": "1.88 / min",
+        "ingredient2_rate": "1.88 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Pressure Conversion Cube",
-        "ingredient3_rate": "45 / min",
+        "ingredient3_rate": "45 /min",
         "ingredient3_stack": "2",
         "ingredient3_name": "Packaged Nitrogen Gas",
-        "ingredient4_rate": "15 / min",
+        "ingredient4_rate": "15 /min",
         "ingredient4_stack": "8",
         "ingredient4_name": "Stator",
-        "output1_rate": "3.75 / min",
+        "output1_rate": "3.75 /min",
         "output1_stack": "2",
         "output1_name": "Turbo Motor"
       }
@@ -1954,40 +2623,40 @@
     "recipes": {
       "Wire": {
         "building": "Constructor",
-        "ingredient1_rate": "15 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Copper Ingot",
-        "output1_rate": "30 / min",
+        "output1_rate": "30 /min",
         "output1_stack": "2",
         "output1_name": "Wire"
       },
       "Alternate: Caterium Wire": {
         "building": "Constructor",
-        "ingredient1_rate": "15 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Caterium Ingot",
-        "output1_rate": "120 / min",
+        "output1_rate": "120 /min",
         "output1_stack": "8",
         "output1_name": "Wire"
       },
       "Alternate: Fused Wire": {
         "building": "Assembler",
-        "ingredient1_rate": "12 / min",
+        "ingredient1_rate": "12 /min",
         "ingredient1_stack": "4",
         "ingredient1_name": "Copper Ingot",
-        "ingredient2_rate": "3 / min",
+        "ingredient2_rate": "3 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Caterium Ingot",
-        "output1_rate": "90 / min",
+        "output1_rate": "90 /min",
         "output1_stack": "3",
         "output1_name": "Wire"
       },
       "Alternate: Iron Wire": {
         "building": "Constructor",
-        "ingredient1_rate": "12.5 / min",
+        "ingredient1_rate": "12.5 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Iron Ingot",
-        "output1_rate": "22.5 / min",
+        "output1_rate": "22.5 /min",
         "output1_stack": "9",
         "output1_name": "Wire"
       }
@@ -2001,46 +2670,46 @@
     "recipes": {
       "Cable": {
         "building": "Constructor",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Wire",
-        "output1_rate": "30 / min",
+        "output1_rate": "30 /min",
         "output1_stack": "1",
         "output1_name": "Cable"
       },
       "Alternate: Coated Cable": {
         "building": "Refinery",
-        "ingredient1_rate": "37.5 / min",
+        "ingredient1_rate": "37.5 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Wire",
-        "ingredient2_rate": "15m³ / min",
+        "ingredient2_rate": "15m3 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Heavy Oil Residue",
-        "output1_rate": "67.5 / min",
+        "output1_rate": "67.5 /min",
         "output1_stack": "9",
         "output1_name": "Cable"
       },
       "Alternate: Insulated Cable": {
         "building": "Assembler",
-        "ingredient1_rate": "45 / min",
+        "ingredient1_rate": "45 /min",
         "ingredient1_stack": "9",
         "ingredient1_name": "Wire",
-        "ingredient2_rate": "30 / min",
+        "ingredient2_rate": "30 /min",
         "ingredient2_stack": "6",
         "ingredient2_name": "Rubber",
-        "output1_rate": "100 / min",
+        "output1_rate": "100 /min",
         "output1_stack": "2",
         "output1_name": "Cable"
       },
       "Alternate: Quickwire Cable": {
         "building": "Assembler",
-        "ingredient1_rate": "7.5 / min",
+        "ingredient1_rate": "7.5 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Quickwire",
-        "ingredient2_rate": "5 / min",
+        "ingredient2_rate": "5 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Rubber",
-        "output1_rate": "27.5 / min",
+        "output1_rate": "27.5 /min",
         "output1_stack": "1",
         "output1_name": "Cable"
       }
@@ -2054,22 +2723,22 @@
     "recipes": {
       "Quickwire": {
         "building": "Constructor",
-        "ingredient1_rate": "12 / min",
+        "ingredient1_rate": "12 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Caterium Ingot",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "5",
         "output1_name": "Quickwire"
       },
       "Alternate: Fused Quickwire": {
         "building": "Assembler",
-        "ingredient1_rate": "7.5 / min",
+        "ingredient1_rate": "7.5 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Caterium Ingot",
-        "ingredient2_rate": "37.5 / min",
+        "ingredient2_rate": "37.5 /min",
         "ingredient2_stack": "5",
         "ingredient2_name": "Copper Ingot",
-        "output1_rate": "90 / min",
+        "output1_rate": "90 /min",
         "output1_stack": "1",
         "output1_name": "Quickwire"
       }
@@ -2083,49 +2752,49 @@
     "recipes": {
       "Circuit Board": {
         "building": "Assembler",
-        "ingredient1_rate": "15 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Copper Sheet",
-        "ingredient2_rate": "30 / min",
+        "ingredient2_rate": "30 /min",
         "ingredient2_stack": "4",
         "ingredient2_name": "Plastic",
-        "output1_rate": "7.5 / min",
+        "output1_rate": "7.5 /min",
         "output1_stack": "1",
         "output1_name": "Circuit Board"
       },
       "Alternate: Caterium Circuit Board": {
         "building": "Assembler",
-        "ingredient1_rate": "12.5 / min",
+        "ingredient1_rate": "12.5 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Plastic",
-        "ingredient2_rate": "37.5 / min",
+        "ingredient2_rate": "37.5 /min",
         "ingredient2_stack": "3",
         "ingredient2_name": "Quickwire",
-        "output1_rate": "8.75 / min",
+        "output1_rate": "8.75 /min",
         "output1_stack": "7",
         "output1_name": "Circuit Board"
       },
       "Alternate: Electrode Circuit Board": {
         "building": "Assembler",
-        "ingredient1_rate": "30 / min",
-        "ingredient1_stack": "6",
+        "ingredient1_rate": "20 /min",
+        "ingredient1_stack": "4",
         "ingredient1_name": "Rubber",
-        "ingredient2_rate": "45 / min",
-        "ingredient2_stack": "9",
+        "ingredient2_rate": "40 /min",
+        "ingredient2_stack": "8",
         "ingredient2_name": "Petroleum Coke",
-        "output1_rate": "5 / min",
+        "output1_rate": "5 /min",
         "output1_stack": "1",
         "output1_name": "Circuit Board"
       },
       "Alternate: Silicon Circuit Board": {
         "building": "Assembler",
-        "ingredient1_rate": "27.5 / min",
+        "ingredient1_rate": "27.5 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Copper Sheet",
-        "ingredient2_rate": "27.5 / min",
+        "ingredient2_rate": "27.5 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Silica",
-        "output1_rate": "12.5 / min",
+        "output1_rate": "12.5 /min",
         "output1_stack": "5",
         "output1_name": "Circuit Board"
       }
@@ -2139,15 +2808,67 @@
     "recipes": {
       "AI Limiter": {
         "building": "Assembler",
-        "ingredient1_rate": "25 / min",
+        "ingredient1_rate": "25 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Copper Sheet",
-        "ingredient2_rate": "100 / min",
+        "ingredient2_rate": "100 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Quickwire",
-        "output1_rate": "5 / min",
+        "output1_rate": "5 /min",
         "output1_stack": "1",
         "output1_name": "AI Limiter"
+      },
+      "Alternate: Plastic AI Limiter": {
+        "building": "Assembler",
+        "ingredient1_rate": "120 /min",
+        "ingredient1_stack": "3",
+        "ingredient1_name": "Quickwire",
+        "ingredient2_rate": "28 /min",
+        "ingredient2_stack": "7",
+        "ingredient2_name": "Plastic",
+        "output1_rate": "8 /min",
+        "output1_stack": "2",
+        "output1_name": "AI Limiter"
+      }
+    }
+  },
+  {
+    "name": "Reanimated SAM",
+    "Category": "Electronics",
+    "Stack size": "100",
+    "Resource Sink Points": "160",
+    "recipes": {
+      "Reanimated SAM": {
+        "building": "Constructor",
+        "ingredient1_rate": "120 /min",
+        "ingredient1_stack": "4",
+        "ingredient1_name": "SAM",
+        "output1_rate": "30 /min",
+        "output1_stack": "1",
+        "output1_name": "Reanimated SAM"
+      }
+    }
+  },
+  {
+    "name": "SAM Fluctuator",
+    "Category": "Electronics",
+    "Stack size": "100",
+    "Resource Sink Points": "1,968",
+    "recipes": {
+      "SAM Fluctuator": {
+        "building": "Manufacturer",
+        "ingredient1_rate": "60 /min",
+        "ingredient1_stack": "6",
+        "ingredient1_name": "Reanimated SAM",
+        "ingredient2_rate": "50 /min",
+        "ingredient2_stack": "5",
+        "ingredient2_name": "Wire",
+        "ingredient3_rate": "30 /min",
+        "ingredient3_stack": "3",
+        "ingredient3_name": "Steel Pipe",
+        "output1_rate": "10 /min",
+        "output1_stack": "1",
+        "output1_name": "SAM Fluctuator"
       }
     }
   },
@@ -2155,51 +2876,48 @@
     "name": "Computer",
     "Category": "Communications",
     "Stack size": "50",
-    "Resource Sink Points": "17,260",
+    "Resource Sink Points": "8,352",
     "recipes": {
       "Computer": {
         "building": "Manufacturer",
-        "ingredient1_rate": "25 / min",
-        "ingredient1_stack": "1",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "4",
         "ingredient1_name": "Circuit Board",
-        "ingredient2_rate": "22.5 / min",
-        "ingredient2_stack": "9",
+        "ingredient2_rate": "20 /min",
+        "ingredient2_stack": "8",
         "ingredient2_name": "Cable",
-        "ingredient3_rate": "45 / min",
+        "ingredient3_rate": "40 /min",
         "ingredient3_stack": "1",
         "ingredient3_name": "Plastic",
-        "ingredient4_rate": "130 / min",
-        "ingredient4_stack": "5",
-        "ingredient4_name": "Screw",
-        "output1_rate": "2.5 / min",
+        "output1_rate": "2.5 /min",
         "output1_stack": "1",
         "output1_name": "Computer"
       },
       "Alternate: Caterium Computer": {
         "building": "Manufacturer",
-        "ingredient1_rate": "26.25 / min",
-        "ingredient1_stack": "7",
+        "ingredient1_rate": "15 /min",
+        "ingredient1_stack": "4",
         "ingredient1_name": "Circuit Board",
-        "ingredient2_rate": "105 / min",
-        "ingredient2_stack": "2",
+        "ingredient2_rate": "52.5 /min",
+        "ingredient2_stack": "1",
         "ingredient2_name": "Quickwire",
-        "ingredient3_rate": "45 / min",
-        "ingredient3_stack": "1",
+        "ingredient3_rate": "22.5 /min",
+        "ingredient3_stack": "6",
         "ingredient3_name": "Rubber",
-        "output1_rate": "3.75 / min",
+        "output1_rate": "3.75 /min",
         "output1_stack": "1",
         "output1_name": "Computer"
       },
       "Alternate: Crystal Computer": {
         "building": "Assembler",
-        "ingredient1_rate": "7.5 / min",
-        "ingredient1_stack": "8",
+        "ingredient1_rate": "5 /min",
+        "ingredient1_stack": "3",
         "ingredient1_name": "Circuit Board",
-        "ingredient2_rate": "2.81 / min",
-        "ingredient2_stack": "3",
+        "ingredient2_rate": "1.67 /min",
+        "ingredient2_stack": "1",
         "ingredient2_name": "Crystal Oscillator",
-        "output1_rate": "2.81 / min",
-        "output1_stack": "3",
+        "output1_rate": "3.33 /min",
+        "output1_stack": "2",
         "output1_name": "Computer"
       }
     }
@@ -2208,114 +2926,109 @@
     "name": "Supercomputer",
     "Category": "Communications",
     "Stack size": "50",
-    "Resource Sink Points": "99,576",
+    "Resource Sink Points": "97,352",
     "recipes": {
       "Supercomputer": {
         "building": "Manufacturer",
-        "ingredient1_rate": "3.75 / min",
-        "ingredient1_stack": "2",
+        "ingredient1_rate": "7.5 /min",
+        "ingredient1_stack": "4",
         "ingredient1_name": "Computer",
-        "ingredient2_rate": "3.75 / min",
+        "ingredient2_rate": "3.75 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "AI Limiter",
-        "ingredient3_rate": "5.63 / min",
+        "ingredient3_rate": "5.63 /min",
         "ingredient3_stack": "3",
         "ingredient3_name": "High-Speed Connector",
-        "ingredient4_rate": "52.5 / min",
+        "ingredient4_rate": "52.5 /min",
         "ingredient4_stack": "2",
         "ingredient4_name": "Plastic",
-        "output1_rate": "1.88 / min",
+        "output1_rate": "1.88 /min",
         "output1_stack": "1",
         "output1_name": "Supercomputer"
       },
       "Alternate: OC Supercomputer": {
         "building": "Assembler",
-        "ingredient1_rate": "9 / min",
-        "ingredient1_stack": "3",
+        "ingredient1_rate": "6 /min",
+        "ingredient1_stack": "2",
         "ingredient1_name": "Radio Control Unit",
-        "ingredient2_rate": "9 / min",
-        "ingredient2_stack": "3",
+        "ingredient2_rate": "6 /min",
+        "ingredient2_stack": "2",
         "ingredient2_name": "Cooling System",
-        "output1_rate": "3 / min",
+        "output1_rate": "3 /min",
         "output1_stack": "1",
         "output1_name": "Supercomputer"
       },
       "Alternate: Super-State Computer": {
         "building": "Manufacturer",
-        "ingredient1_rate": "3.6 / min",
+        "ingredient1_rate": "7.2 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Computer",
-        "ingredient2_rate": "2.4 / min",
-        "ingredient2_stack": "2",
+        "ingredient2_rate": "2.4 /min",
+        "ingredient2_stack": "1",
         "ingredient2_name": "Electromagnetic Control Rod",
-        "ingredient3_rate": "24 / min",
-        "ingredient3_stack": "2",
+        "ingredient3_rate": "24 /min",
+        "ingredient3_stack": "1",
         "ingredient3_name": "Battery",
-        "ingredient4_rate": "54 / min",
-        "ingredient4_stack": "4",
+        "ingredient4_rate": "60 /min",
+        "ingredient4_stack": "2",
         "ingredient4_name": "Wire",
-        "output1_rate": "2.4 / min",
-        "output1_stack": "2",
+        "output1_rate": "2.4 /min",
+        "output1_stack": "1",
         "output1_name": "Supercomputer"
       }
     }
   },
   {
-    "name": "Quantum Computer",
-    "Category": "Communications",
-    "Stack size": "200"
-  },
-  {
     "name": "Radio Control Unit",
     "Category": "Communications",
     "Stack size": "50",
-    "Resource Sink Points": "32,908",
+    "Resource Sink Points": "32,352",
     "recipes": {
       "Radio Control Unit": {
         "building": "Manufacturer",
-        "ingredient1_rate": "40 / min",
+        "ingredient1_rate": "40 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Aluminum Casing",
-        "ingredient2_rate": "1.25 / min",
+        "ingredient2_rate": "1.25 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Crystal Oscillator",
-        "ingredient3_rate": "1.25 / min",
-        "ingredient3_stack": "1",
+        "ingredient3_rate": "2.5 /min",
+        "ingredient3_stack": "2",
         "ingredient3_name": "Computer",
-        "output1_rate": "2.5 / min",
+        "output1_rate": "2.5 /min",
         "output1_stack": "2",
         "output1_name": "Radio Control Unit"
       },
       "Alternate: Radio Connection Unit": {
         "building": "Manufacturer",
-        "ingredient1_rate": "15 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "4",
         "ingredient1_name": "Heat Sink",
-        "ingredient2_rate": "7.5 / min",
+        "ingredient2_rate": "7.5 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "High-Speed Connector",
-        "ingredient3_rate": "45 / min",
+        "ingredient3_rate": "45 /min",
         "ingredient3_stack": "1",
         "ingredient3_name": "Quartz Crystal",
-        "output1_rate": "3.75 / min",
+        "output1_rate": "3.75 /min",
         "output1_stack": "1",
         "output1_name": "Radio Control Unit"
       },
       "Alternate: Radio Control System": {
         "building": "Manufacturer",
-        "ingredient1_rate": "1.5 / min",
+        "ingredient1_rate": "1.5 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Crystal Oscillator",
-        "ingredient2_rate": "15 / min",
+        "ingredient2_rate": "15 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Circuit Board",
-        "ingredient3_rate": "90 / min",
+        "ingredient3_rate": "90 /min",
         "ingredient3_stack": "6",
         "ingredient3_name": "Aluminum Casing",
-        "ingredient4_rate": "45 / min",
+        "ingredient4_rate": "45 /min",
         "ingredient4_stack": "3",
         "ingredient4_name": "Rubber",
-        "output1_rate": "4.5 / min",
+        "output1_rate": "4.5 /min",
         "output1_stack": "3",
         "output1_name": "Radio Control Unit"
       }
@@ -2329,31 +3042,31 @@
     "recipes": {
       "Crystal Oscillator": {
         "building": "Manufacturer",
-        "ingredient1_rate": "18 / min",
+        "ingredient1_rate": "18 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Quartz Crystal",
-        "ingredient2_rate": "14 / min",
+        "ingredient2_rate": "14 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Cable",
-        "ingredient3_rate": "2.5 / min",
+        "ingredient3_rate": "2.5 /min",
         "ingredient3_stack": "5",
         "ingredient3_name": "Reinforced Iron Plate",
-        "output1_rate": "1 / min",
+        "output1_rate": "1 /min",
         "output1_stack": "2",
         "output1_name": "Crystal Oscillator"
       },
       "Alternate: Insulated Crystal Oscillator": {
         "building": "Manufacturer",
-        "ingredient1_rate": "18.75 / min",
+        "ingredient1_rate": "18.75 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Quartz Crystal",
-        "ingredient2_rate": "13.13 / min",
+        "ingredient2_rate": "13.13 /min",
         "ingredient2_stack": "7",
         "ingredient2_name": "Rubber",
-        "ingredient3_rate": "1.88 / min",
+        "ingredient3_rate": "1.88 /min",
         "ingredient3_stack": "1",
         "ingredient3_name": "AI Limiter",
-        "output1_rate": "1.88 / min",
+        "output1_rate": "1.88 /min",
         "output1_stack": "1",
         "output1_name": "Crystal Oscillator"
       }
@@ -2362,7 +3075,83 @@
   {
     "name": "Superposition Oscillator",
     "Category": "Communications",
-    "Stack size": "200"
+    "Stack size": "100",
+    "Resource Sink Points": "37,292"
+  },
+  {
+    "name": "Diamonds",
+    "Category": "Quantum Technology",
+    "Stack size": "200",
+    "Resource Sink Points": "240",
+    "recipes": {
+      "Alternate: Pink Diamonds": {
+        "building": "Converter",
+        "ingredient1_rate": "120 /min",
+        "ingredient1_stack": "8",
+        "ingredient1_name": "Coal",
+        "ingredient2_rate": "45 /min",
+        "ingredient2_stack": "3",
+        "ingredient2_name": "Quartz Crystal",
+        "output1_rate": "15 /min",
+        "output1_stack": "1",
+        "output1_name": "Diamonds"
+      }
+    }
+  },
+  {
+    "name": "Time Crystal",
+    "Category": "Quantum Technology",
+    "Stack size": "200",
+    "Resource Sink Points": "960",
+    "recipes": {
+      "Time Crystal": {
+        "building": "Converter",
+        "ingredient1_rate": "12 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Diamonds",
+        "output1_rate": "6 /min",
+        "output1_stack": "1",
+        "output1_name": "Time Crystal"
+      }
+    }
+  },
+  {
+    "name": "Dark Matter Crystal",
+    "Category": "Quantum Technology",
+    "Stack size": "200",
+    "Resource Sink Points": "1,780"
+  },
+  {
+    "name": "Singularity Cell",
+    "Category": "Quantum Technology",
+    "Stack size": "50",
+    "Resource Sink Points": "114,675",
+    "recipes": {
+      "Singularity Cell": {
+        "building": "Manufacturer",
+        "ingredient1_rate": "1 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Nuclear Pasta",
+        "ingredient2_rate": "20 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Dark Matter Crystal",
+        "ingredient3_rate": "100 /min",
+        "ingredient3_stack": "1",
+        "ingredient3_name": "Iron Plate",
+        "ingredient4_rate": "200 /min",
+        "ingredient4_stack": "2",
+        "ingredient4_name": "Concrete",
+        "output1_rate": "10 /min",
+        "output1_stack": "1",
+        "output1_name": "Singularity Cell"
+      }
+    }
+  },
+  {
+    "name": "Alien Power Matrix",
+    "Category": "Quantum Technology",
+    "Stack size": "50",
+    "Resource Sink Points": "210"
   },
   {
     "name": "Empty Canister",
@@ -2372,128 +3161,128 @@
     "recipes": {
       "Empty Canister": {
         "building": "Constructor",
-        "ingredient1_rate": "30 / min",
+        "ingredient1_rate": "30 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Plastic",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "4",
         "output1_name": "Empty Canister"
       },
       "Unpackage Alumina Solution": {
         "building": "Packager",
-        "ingredient1_rate": "120 / min",
+        "ingredient1_rate": "120 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Alumina Solution",
-        "output1_rate": "120m³ / min",
+        "output1_rate": "120m3 /min",
         "output1_stack": "2",
         "output1_name": "Alumina Solution",
-        "output2_rate": "120 / min",
+        "output2_rate": "120 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       },
       "Unpackage Fuel": {
         "building": "Packager",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Fuel",
-        "output1_rate": "60m³ / min",
+        "output1_rate": "60m3 /min",
         "output1_stack": "2",
         "output1_name": "Fuel",
-        "output2_rate": "60 / min",
+        "output2_rate": "60 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       },
       "Unpackage Heavy Oil Residue": {
         "building": "Packager",
-        "ingredient1_rate": "20 / min",
+        "ingredient1_rate": "20 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Heavy Oil Residue",
-        "output1_rate": "20m³ / min",
+        "output1_rate": "20m3 /min",
         "output1_stack": "2",
         "output1_name": "Heavy Oil Residue",
-        "output2_rate": "20 / min",
+        "output2_rate": "20 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       },
       "Unpackage Liquid Biofuel": {
         "building": "Packager",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Liquid Biofuel",
-        "output1_rate": "60m³ / min",
+        "output1_rate": "60m3 /min",
         "output1_stack": "2",
         "output1_name": "Liquid Biofuel",
-        "output2_rate": "60 / min",
+        "output2_rate": "60 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       },
       "Unpackage Oil": {
         "building": "Packager",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Oil",
-        "output1_rate": "60m³ / min",
+        "output1_rate": "60m3 /min",
         "output1_stack": "2",
         "output1_name": "Crude Oil",
-        "output2_rate": "60 / min",
+        "output2_rate": "60 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       },
       "Unpackage Sulfuric Acid": {
         "building": "Packager",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Packaged Sulfuric Acid",
-        "output1_rate": "60m³ / min",
+        "output1_rate": "60m3 /min",
         "output1_stack": "1",
         "output1_name": "Sulfuric Acid",
-        "output2_rate": "60 / min",
+        "output2_rate": "60 /min",
         "output2_stack": "1",
         "output2_name": "Empty Canister"
       },
       "Unpackage Turbofuel": {
         "building": "Packager",
-        "ingredient1_rate": "20 / min",
+        "ingredient1_rate": "20 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Turbofuel",
-        "output1_rate": "20m³ / min",
+        "output1_rate": "20m3 /min",
         "output1_stack": "2",
         "output1_name": "Turbofuel",
-        "output2_rate": "20 / min",
+        "output2_rate": "20 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       },
       "Unpackage Water": {
         "building": "Packager",
-        "ingredient1_rate": "120 / min",
+        "ingredient1_rate": "120 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Packaged Water",
-        "output1_rate": "120m³ / min",
+        "output1_rate": "120m3 /min",
         "output1_stack": "2",
         "output1_name": "Water",
-        "output2_rate": "120 / min",
+        "output2_rate": "120 /min",
         "output2_stack": "2",
         "output2_name": "Empty Canister"
       },
       "Alternate: Coated Iron Canister": {
         "building": "Assembler",
-        "ingredient1_rate": "30 / min",
+        "ingredient1_rate": "30 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Iron Plate",
-        "ingredient2_rate": "15 / min",
+        "ingredient2_rate": "15 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Copper Sheet",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "4",
         "output1_name": "Empty Canister"
       },
       "Alternate: Steel Canister": {
         "building": "Constructor",
-        "ingredient1_rate": "60 / min",
-        "ingredient1_stack": "3",
+        "ingredient1_rate": "40 /min",
+        "ingredient1_stack": "4",
         "ingredient1_name": "Steel Ingot",
-        "output1_rate": "40 / min",
-        "output1_stack": "2",
+        "output1_rate": "40 /min",
+        "output1_stack": "4",
         "output1_name": "Empty Canister"
       }
     }
@@ -2502,38 +3291,62 @@
     "name": "Empty Fluid Tank",
     "Category": "Containers",
     "Stack size": "100",
-    "Resource Sink Points": "225",
+    "Resource Sink Points": "170",
     "recipes": {
       "Empty Fluid Tank": {
         "building": "Constructor",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Aluminum Ingot",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "1",
         "output1_name": "Empty Fluid Tank"
       },
+      "Unpackage Ionized Fuel": {
+        "building": "Packager",
+        "ingredient1_rate": "40 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Packaged Ionized Fuel",
+        "output1_rate": "80m3 /min",
+        "output1_stack": "4",
+        "output1_name": "Ionized Fuel",
+        "output2_rate": "40 /min",
+        "output2_stack": "2",
+        "output2_name": "Empty Fluid Tank"
+      },
       "Unpackage Nitric Acid": {
         "building": "Packager",
-        "ingredient1_rate": "20 / min",
+        "ingredient1_rate": "20 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Packaged Nitric Acid",
-        "output1_rate": "20m³ / min",
+        "output1_rate": "20m3 /min",
         "output1_stack": "1",
         "output1_name": "Nitric Acid",
-        "output2_rate": "20 / min",
+        "output2_rate": "20 /min",
         "output2_stack": "1",
         "output2_name": "Empty Fluid Tank"
       },
       "Unpackage Nitrogen Gas": {
         "building": "Packager",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Packaged Nitrogen Gas",
-        "output1_rate": "240m³ / min",
+        "output1_rate": "240m3 /min",
         "output1_stack": "4",
         "output1_name": "Nitrogen Gas",
-        "output2_rate": "60 / min",
+        "output2_rate": "60 /min",
+        "output2_stack": "1",
+        "output2_name": "Empty Fluid Tank"
+      },
+      "Unpackage Rocket Fuel": {
+        "building": "Packager",
+        "ingredient1_rate": "60 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Packaged Rocket Fuel",
+        "output1_rate": "120m3 /min",
+        "output1_stack": "2",
+        "output1_name": "Rocket Fuel",
+        "output2_rate": "60 /min",
         "output2_stack": "1",
         "output2_name": "Empty Fluid Tank"
       }
@@ -2543,17 +3356,17 @@
     "name": "Pressure Conversion Cube",
     "Category": "Containers",
     "Stack size": "50",
-    "Resource Sink Points": "257,312",
+    "Resource Sink Points": "255,088",
     "recipes": {
       "Pressure Conversion Cube": {
         "building": "Assembler",
-        "ingredient1_rate": "1 / min",
+        "ingredient1_rate": "1 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Fused Modular Frame",
-        "ingredient2_rate": "2 / min",
+        "ingredient2_rate": "2 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Radio Control Unit",
-        "output1_rate": "1 / min",
+        "output1_rate": "1 /min",
         "output1_stack": "1",
         "output1_name": "Pressure Conversion Cube"
       }
@@ -2567,13 +3380,13 @@
     "recipes": {
       "Packaged Water": {
         "building": "Packager",
-        "ingredient1_rate": "60m³ / min",
+        "ingredient1_rate": "60m3 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Water",
-        "ingredient2_rate": "60 / min",
+        "ingredient2_rate": "60 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Empty Canister",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "2",
         "output1_name": "Packaged Water"
       }
@@ -2587,13 +3400,13 @@
     "recipes": {
       "Packaged Alumina Solution": {
         "building": "Packager",
-        "ingredient1_rate": "120m³ / min",
+        "ingredient1_rate": "120m3 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Alumina Solution",
-        "ingredient2_rate": "120 / min",
+        "ingredient2_rate": "120 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Empty Canister",
-        "output1_rate": "120 / min",
+        "output1_rate": "120 /min",
         "output1_stack": "2",
         "output1_name": "Packaged Alumina Solution"
       }
@@ -2607,13 +3420,13 @@
     "recipes": {
       "Packaged Sulfuric Acid": {
         "building": "Packager",
-        "ingredient1_rate": "40m³ / min",
+        "ingredient1_rate": "40m3 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Sulfuric Acid",
-        "ingredient2_rate": "40 / min",
+        "ingredient2_rate": "40 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Empty Canister",
-        "output1_rate": "40 / min",
+        "output1_rate": "40 /min",
         "output1_stack": "2",
         "output1_name": "Packaged Sulfuric Acid"
       }
@@ -2627,13 +3440,13 @@
     "recipes": {
       "Packaged Nitric Acid": {
         "building": "Packager",
-        "ingredient1_rate": "30m³ / min",
+        "ingredient1_rate": "30m3 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Nitric Acid",
-        "ingredient2_rate": "30 / min",
+        "ingredient2_rate": "30 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Empty Fluid Tank",
-        "output1_rate": "30 / min",
+        "output1_rate": "30 /min",
         "output1_stack": "1",
         "output1_name": "Packaged Nitric Acid"
       }
@@ -2647,13 +3460,13 @@
     "recipes": {
       "Packaged Nitrogen Gas": {
         "building": "Packager",
-        "ingredient1_rate": "240m³ / min",
+        "ingredient1_rate": "240m3 /min",
         "ingredient1_stack": "4",
         "ingredient1_name": "Nitrogen Gas",
-        "ingredient2_rate": "60 / min",
+        "ingredient2_rate": "60 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Empty Fluid Tank",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "1",
         "output1_name": "Packaged Nitrogen Gas"
       }
@@ -2694,48 +3507,39 @@
     "Energy": "180MJ",
     "Resource Sink Points": "12",
     "recipes": {
-      "Biomass (Alien Carapace)": {
+      "Biomass (Alien Protein)": {
         "building": "Constructor",
-        "ingredient1_rate": "15 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "1",
-        "ingredient1_name": "Alien Carapace",
-        "output1_rate": "1,500 / min",
+        "ingredient1_name": "Alien Protein",
+        "output1_rate": "1,500 /min",
         "output1_stack": "1",
-        "output1_name": "Biomass"
-      },
-      "Biomass (Alien Organs)": {
-        "building": "Constructor",
-        "ingredient1_rate": "7.5 / min",
-        "ingredient1_stack": "1",
-        "ingredient1_name": "Alien Organs",
-        "output1_rate": "1,500 / min",
-        "output1_stack": "2",
         "output1_name": "Biomass"
       },
       "Biomass (Leaves)": {
         "building": "Constructor",
-        "ingredient1_rate": "120 / min",
+        "ingredient1_rate": "120 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Leaves",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "5",
         "output1_name": "Biomass"
       },
       "Biomass (Mycelia)": {
         "building": "Constructor",
-        "ingredient1_rate": "150 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Mycelia",
-        "output1_rate": "150 / min",
+        "output1_rate": "150 /min",
         "output1_stack": "1",
         "output1_name": "Biomass"
       },
       "Biomass (Wood)": {
         "building": "Constructor",
-        "ingredient1_rate": "60 / min",
+        "ingredient1_rate": "60 /min",
         "ingredient1_stack": "4",
         "ingredient1_name": "Wood",
-        "output1_rate": "300 / min",
+        "output1_rate": "300 /min",
         "output1_stack": "2",
         "output1_name": "Biomass"
       }
@@ -2750,15 +3554,81 @@
     "recipes": {
       "Alternate: Compacted Coal": {
         "building": "Assembler",
-        "ingredient1_rate": "25 / min",
+        "ingredient1_rate": "25 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Coal",
-        "ingredient2_rate": "25 / min",
+        "ingredient2_rate": "25 /min",
         "ingredient2_stack": "5",
         "ingredient2_name": "Sulfur",
-        "output1_rate": "25 / min",
+        "output1_rate": "25 /min",
         "output1_stack": "5",
         "output1_name": "Compacted Coal"
+      },
+      "Ionized Fuel": {
+        "building": "Refinery",
+        "ingredient1_rate": "40m3 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Rocket Fuel",
+        "ingredient2_rate": "2.5 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Power Shard",
+        "output1_rate": "40m3 /min",
+        "output1_stack": "1",
+        "output1_name": "Ionized Fuel",
+        "output2_rate": "5 /min",
+        "output2_stack": "2",
+        "output2_name": "Compacted Coal"
+      },
+      "Rocket Fuel": {
+        "building": "Blender",
+        "ingredient1_rate": "60m3 /min",
+        "ingredient1_stack": "6",
+        "ingredient1_name": "Turbofuel",
+        "ingredient2_rate": "10m3 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Nitric Acid",
+        "output1_rate": "100m3 /min",
+        "output1_stack": "1",
+        "output1_name": "Rocket Fuel",
+        "output2_rate": "10 /min",
+        "output2_stack": "1",
+        "output2_name": "Compacted Coal"
+      },
+      "Alternate: Dark-Ion Fuel": {
+        "building": "Converter",
+        "ingredient1_rate": "240 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Packaged Rocket Fuel",
+        "ingredient2_rate": "80 /min",
+        "ingredient2_stack": "4",
+        "ingredient2_name": "Dark Matter Crystal",
+        "output1_rate": "200m3 /min",
+        "output1_stack": "1",
+        "output1_name": "Ionized Fuel",
+        "output2_rate": "40 /min",
+        "output2_stack": "2",
+        "output2_name": "Compacted Coal"
+      },
+      "Alternate: Nitro Rocket Fuel": {
+        "building": "Blender",
+        "ingredient1_rate": "100m3 /min",
+        "ingredient1_stack": "4",
+        "ingredient1_name": "Fuel",
+        "ingredient2_rate": "75m3 /min",
+        "ingredient2_stack": "3",
+        "ingredient2_name": "Nitrogen Gas",
+        "ingredient3_rate": "100 /min",
+        "ingredient3_stack": "4",
+        "ingredient3_name": "Sulfur",
+        "ingredient4_rate": "50 /min",
+        "ingredient4_stack": "2",
+        "ingredient4_name": "Coal",
+        "output1_rate": "150m3 /min",
+        "output1_stack": "6",
+        "output1_name": "Rocket Fuel",
+        "output2_rate": "25 /min",
+        "output2_stack": "1",
+        "output2_name": "Compacted Coal"
       }
     }
   },
@@ -2771,13 +3641,13 @@
     "recipes": {
       "Packaged Oil": {
         "building": "Packager",
-        "ingredient1_rate": "30m³ / min",
+        "ingredient1_rate": "30m3 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Crude Oil",
-        "ingredient2_rate": "30 / min",
+        "ingredient2_rate": "30 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Empty Canister",
-        "output1_rate": "30 / min",
+        "output1_rate": "30 /min",
         "output1_stack": "2",
         "output1_name": "Packaged Oil"
       }
@@ -2792,13 +3662,13 @@
     "recipes": {
       "Packaged Heavy Oil Residue": {
         "building": "Packager",
-        "ingredient1_rate": "30m³ / min",
+        "ingredient1_rate": "30m3 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Heavy Oil Residue",
-        "ingredient2_rate": "30 / min",
+        "ingredient2_rate": "30 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Empty Canister",
-        "output1_rate": "30 / min",
+        "output1_rate": "30 /min",
         "output1_stack": "2",
         "output1_name": "Packaged Heavy Oil Residue"
       }
@@ -2813,10 +3683,10 @@
     "recipes": {
       "Solid Biofuel": {
         "building": "Constructor",
-        "ingredient1_rate": "120 / min",
+        "ingredient1_rate": "120 /min",
         "ingredient1_stack": "8",
         "ingredient1_name": "Biomass",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "4",
         "output1_name": "Solid Biofuel"
       }
@@ -2831,25 +3701,25 @@
     "recipes": {
       "Packaged Fuel": {
         "building": "Packager",
-        "ingredient1_rate": "40m³ / min",
+        "ingredient1_rate": "40m3 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Fuel",
-        "ingredient2_rate": "40 / min",
+        "ingredient2_rate": "40 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Empty Canister",
-        "output1_rate": "40 / min",
+        "output1_rate": "40 /min",
         "output1_stack": "2",
         "output1_name": "Packaged Fuel"
       },
       "Alternate: Diluted Packaged Fuel": {
         "building": "Refinery",
-        "ingredient1_rate": "30m³ / min",
+        "ingredient1_rate": "30m3 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Heavy Oil Residue",
-        "ingredient2_rate": "60 / min",
+        "ingredient2_rate": "60 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Packaged Water",
-        "output1_rate": "60 / min",
+        "output1_rate": "60 /min",
         "output1_stack": "2",
         "output1_name": "Packaged Fuel"
       }
@@ -2864,13 +3734,13 @@
     "recipes": {
       "Packaged Liquid Biofuel": {
         "building": "Packager",
-        "ingredient1_rate": "40m³ / min",
+        "ingredient1_rate": "40m3 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Liquid Biofuel",
-        "ingredient2_rate": "40 / min",
+        "ingredient2_rate": "40 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Empty Canister",
-        "output1_rate": "40 / min",
+        "output1_rate": "40 /min",
         "output1_stack": "2",
         "output1_name": "Packaged Liquid Biofuel"
       }
@@ -2885,15 +3755,57 @@
     "recipes": {
       "Packaged Turbofuel": {
         "building": "Packager",
-        "ingredient1_rate": "20m³ / min",
+        "ingredient1_rate": "20m3 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Turbofuel",
-        "ingredient2_rate": "20 / min",
+        "ingredient2_rate": "20 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Empty Canister",
-        "output1_rate": "20 / min",
+        "output1_rate": "20 /min",
         "output1_stack": "2",
         "output1_name": "Packaged Turbofuel"
+      }
+    }
+  },
+  {
+    "name": "Packaged Rocket Fuel",
+    "Category": "Fuels",
+    "Stack size": "100",
+    "Energy": "7,200MJ",
+    "Resource Sink Points": "1,028",
+    "recipes": {
+      "Packaged Rocket Fuel": {
+        "building": "Packager",
+        "ingredient1_rate": "120m3 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Rocket Fuel",
+        "ingredient2_rate": "60 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Empty Fluid Tank",
+        "output1_rate": "60 /min",
+        "output1_stack": "1",
+        "output1_name": "Packaged Rocket Fuel"
+      }
+    }
+  },
+  {
+    "name": "Packaged Ionized Fuel",
+    "Category": "Fuels",
+    "Stack size": "100",
+    "Energy": "10,000MJ",
+    "Resource Sink Points": "5,246",
+    "recipes": {
+      "Packaged Ionized Fuel": {
+        "building": "Packager",
+        "ingredient1_rate": "80m3 /min",
+        "ingredient1_stack": "4",
+        "ingredient1_name": "Ionized Fuel",
+        "ingredient2_rate": "40 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Empty Fluid Tank",
+        "output1_rate": "40 /min",
+        "output1_stack": "2",
+        "output1_name": "Packaged Ionized Fuel"
       }
     }
   },
@@ -2902,38 +3814,38 @@
     "Category": "Fuels",
     "Stack size": "50",
     "Energy": "750,000MJ",
-    "Resource Sink Points": "44,092",
+    "Resource Sink Points": "43,468",
     "recipes": {
       "Uranium Fuel Rod": {
         "building": "Manufacturer",
-        "ingredient1_rate": "20 / min",
+        "ingredient1_rate": "20 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Encased Uranium Cell",
-        "ingredient2_rate": "1.2 / min",
+        "ingredient2_rate": "1.2 /min",
         "ingredient2_stack": "3",
         "ingredient2_name": "Encased Industrial Beam",
-        "ingredient3_rate": "2 / min",
+        "ingredient3_rate": "2 /min",
         "ingredient3_stack": "5",
         "ingredient3_name": "Electromagnetic Control Rod",
-        "output1_rate": "0.4 / min",
+        "output1_rate": "0.4 /min",
         "output1_stack": "1",
         "output1_name": "Uranium Fuel Rod"
       },
       "Alternate: Uranium Fuel Unit": {
         "building": "Manufacturer",
-        "ingredient1_rate": "20 / min",
+        "ingredient1_rate": "20 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Encased Uranium Cell",
-        "ingredient2_rate": "2 / min",
+        "ingredient2_rate": "2 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Electromagnetic Control Rod",
-        "ingredient3_rate": "0.6 / min",
+        "ingredient3_rate": "0.6 /min",
         "ingredient3_stack": "3",
         "ingredient3_name": "Crystal Oscillator",
-        "ingredient4_rate": "1.2 / min",
-        "ingredient4_stack": "6",
-        "ingredient4_name": "Beacon",
-        "output1_rate": "0.6 / min",
+        "ingredient4_rate": "2 /min",
+        "ingredient4_stack": "1",
+        "ingredient4_name": "Rotor",
+        "output1_rate": "0.6 /min",
         "output1_stack": "3",
         "output1_name": "Uranium Fuel Rod"
       }
@@ -2948,31 +3860,31 @@
     "recipes": {
       "Plutonium Fuel Rod": {
         "building": "Manufacturer",
-        "ingredient1_rate": "7.5 / min",
+        "ingredient1_rate": "7.5 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Encased Plutonium Cell",
-        "ingredient2_rate": "4.5 / min",
+        "ingredient2_rate": "4.5 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Steel Beam",
-        "ingredient3_rate": "1.5 / min",
+        "ingredient3_rate": "1.5 /min",
         "ingredient3_stack": "6",
         "ingredient3_name": "Electromagnetic Control Rod",
-        "ingredient4_rate": "2.5 / min",
+        "ingredient4_rate": "2.5 /min",
         "ingredient4_stack": "1",
         "ingredient4_name": "Heat Sink",
-        "output1_rate": "0.25 / min",
+        "output1_rate": "0.25 /min",
         "output1_stack": "1",
         "output1_name": "Plutonium Fuel Rod"
       },
       "Alternate: Plutonium Fuel Unit": {
         "building": "Assembler",
-        "ingredient1_rate": "10 / min",
+        "ingredient1_rate": "10 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Encased Plutonium Cell",
-        "ingredient2_rate": "0.5 / min",
+        "ingredient2_rate": "0.5 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Pressure Conversion Cube",
-        "output1_rate": "0.5 / min",
+        "output1_rate": "0.5 /min",
         "output1_stack": "1",
         "output1_name": "Plutonium Fuel Rod"
       }
@@ -2981,56 +3893,73 @@
   {
     "name": "Black Powder",
     "Category": "Consumed",
-    "Stack size": "100",
-    "Resource Sink Points": "50",
+    "Stack size": "200",
+    "Resource Sink Points": "14",
     "recipes": {
       "Black Powder": {
         "building": "Assembler",
-        "ingredient1_rate": "7.5 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Coal",
-        "ingredient2_rate": "15 / min",
-        "ingredient2_stack": "2",
+        "ingredient2_rate": "15 /min",
+        "ingredient2_stack": "1",
         "ingredient2_name": "Sulfur",
-        "output1_rate": "7.5 / min",
-        "output1_stack": "1",
+        "output1_rate": "30 /min",
+        "output1_stack": "2",
         "output1_name": "Black Powder"
       },
       "Alternate: Fine Black Powder": {
         "building": "Assembler",
-        "ingredient1_rate": "7.5 / min",
-        "ingredient1_stack": "2",
+        "ingredient1_rate": "7.5 /min",
+        "ingredient1_stack": "1",
         "ingredient1_name": "Sulfur",
-        "ingredient2_rate": "3.75 / min",
-        "ingredient2_stack": "1",
+        "ingredient2_rate": "15 /min",
+        "ingredient2_stack": "2",
         "ingredient2_name": "Compacted Coal",
-        "output1_rate": "15 / min",
-        "output1_stack": "4",
+        "output1_rate": "45 /min",
+        "output1_stack": "6",
         "output1_name": "Black Powder"
       }
     }
   },
   {
-    "name": "Smokeless Powder"
+    "name": "Smokeless Powder",
+    "Category": "Consumed",
+    "Stack size": "100",
+    "Resource Sink Points": "58",
+    "recipes": {
+      "Smokeless Powder": {
+        "building": "Refinery",
+        "ingredient1_rate": "20 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Black Powder",
+        "ingredient2_rate": "10m3 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Heavy Oil Residue",
+        "output1_rate": "20 /min",
+        "output1_stack": "2",
+        "output1_name": "Smokeless Powder"
+      }
+    }
   },
   {
     "name": "Gas Filter",
     "Category": "Consumed",
     "Stack size": "50",
-    "Resource Sink Points": "830",
+    "Resource Sink Points": "608",
     "recipes": {
       "Gas Filter": {
         "building": "Manufacturer",
-        "ingredient1_rate": "37.5 / min",
-        "ingredient1_stack": "5",
-        "ingredient1_name": "Coal",
-        "ingredient2_rate": "15 / min",
-        "ingredient2_stack": "2",
-        "ingredient2_name": "Rubber",
-        "ingredient3_rate": "15 / min",
+        "ingredient1_rate": "15 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Fabric",
+        "ingredient2_rate": "30 /min",
+        "ingredient2_stack": "4",
+        "ingredient2_name": "Coal",
+        "ingredient3_rate": "15 /min",
         "ingredient3_stack": "2",
-        "ingredient3_name": "Fabric",
-        "output1_rate": "7.5 / min",
+        "ingredient3_name": "Iron Plate",
+        "output1_rate": "7.5 /min",
         "output1_stack": "1",
         "output1_name": "Gas Filter"
       }
@@ -3041,187 +3970,263 @@
     "Category": "Consumed",
     "Stack size": "200",
     "Energy": "900MJ",
-    "Resource Sink Points": "10",
-    "recipes": {
-      "Color Cartridge": {
-        "building": "Constructor",
-        "ingredient1_rate": "37.5 / min",
-        "ingredient1_stack": "5",
-        "ingredient1_name": "Flower Petals",
-        "output1_rate": "75 / min",
-        "output1_stack": "1",
-        "output1_name": "Color Cartridge"
-      }
-    }
+    "Resource Sink Points": "10"
   },
   {
     "name": "Beacon",
     "Category": "Consumed",
     "Stack size": "100",
-    "Resource Sink Points": "320",
-    "recipes": {
-      "Beacon": {
-        "building": "Manufacturer",
-        "ingredient1_rate": "22.5 / min",
-        "ingredient1_stack": "3",
-        "ingredient1_name": "Iron Plate",
-        "ingredient2_rate": "7.5 / min",
-        "ingredient2_stack": "1",
-        "ingredient2_name": "Iron Rod",
-        "ingredient3_rate": "112.5 / min",
-        "ingredient3_stack": "1",
-        "ingredient3_name": "Wire",
-        "ingredient4_rate": "15 / min",
-        "ingredient4_stack": "2",
-        "ingredient4_name": "Cable",
-        "output1_rate": "7.5 / min",
-        "output1_stack": "1",
-        "output1_name": "Beacon"
-      },
-      "Alternate: Crystal Beacon": {
-        "building": "Manufacturer",
-        "ingredient1_rate": "2 / min",
-        "ingredient1_stack": "4",
-        "ingredient1_name": "Steel Beam",
-        "ingredient2_rate": "8 / min",
-        "ingredient2_stack": "1",
-        "ingredient2_name": "Steel Pipe",
-        "ingredient3_rate": "0.5 / min",
-        "ingredient3_stack": "1",
-        "ingredient3_name": "Crystal Oscillator",
-        "output1_rate": "10 / min",
-        "output1_stack": "2",
-        "output1_name": "Beacon"
-      }
-    }
-  },
-  {
-    "name": "Iodine Infused Filter",
-    "Category": "Consumed",
-    "Stack size": "50",
-    "Resource Sink Points": "2,718",
-    "recipes": {
-      "Iodine Infused Filter": {
-        "building": "Manufacturer",
-        "ingredient1_rate": "3.75 / min",
-        "ingredient1_stack": "1",
-        "ingredient1_name": "Gas Filter",
-        "ingredient2_rate": "30 / min",
-        "ingredient2_stack": "8",
-        "ingredient2_name": "Quickwire",
-        "ingredient3_rate": "3.75 / min",
-        "ingredient3_stack": "1",
-        "ingredient3_name": "Aluminum Casing",
-        "output1_rate": "3.75 / min",
-        "output1_stack": "1",
-        "output1_name": "Iodine Infused Filter"
-      }
-    }
+    "Resource Sink Points": "320"
   },
   {
     "name": "Iron Rebar",
-    "Category": "Consumed",
-    "Stack size": "50",
+    "Category": "Ammos",
+    "Stack size": "100",
     "Resource Sink Points": "8",
     "recipes": {
-      "Spiked Rebar": {
+      "Iron Rebar": {
         "building": "Constructor",
-        "ingredient1_rate": "15 / min",
+        "ingredient1_rate": "15 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Iron Rod",
-        "output1_rate": "15 / min",
+        "output1_rate": "15 /min",
         "output1_stack": "1",
-        "output1_name": "Spiked Rebar"
+        "output1_name": "Iron Rebar"
       }
     }
   },
   {
-    "name": "Stun Rebar"
+    "name": "Stun Rebar",
+    "Category": "Ammos",
+    "Stack size": "100",
+    "Resource Sink Points": "186",
+    "recipes": {
+      "Stun Rebar": {
+        "building": "Assembler",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Iron Rebar",
+        "ingredient2_rate": "50 /min",
+        "ingredient2_stack": "5",
+        "ingredient2_name": "Quickwire",
+        "output1_rate": "10 /min",
+        "output1_stack": "1",
+        "output1_name": "Stun Rebar"
+      }
+    }
   },
   {
-    "name": "Shatter Rebar"
+    "name": "Shatter Rebar",
+    "Category": "Ammos",
+    "Stack size": "100",
+    "Resource Sink Points": "332",
+    "recipes": {
+      "Shatter Rebar": {
+        "building": "Assembler",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Iron Rebar",
+        "ingredient2_rate": "15 /min",
+        "ingredient2_stack": "3",
+        "ingredient2_name": "Quartz Crystal",
+        "output1_rate": "5 /min",
+        "output1_stack": "1",
+        "output1_name": "Shatter Rebar"
+      }
+    }
   },
   {
-    "name": "Explosive Rebar"
+    "name": "Explosive Rebar",
+    "Category": "Ammos",
+    "Stack size": "100",
+    "Resource Sink Points": "360",
+    "recipes": {
+      "Explosive Rebar": {
+        "building": "Manufacturer",
+        "ingredient1_rate": "10 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Iron Rebar",
+        "ingredient2_rate": "10 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Smokeless Powder",
+        "ingredient3_rate": "10 /min",
+        "ingredient3_stack": "2",
+        "ingredient3_name": "Steel Pipe",
+        "output1_rate": "5 /min",
+        "output1_stack": "1",
+        "output1_name": "Explosive Rebar"
+      }
+    }
   },
   {
     "name": "Rifle Ammo",
-    "Category": "Consumed",
-    "Stack size": "100",
-    "Resource Sink Points": "664",
+    "Category": "Ammos",
+    "Stack size": "500",
+    "Resource Sink Points": "25",
     "recipes": {
-      "Rifle Cartridge": {
-        "building": "Manufacturer",
-        "ingredient1_rate": "3 / min",
-        "ingredient1_stack": "1",
-        "ingredient1_name": "Beacon",
-        "ingredient2_rate": "30 / min",
-        "ingredient2_stack": "1",
-        "ingredient2_name": "Steel Pipe",
-        "ingredient3_rate": "30 / min",
-        "ingredient3_stack": "1",
-        "ingredient3_name": "Black Powder",
-        "ingredient4_rate": "30 / min",
-        "ingredient4_stack": "1",
-        "ingredient4_name": "Rubber",
-        "output1_rate": "15 / min",
-        "output1_stack": "5",
-        "output1_name": "Rifle Cartridge"
+      "Rifle Ammo": {
+        "building": "Assembler",
+        "ingredient1_rate": "15 /min",
+        "ingredient1_stack": "3",
+        "ingredient1_name": "Copper Sheet",
+        "ingredient2_rate": "10 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Smokeless Powder",
+        "output1_rate": "75 /min",
+        "output1_stack": "1",
+        "output1_name": "Rifle Ammo"
       }
     }
   },
   {
-    "name": "Homing Rifle Ammo"
+    "name": "Homing Rifle Ammo",
+    "Category": "Ammos",
+    "Stack size": "500",
+    "Resource Sink Points": "855",
+    "recipes": {
+      "Homing Rifle Ammo": {
+        "building": "Assembler",
+        "ingredient1_rate": "50 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Rifle Ammo",
+        "ingredient2_rate": "2.5 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "High-Speed Connector",
+        "output1_rate": "25 /min",
+        "output1_stack": "1",
+        "output1_name": "Homing Rifle Ammo"
+      }
+    }
   },
   {
-    "name": "Turbo Rifle Ammo"
+    "name": "Turbo Rifle Ammo",
+    "Category": "Ammos",
+    "Stack size": "500",
+    "Resource Sink Points": "120",
+    "recipes": {
+      "Turbo Rifle Ammo": {
+        "building": "Blender",
+        "ingredient1_rate": "125 /min",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Rifle Ammo",
+        "ingredient2_rate": "15 /min",
+        "ingredient2_stack": "3",
+        "ingredient2_name": "Aluminum Casing",
+        "ingredient3_rate": "15m3 /min",
+        "ingredient3_stack": "3",
+        "ingredient3_name": "Turbofuel",
+        "output1_rate": "250 /min",
+        "output1_stack": "5",
+        "output1_name": "Turbo Rifle Ammo"
+      }
+    }
   },
   {
     "name": "Nobelisk",
-    "Category": "Consumed",
+    "Category": "Ammos",
     "Stack size": "50",
-    "Resource Sink Points": "980",
+    "Resource Sink Points": "152",
     "recipes": {
       "Nobelisk": {
         "building": "Assembler",
-        "ingredient1_rate": "15 / min",
-        "ingredient1_stack": "5",
+        "ingredient1_rate": "20 /min",
+        "ingredient1_stack": "2",
         "ingredient1_name": "Black Powder",
-        "ingredient2_rate": "30 / min",
-        "ingredient2_stack": "1",
+        "ingredient2_rate": "20 /min",
+        "ingredient2_stack": "2",
         "ingredient2_name": "Steel Pipe",
-        "output1_rate": "3 / min",
+        "output1_rate": "10 /min",
         "output1_stack": "1",
-        "output1_name": "Nobelisk"
-      },
-      "Alternate: Seismic Nobelisk": {
-        "building": "Manufacturer",
-        "ingredient1_rate": "12 / min",
-        "ingredient1_stack": "8",
-        "ingredient1_name": "Black Powder",
-        "ingredient2_rate": "12 / min",
-        "ingredient2_stack": "8",
-        "ingredient2_name": "Steel Pipe",
-        "ingredient3_rate": "1.5 / min",
-        "ingredient3_stack": "1",
-        "ingredient3_name": "Crystal Oscillator",
-        "output1_rate": "6 / min",
-        "output1_stack": "4",
         "output1_name": "Nobelisk"
       }
     }
   },
   {
-    "name": "Gas Nobelisk"
+    "name": "Gas Nobelisk",
+    "Category": "Ammos",
+    "Stack size": "50",
+    "Resource Sink Points": "544",
+    "recipes": {
+      "Gas Nobelisk": {
+        "building": "Assembler",
+        "ingredient1_rate": "5 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Nobelisk",
+        "ingredient2_rate": "50 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Biomass",
+        "output1_rate": "5 /min",
+        "output1_stack": "1",
+        "output1_name": "Gas Nobelisk"
+      }
+    }
   },
   {
-    "name": "Pulse Nobelisk"
+    "name": "Pulse Nobelisk",
+    "Category": "Ammos",
+    "Stack size": "50",
+    "Resource Sink Points": "1,533",
+    "recipes": {
+      "Pulse Nobelisk": {
+        "building": "Assembler",
+        "ingredient1_rate": "5 /min",
+        "ingredient1_stack": "5",
+        "ingredient1_name": "Nobelisk",
+        "ingredient2_rate": "1 /min",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Crystal Oscillator",
+        "output1_rate": "5 /min",
+        "output1_stack": "5",
+        "output1_name": "Pulse Nobelisk"
+      }
+    }
   },
   {
-    "name": "Cluster Nobelisk"
+    "name": "Cluster Nobelisk",
+    "Category": "Ammos",
+    "Stack size": "50",
+    "Damage": "40",
+    "Resource Sink Points": "1,376",
+    "recipes": {
+      "Cluster Nobelisk": {
+        "building": "Assembler",
+        "ingredient1_rate": "7.5 /min",
+        "ingredient1_stack": "3",
+        "ingredient1_name": "Nobelisk",
+        "ingredient2_rate": "10 /min",
+        "ingredient2_stack": "4",
+        "ingredient2_name": "Smokeless Powder",
+        "output1_rate": "2.5 /min",
+        "output1_stack": "1",
+        "output1_name": "Cluster Nobelisk"
+      }
+    }
   },
   {
-    "name": "Nuke Nobelisk"
+    "name": "Nuke Nobelisk",
+    "Category": "Ammos",
+    "Stack size": "50",
+    "Resource Sink Points": "19,600",
+    "recipes": {
+      "Nuke Nobelisk": {
+        "building": "Manufacturer",
+        "ingredient1_rate": "2.5 /min",
+        "ingredient1_stack": "5",
+        "ingredient1_name": "Nobelisk",
+        "ingredient2_rate": "10 /min",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Encased Uranium Cell",
+        "ingredient3_rate": "5 /min",
+        "ingredient3_stack": "1",
+        "ingredient3_name": "Smokeless Powder",
+        "ingredient4_rate": "3 /min",
+        "ingredient4_stack": "6",
+        "ingredient4_name": "AI Limiter",
+        "output1_rate": "0.5 /min",
+        "output1_stack": "1",
+        "output1_name": "Nuke Nobelisk"
+      }
+    }
   },
   {
     "name": "Electromagnetic Control Rod",
@@ -3231,25 +4236,25 @@
     "recipes": {
       "Electromagnetic Control Rod": {
         "building": "Assembler",
-        "ingredient1_rate": "6 / min",
+        "ingredient1_rate": "6 /min",
         "ingredient1_stack": "3",
         "ingredient1_name": "Stator",
-        "ingredient2_rate": "4 / min",
+        "ingredient2_rate": "4 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "AI Limiter",
-        "output1_rate": "4 / min",
+        "output1_rate": "4 /min",
         "output1_stack": "2",
         "output1_name": "Electromagnetic Control Rod"
       },
       "Alternate: Electromagnetic Connection Rod": {
         "building": "Assembler",
-        "ingredient1_rate": "8 / min",
+        "ingredient1_rate": "8 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Stator",
-        "ingredient2_rate": "4 / min",
+        "ingredient2_rate": "4 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "High-Speed Connector",
-        "output1_rate": "8 / min",
+        "output1_rate": "8 /min",
         "output1_stack": "2",
         "output1_name": "Electromagnetic Control Rod"
       }
@@ -3263,37 +4268,37 @@
     "recipes": {
       "Encased Uranium Cell": {
         "building": "Blender",
-        "ingredient1_rate": "50 / min",
+        "ingredient1_rate": "50 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Uranium",
-        "ingredient2_rate": "15 / min",
+        "ingredient2_rate": "15 /min",
         "ingredient2_stack": "3",
         "ingredient2_name": "Concrete",
-        "ingredient3_rate": "40m³ / min",
+        "ingredient3_rate": "40m3 /min",
         "ingredient3_stack": "8",
         "ingredient3_name": "Sulfuric Acid",
-        "output1_rate": "25 / min",
+        "output1_rate": "25 /min",
         "output1_stack": "5",
         "output1_name": "Encased Uranium Cell",
-        "output2_rate": "10m³ / min",
+        "output2_rate": "10m3 /min",
         "output2_stack": "2",
         "output2_name": "Sulfuric Acid"
       },
       "Alternate: Infused Uranium Cell": {
         "building": "Manufacturer",
-        "ingredient1_rate": "25 / min",
+        "ingredient1_rate": "25 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Uranium",
-        "ingredient2_rate": "15 / min",
+        "ingredient2_rate": "15 /min",
         "ingredient2_stack": "3",
         "ingredient2_name": "Silica",
-        "ingredient3_rate": "25 / min",
+        "ingredient3_rate": "25 /min",
         "ingredient3_stack": "5",
         "ingredient3_name": "Sulfur",
-        "ingredient4_rate": "75 / min",
+        "ingredient4_rate": "75 /min",
         "ingredient4_stack": "1",
         "ingredient4_name": "Quickwire",
-        "output1_rate": "20 / min",
+        "output1_rate": "20 /min",
         "output1_stack": "4",
         "output1_name": "Encased Uranium Cell"
       }
@@ -3315,17 +4320,31 @@
     "recipes": {
       "Encased Plutonium Cell": {
         "building": "Assembler",
-        "ingredient1_rate": "10 / min",
+        "ingredient1_rate": "10 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Plutonium Pellet",
-        "ingredient2_rate": "20 / min",
+        "ingredient2_rate": "20 /min",
         "ingredient2_stack": "4",
         "ingredient2_name": "Concrete",
-        "output1_rate": "5 / min",
+        "output1_rate": "5 /min",
         "output1_stack": "1",
         "output1_name": "Encased Plutonium Cell"
       }
     }
+  },
+  {
+    "name": "Ficsonium",
+    "Category": "Nuclear",
+    "Stack size": "100",
+    "Energy": "0MJ",
+    "Resource Sink Points": "Cannot be put into the sink."
+  },
+  {
+    "name": "Ficsonium Fuel Rod",
+    "Category": "Nuclear",
+    "Stack size": "50",
+    "Energy": "150,000MJ",
+    "Resource Sink Points": "Cannot be put into the sink."
   },
   {
     "name": "Uranium Waste",
@@ -3365,28 +4384,28 @@
     "recipes": {
       "Power Shard (1)": {
         "building": "Constructor",
-        "ingredient1_rate": "7.5 / min",
+        "ingredient1_rate": "7.5 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Blue Power Slug",
-        "output1_rate": "7.5 / min",
+        "output1_rate": "7.5 /min",
         "output1_stack": "1",
         "output1_name": "Power Shard"
       },
       "Power Shard (2)": {
         "building": "Constructor",
-        "ingredient1_rate": "5 / min",
+        "ingredient1_rate": "5 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Yellow Power Slug",
-        "output1_rate": "10 / min",
+        "output1_rate": "10 /min",
         "output1_stack": "2",
         "output1_name": "Power Shard"
       },
       "Power Shard (5)": {
         "building": "Constructor",
-        "ingredient1_rate": "2.5 / min",
+        "ingredient1_rate": "2.5 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Purple Power Slug",
-        "output1_rate": "12.5 / min",
+        "output1_rate": "12.5 /min",
         "output1_stack": "5",
         "output1_name": "Power Shard"
       }
@@ -3405,28 +4424,28 @@
     "recipes": {
       "Smart Plating": {
         "building": "Assembler",
-        "ingredient1_rate": "2 / min",
+        "ingredient1_rate": "2 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Reinforced Iron Plate",
-        "ingredient2_rate": "2 / min",
+        "ingredient2_rate": "2 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Rotor",
-        "output1_rate": "2 / min",
+        "output1_rate": "2 /min",
         "output1_stack": "1",
         "output1_name": "Smart Plating"
       },
       "Alternate: Plastic Smart Plating": {
         "building": "Manufacturer",
-        "ingredient1_rate": "2.5 / min",
+        "ingredient1_rate": "2.5 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Reinforced Iron Plate",
-        "ingredient2_rate": "2.5 / min",
+        "ingredient2_rate": "2.5 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Rotor",
-        "ingredient3_rate": "7.5 / min",
+        "ingredient3_rate": "7.5 /min",
         "ingredient3_stack": "3",
         "ingredient3_name": "Plastic",
-        "output1_rate": "5 / min",
+        "output1_rate": "5 /min",
         "output1_stack": "2",
         "output1_name": "Smart Plating"
       }
@@ -3440,28 +4459,28 @@
     "recipes": {
       "Versatile Framework": {
         "building": "Assembler",
-        "ingredient1_rate": "2.5 / min",
+        "ingredient1_rate": "2.5 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Modular Frame",
-        "ingredient2_rate": "30 / min",
+        "ingredient2_rate": "30 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Steel Beam",
-        "output1_rate": "5 / min",
+        "output1_rate": "5 /min",
         "output1_stack": "2",
         "output1_name": "Versatile Framework"
       },
       "Alternate: Flexible Framework": {
         "building": "Manufacturer",
-        "ingredient1_rate": "3.75 / min",
+        "ingredient1_rate": "3.75 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Modular Frame",
-        "ingredient2_rate": "22.5 / min",
+        "ingredient2_rate": "22.5 /min",
         "ingredient2_stack": "6",
         "ingredient2_name": "Steel Beam",
-        "ingredient3_rate": "30 / min",
+        "ingredient3_rate": "30 /min",
         "ingredient3_stack": "8",
         "ingredient3_name": "Rubber",
-        "output1_rate": "7.5 / min",
+        "output1_rate": "7.5 /min",
         "output1_stack": "2",
         "output1_name": "Versatile Framework"
       }
@@ -3475,28 +4494,28 @@
     "recipes": {
       "Automated Wiring": {
         "building": "Assembler",
-        "ingredient1_rate": "2.5 / min",
+        "ingredient1_rate": "2.5 /min",
         "ingredient1_stack": "1",
         "ingredient1_name": "Stator",
-        "ingredient2_rate": "50 / min",
+        "ingredient2_rate": "50 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Cable",
-        "output1_rate": "2.5 / min",
+        "output1_rate": "2.5 /min",
         "output1_stack": "1",
         "output1_name": "Automated Wiring"
       },
       "Alternate: Automated Speed Wiring": {
         "building": "Manufacturer",
-        "ingredient1_rate": "3.75 / min",
+        "ingredient1_rate": "3.75 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Stator",
-        "ingredient2_rate": "75 / min",
+        "ingredient2_rate": "75 /min",
         "ingredient2_stack": "4",
         "ingredient2_name": "Wire",
-        "ingredient3_rate": "1.88 / min",
+        "ingredient3_rate": "1.88 /min",
         "ingredient3_stack": "1",
         "ingredient3_name": "High-Speed Connector",
-        "output1_rate": "7.5 / min",
+        "output1_rate": "7.5 /min",
         "output1_stack": "4",
         "output1_name": "Automated Wiring"
       }
@@ -3510,16 +4529,16 @@
     "recipes": {
       "Modular Engine": {
         "building": "Manufacturer",
-        "ingredient1_rate": "2 / min",
+        "ingredient1_rate": "2 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Motor",
-        "ingredient2_rate": "15 / min",
+        "ingredient2_rate": "15 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Rubber",
-        "ingredient3_rate": "2 / min",
+        "ingredient3_rate": "2 /min",
         "ingredient3_stack": "2",
         "ingredient3_name": "Smart Plating",
-        "output1_rate": "1 / min",
+        "output1_rate": "1 /min",
         "output1_stack": "1",
         "output1_name": "Modular Engine"
       }
@@ -3529,24 +4548,24 @@
     "name": "Adaptive Control Unit",
     "Category": "Special",
     "Stack size": "50",
-    "Resource Sink Points": "86,120",
+    "Resource Sink Points": "76,368",
     "recipes": {
       "Adaptive Control Unit": {
         "building": "Manufacturer",
-        "ingredient1_rate": "7.5 / min",
-        "ingredient1_stack": "1",
+        "ingredient1_rate": "5 /min",
+        "ingredient1_stack": "5",
         "ingredient1_name": "Automated Wiring",
-        "ingredient2_rate": "5 / min",
-        "ingredient2_stack": "1",
+        "ingredient2_rate": "5 /min",
+        "ingredient2_stack": "5",
         "ingredient2_name": "Circuit Board",
-        "ingredient3_rate": "1 / min",
-        "ingredient3_stack": "2",
+        "ingredient3_rate": "1 /min",
+        "ingredient3_stack": "1",
         "ingredient3_name": "Heavy Modular Frame",
-        "ingredient4_rate": "1 / min",
+        "ingredient4_rate": "2 /min",
         "ingredient4_stack": "2",
         "ingredient4_name": "Computer",
-        "output1_rate": "1 / min",
-        "output1_stack": "2",
+        "output1_rate": "1 /min",
+        "output1_stack": "1",
         "output1_name": "Adaptive Control Unit"
       }
     }
@@ -3555,17 +4574,17 @@
     "name": "Assembly Director System",
     "Category": "Special",
     "Stack size": "50",
-    "Resource Sink Points": "543,632",
+    "Resource Sink Points": "500,176",
     "recipes": {
       "Assembly Director System": {
         "building": "Assembler",
-        "ingredient1_rate": "1.5 / min",
+        "ingredient1_rate": "1.5 /min",
         "ingredient1_stack": "2",
         "ingredient1_name": "Adaptive Control Unit",
-        "ingredient2_rate": "0.75 / min",
+        "ingredient2_rate": "0.75 /min",
         "ingredient2_stack": "1",
         "ingredient2_name": "Supercomputer",
-        "output1_rate": "0.75 / min",
+        "output1_rate": "0.75 /min",
         "output1_stack": "1",
         "output1_name": "Assembly Director System"
       }
@@ -3575,20 +4594,17 @@
     "name": "Magnetic Field Generator",
     "Category": "Special",
     "Stack size": "50",
-    "Resource Sink Points": "15,650",
+    "Resource Sink Points": "11,000",
     "recipes": {
       "Magnetic Field Generator": {
-        "building": "Manufacturer",
-        "ingredient1_rate": "2.5 / min",
+        "building": "Assembler",
+        "ingredient1_rate": "2.5 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Versatile Framework",
-        "ingredient2_rate": "1 / min",
+        "ingredient2_rate": "1 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Electromagnetic Control Rod",
-        "ingredient3_rate": "5 / min",
-        "ingredient3_stack": "1",
-        "ingredient3_name": "Battery",
-        "output1_rate": "1 / min",
+        "output1_rate": "1 /min",
         "output1_stack": "2",
         "output1_name": "Magnetic Field Generator"
       }
@@ -3598,23 +4614,23 @@
     "name": "Thermal Propulsion Rocket",
     "Category": "Special",
     "Stack size": "50",
-    "Resource Sink Points": "732,956",
+    "Resource Sink Points": "728,508",
     "recipes": {
       "Thermal Propulsion Rocket": {
         "building": "Manufacturer",
-        "ingredient1_rate": "2.5 / min",
+        "ingredient1_rate": "2.5 /min",
         "ingredient1_stack": "5",
         "ingredient1_name": "Modular Engine",
-        "ingredient2_rate": "1 / min",
+        "ingredient2_rate": "1 /min",
         "ingredient2_stack": "2",
         "ingredient2_name": "Turbo Motor",
-        "ingredient3_rate": "3 / min",
+        "ingredient3_rate": "3 /min",
         "ingredient3_stack": "6",
         "ingredient3_name": "Cooling System",
-        "ingredient4_rate": "1 / min",
+        "ingredient4_rate": "1 /min",
         "ingredient4_stack": "2",
         "ingredient4_name": "Fused Modular Frame",
-        "output1_rate": "1 / min",
+        "output1_rate": "1 /min",
         "output1_stack": "2",
         "output1_name": "Thermal Propulsion Rocket"
       }
@@ -3624,6 +4640,61 @@
     "name": "Nuclear Pasta",
     "Category": "Special",
     "Stack size": "50",
-    "Resource Sink Points": "543,424"
+    "Resource Sink Points": "538,976"
+  },
+  {
+    "name": "Biochemical Sculptor",
+    "Category": "Special",
+    "Stack size": "50",
+    "Resource Sink Points": "301,778",
+    "recipes": {
+      "Biochemical Sculptor": {
+        "building": "Blender",
+        "ingredient1_rate": "0.5 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Assembly Director System",
+        "ingredient2_rate": "40 /min",
+        "ingredient2_stack": "8",
+        "ingredient2_name": "Ficsite Trigon",
+        "ingredient3_rate": "10m3 /min",
+        "ingredient3_stack": "2",
+        "ingredient3_name": "Water",
+        "output1_rate": "2 /min",
+        "output1_stack": "4",
+        "output1_name": "Biochemical Sculptor"
+      }
+    }
+  },
+  {
+    "name": "Ballistic Warp Drive",
+    "Category": "Special",
+    "Stack size": "50",
+    "Resource Sink Points": "2,895,334",
+    "recipes": {
+      "Ballistic Warp Drive": {
+        "building": "Manufacturer",
+        "ingredient1_rate": "1 /min",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Thermal Propulsion Rocket",
+        "ingredient2_rate": "5 /min",
+        "ingredient2_stack": "5",
+        "ingredient2_name": "Singularity Cell",
+        "ingredient3_rate": "2 /min",
+        "ingredient3_stack": "2",
+        "ingredient3_name": "Superposition Oscillator",
+        "ingredient4_rate": "40 /min",
+        "ingredient4_stack": "4",
+        "ingredient4_name": "Dark Matter Crystal",
+        "output1_rate": "1 /min",
+        "output1_stack": "1",
+        "output1_name": "Ballistic Warp Drive"
+      }
+    }
+  },
+  {
+    "name": "AI Expansion Server",
+    "Category": "Special",
+    "Stack size": "50",
+    "Resource Sink Points": "597,652"
   }
 ]

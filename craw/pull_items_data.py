@@ -23,6 +23,19 @@ def grep_recipe(item_dict: dict, data: str) -> dict:
             match_rate = match_item[0]
             match_stack = match_item[1]
             match_name = match_item[2]
+
+            # Helper to clean string
+            def clean_str(val):
+                val = re.sub(r'<[^>]+>', '', val)
+                val = " ".join(val.split())
+                val = val.replace(" MW", "MW").replace(" m", "m")
+                val = val.replace("\u00b3", "3")
+                return val
+
+            match_rate = clean_str(match_rate)
+            match_stack = clean_str(match_stack)
+            match_name = clean_str(match_name)
+
             recipe[column_flag + str(ingredient_counter) + '_rate'] = match_rate
             recipe[column_flag + str(ingredient_counter) + '_stack'] = match_stack
             recipe[column_flag + str(ingredient_counter) + '_name'] = match_name
@@ -54,7 +67,17 @@ def grep_recipes(item_dict: dict, data: str) -> dict:
 def parse_item_details(item_dict: dict, data: str) -> Dict:
     detail_matches = re.findall(r'<span>\s+?<i class=".+?"></i> (.+?)\s+?</span>\s+?<span class="float-right"><strong>(.+?)</strong></span>', data)
     for dm in detail_matches:
-        item_dict[dm[0]] = dm[1]
+        key = dm[0]
+        val = dm[1]
+        # Strip HTML tags
+        val = re.sub(r'<[^>]+>', '', val)
+        # Normalize whitespace
+        val = " ".join(val.split())
+        # Fix unit spacing to match legacy format
+        val = val.replace(" MW", "MW").replace(" m", "m")
+        # Fix unicode units
+        val = val.replace("\u00b3", "3")
+        item_dict[key] = val
 
     return item_dict
 
@@ -84,9 +107,17 @@ def parse_item_page_sections(data: str) -> Dict[str, str]:
 
 
 # =================================================================================================================================================
+# =================================================================================================================================================
 def main():
     url_base = 'https://satisfactory-calculator.com'
-    raw_response = requests.get(f'{url_base}/en/items?switchGameBranch=Experimental')
+    
+    session = requests.Session()
+    adapter = requests.adapters.HTTPAdapter(max_retries=requests.adapters.Retry(total=5, backoff_factor=1))
+    session.mount('https://', adapter)
+    session.mount('http://', adapter)
+
+    print("Fetching items list...")
+    raw_response = session.get(f'{url_base}/en/items?switchGameBranch=Experimental', timeout=30)
 
     item_matches = re.findall(r'<a href="(?P<link>[^"]+?)">\s+<strong>(?P<name>[\w\s]+?)</strong>', raw_response.text)
     items = []
@@ -99,20 +130,23 @@ def main():
         # if item_name == 'Automated Wiring':
         # if item_name == 'Polymer Resin' or item_name == 'Plastic':
         # if item_name == 'Battery':
-        raw_response = requests.get(url_base + item_url_path)
-        trimmed = raw_response.text.split('<h4>' + item_name + '</h4>')[-1]
-        sections = parse_item_page_sections(trimmed)
-        item_dict = parse_item_details(item_dict, sections['item'])
-        if 'recipes' in sections.keys():
-            item_dict = grep_recipes(item_dict, sections['recipes'])
-        if 'alternatives' in sections.keys():
-            item_dict = grep_recipes(item_dict, sections['alternatives'])
+        try:
+            raw_response = session.get(url_base + item_url_path, timeout=30)
+            trimmed = raw_response.text.split('<h4>' + item_name + '</h4>')[-1]
+            sections = parse_item_page_sections(trimmed)
+            item_dict = parse_item_details(item_dict, sections['item'])
+            if 'recipes' in sections.keys():
+                item_dict = grep_recipes(item_dict, sections['recipes'])
+            if 'alternatives' in sections.keys():
+                item_dict = grep_recipes(item_dict, sections['alternatives'])
 
-        items.append(item_dict)
+            items.append(item_dict)
+        except Exception as e:
+            print(f"Failed to process {item_name}: {e}")
 
     with open('../data/items.json', 'w') as f:
-        json.dump(items, f)
-    print(items)
+        json.dump(items, f, indent=2)
+    print(f"Successfully processed {len(items)} items.")
 
 
 if __name__ == "__main__":
