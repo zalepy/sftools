@@ -1,32 +1,5 @@
 [
   {
-    "name": "Miner Mk.1",
-    "Category": "Extraction",
-    "Power used": "5MW",
-    "Width": "8m",
-    "Length": "14m",
-    "Height": "18m",
-    "Output": "1"
-  },
-  {
-    "name": "Miner Mk.2",
-    "Category": "Extraction",
-    "Power used": "12MW",
-    "Width": "8m",
-    "Length": "14m",
-    "Height": "18m",
-    "Output": "1"
-  },
-  {
-    "name": "Miner Mk.3",
-    "Category": "Extraction",
-    "Power used": "30MW",
-    "Width": "8m",
-    "Length": "14m",
-    "Height": "18m",
-    "Output": "1"
-  },
-  {
     "name": "Oil Extractor",
     "Category": "Extraction",
     "Power used": "40MW",
@@ -117,7 +90,7 @@
     "Power used": "30MW",
     "Width": "10m",
     "Length": "20m",
-    "Height": "21m",
+    "Height": "31m",
     "Input": "2",
     "Output": "2"
   },
@@ -144,11 +117,70 @@
   {
     "name": "Particle Accelerator",
     "Category": "Production",
+    "Power used (Diamonds)": "250MW - 750MW",
+    "Power used (Alternate: Petroleum Diamonds)": "250MW - 750MW",
+    "Power used (Alternate: Turbo Diamonds)": "250MW - 750MW",
+    "Power used (Alternate: Oil-Based Diamonds)": "250MW - 750MW",
+    "Power used (Alternate: Cloudy Diamonds)": "250MW - 750MW",
     "Power used (Plutonium Pellet)": "250MW - 750MW",
+    "Power used (Alternate: Instant Plutonium Cell)": "250MW - 750MW",
+    "Power used (Dark Matter Crystal)": "500MW - 1,500MW",
+    "Power used (Alternate: Dark Matter Trap)": "500MW - 1,500MW",
+    "Power used (Alternate: Dark Matter Crystallization)": "500MW - 1,500MW",
+    "Power used (Ficsonium)": "500MW - 1,500MW",
     "Power used (Nuclear Pasta)": "500MW - 1,500MW",
     "Width": "38m",
     "Length": "24m",
     "Height": "38m",
+    "Input": "2",
+    "Output": "2"
+  },
+  {
+    "name": "Quantum Encoder",
+    "Category": "Production",
+    "Power used (Superposition Oscillator)": "0MW - 2,000MW",
+    "Power used (Neural-Quantum Processor)": "0MW - 2,000MW",
+    "Power used (AI Expansion Server)": "0MW - 2,000MW",
+    "Power used (Ficsonium Fuel Rod)": "0MW - 2,000MW",
+    "Power used (Alien Power Matrix)": "0MW - 2,000MW",
+    "Power used (Synthetic Power Shard)": "0MW - 2,000MW",
+    "Width": "22m",
+    "Length": "48m",
+    "Height": "8m",
+    "Input": "4",
+    "Output": "2"
+  },
+  {
+    "name": "Converter",
+    "Category": "Production",
+    "Power used (Alternate: Dark-Ion Fuel)": "100MW - 400MW",
+    "Power used (Dark Matter Residue)": "100MW - 400MW",
+    "Power used (Excited Photonic Matter)": "100MW - 400MW",
+    "Power used (Ficsite Ingot (Iron))": "100MW - 400MW",
+    "Power used (Time Crystal)": "100MW - 400MW",
+    "Power used (Ficsite Ingot (Aluminum))": "100MW - 400MW",
+    "Power used (Ficsite Ingot (Caterium))": "100MW - 400MW",
+    "Power used (Bauxite (Caterium))": "100MW - 400MW",
+    "Power used (Bauxite (Copper))": "100MW - 400MW",
+    "Power used (Caterium Ore (Copper))": "100MW - 400MW",
+    "Power used (Caterium Ore (Quartz))": "100MW - 400MW",
+    "Power used (Coal (Iron))": "100MW - 400MW",
+    "Power used (Coal (Limestone))": "100MW - 400MW",
+    "Power used (Copper Ore (Quartz))": "100MW - 400MW",
+    "Power used (Copper Ore (Sulfur))": "100MW - 400MW",
+    "Power used (Iron Ore (Limestone))": "100MW - 400MW",
+    "Power used (Limestone (Sulfur))": "100MW - 400MW",
+    "Power used (Nitrogen Gas (Bauxite))": "100MW - 400MW",
+    "Power used (Nitrogen Gas (Caterium))": "100MW - 400MW",
+    "Power used (Raw Quartz (Bauxite))": "100MW - 400MW",
+    "Power used (Raw Quartz (Coal))": "100MW - 400MW",
+    "Power used (Sulfur (Coal))": "100MW - 400MW",
+    "Power used (Sulfur (Iron))": "100MW - 400MW",
+    "Power used (Uranium Ore (Bauxite))": "100MW - 400MW",
+    "Power used (Alternate: Pink Diamonds)": "100MW - 400MW",
+    "Width": "16m",
+    "Length": "16m",
+    "Height": "16m",
     "Input": "2",
     "Output": "2"
   },
@@ -158,32 +190,15 @@
     "Power generated": "30MW",
     "Width": "8m",
     "Length": "8m",
-    "Height": "10m"
-  },
-  {
-    "name": "Coal Generator",
-    "Category": "Generators",
-    "Power generated": "75MW",
-    "Width": "10m",
-    "Length": "26m",
-    "Height": "32m",
-    "Input": "1"
-  },
-  {
-    "name": "Fuel Generator",
-    "Category": "Generators",
-    "Power generated": "150MW",
-    "Width": "21m",
-    "Length": "21m",
-    "Height": "28m",
+    "Height": "10m",
     "Input": "1"
   },
   {
     "name": "Geothermal Generator",
     "Category": "Generators",
-    "Power generated (MAP\\Impure)": "50MW - 150MW",
-    "Power generated (MAP\\Normal)": "100MW - 300MW",
-    "Power generated (MAP\\Pure)": "200MW - 600MW",
+    "Power generated (Impure)": "50MW - 150MW",
+    "Power generated (Normal)": "100MW - 300MW",
+    "Power generated (Pure)": "200MW - 600MW",
     "Width": "19m",
     "Length": "20m",
     "Height": "34m"
@@ -196,7 +211,8 @@
     "Length": "43m",
     "Height": "49m",
     "Input": "1",
-    "Output": "1"
+    "Output": "1",
+    "Supplemental Load": "240m3 Water"
   },
   {
     "name": "Power Storage",
@@ -204,6 +220,15 @@
     "Width": "6m",
     "Length": "6m",
     "Height": "12m"
+  },
+  {
+    "name": "Alien Power Augmenter",
+    "Category": "Generators",
+    "Power generated": "1,000MW",
+    "Width": "28m",
+    "Length": "28m",
+    "Height": "28m",
+    "Input": "1"
   },
   {
     "name": "The HUB",
@@ -244,7 +269,7 @@
     "Height": "4m"
   },
   {
-    "name": "Craft Bench",
+    "name": "Crafting Bench",
     "Category": "Workstations",
     "Width": "3m",
     "Length": "6m",
@@ -318,6 +343,22 @@
     "Height": "12m",
     "Input": "1",
     "Output": "1"
+  },
+  {
+    "name": "Dimensional Depot Uploader",
+    "Category": "Storage",
+    "Width": "5m",
+    "Length": "10m",
+    "Height": "8m",
+    "Input": "2",
+    "Output": "2"
+  },
+  {
+    "name": "Basic Shelf Unit",
+    "Category": "Storage",
+    "Width": "4m",
+    "Length": "2m",
+    "Height": "2m"
   },
   {
     "name": "Truck Station",

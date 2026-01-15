@@ -23,6 +23,24 @@ def grep_recipe(item_dict: dict, data: str) -> dict:
             match_rate = match_item[0]
             match_stack = match_item[1]
             match_name = match_item[2]
+
+            # Clean data
+            for val in [match_rate, match_stack, match_name]: 
+                # This doesn't write back to the variables, need to do it explicitly or use a helper
+                pass
+            
+            # Helper to clean string
+            def clean_str(val):
+                val = re.sub(r'<[^>]+>', '', val)
+                val = " ".join(val.split())
+                val = val.replace(" MW", "MW").replace(" m", "m")
+                val = val.replace("\u00b3", "3")
+                return val
+
+            match_rate = clean_str(match_rate)
+            match_stack = clean_str(match_stack)
+            match_name = clean_str(match_name)
+
             recipe[column_flag + str(ingredient_counter) + '_rate'] = match_rate
             recipe[column_flag + str(ingredient_counter) + '_stack'] = match_stack
             recipe[column_flag + str(ingredient_counter) + '_name'] = match_name
@@ -55,7 +73,17 @@ def parse_item_details(item_dict: dict, data: str) -> Dict:
     detail_matches = re.findall(r'<span>\s+?<i class=".+?"></i> (.+?)\s+?</span>\s+?<span class="float-right"><strong>(.+?)</strong></span>', data)
     for dm in detail_matches:
         if dm[0] != 'Power planner':
-            item_dict[dm[0]] = dm[1]
+            key = dm[0]
+            val = dm[1]
+            # Strip HTML tags
+            val = re.sub(r'<[^>]+>', '', val)
+            # Normalize whitespace
+            val = " ".join(val.split())
+            # Fix unit spacing to match legacy format
+            val = val.replace(" MW", "MW").replace(" m", "m")
+            # Fix unicode units
+            val = val.replace("\u00b3", "3")
+            item_dict[key] = val
 
     return item_dict
 
@@ -112,7 +140,7 @@ def main():
         items.append(item_dict)
 
     with open('../data/buildings.json', 'w') as f:
-        json.dump(items, f)
+        json.dump(items, f, indent=2)
     print(items)
 
 
