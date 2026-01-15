@@ -30,6 +30,7 @@ class Recipe:
                  ingredient4_item: Item = None,
                  ingredient4_rate: float = None,
                  ingredient4_stack: int = None,
+                 recipe_type: RecipeType = None
                  ):
         self._name = name
         self._building = building
@@ -52,7 +53,10 @@ class Recipe:
         self._ingredient4_rate = ingredient4_rate
         self._ingredient4_stack = ingredient4_stack
 
-        self._type = RecipeType.ALTERNATE if self._name.count('Alternate') else RecipeType.BASIC
+        if recipe_type:
+            self._type = recipe_type
+        else:
+            self._type = RecipeType.ALTERNATE if self._name.count('Alternate') else RecipeType.BASIC
 
     @property
     def name(self):

@@ -159,6 +159,13 @@ def load_items(path: str, buildings: Dict[str, Building]) -> Tuple[Dict[str, Ite
                 if item_recipe_json_by_name.get(output2_name):
                     output2_item = item_recipe_json_by_name.get(output2_name)[0]
 
+                if building_name == 'Converter':
+                    recipe_type = RecipeType.CONVERSION
+                elif recipe_name.count('Alternate'):
+                    recipe_type = RecipeType.ALTERNATE
+                else:
+                    recipe_type = RecipeType.BASIC
+
                 recipe = Recipe(
                     recipe_name,
                     buildings.get(building_name),
@@ -180,6 +187,7 @@ def load_items(path: str, buildings: Dict[str, Building]) -> Tuple[Dict[str, Ite
                     ingredient4_item=ingredient4_item,
                     ingredient4_rate=ingredient4_rate,
                     ingredient4_stack=ingredient4_stack,
+                    recipe_type=recipe_type
                 )
 
                 recipe_models[recipe_name] = recipe
