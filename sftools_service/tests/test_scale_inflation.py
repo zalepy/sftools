@@ -1,12 +1,14 @@
 import pytest
-from calc_by_demand import find_production_and_demand, load_models, aggregate_models
+import os
+from sftools_service.logic.demand_calculator import find_production_and_demand, load_models, aggregate_models
 from sftools_service.domain.enums.demand_type import DemandType
 from sftools_service.domain.models.demand import Demand
 
 
 @pytest.fixture
 def data():
-    return load_models('../../data/')
+    data_path = os.path.join(os.path.dirname(__file__), '../../data')
+    return load_models(data_path)
 
 def test_scaling_does_not_inflate_sub_demands(data):
     items, recipes, buildings = data

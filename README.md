@@ -4,7 +4,7 @@ tools for satisfactory
 Current operation:
 * scripts under `craw` were used to scrape data from 'https://satisfactory-calculator.com' and store it under the `data` directory. 
   You can re-run if data is outdated, but be sure to make a copy of the current data, as the scrape may be outdated too. 
-* setup root demand in `calc_by_demand`
+* setup root demand in `sftools_service.logic.demand_calculator`
   ```
     root_demand_item = items['Smart Plating']
     root_demand = {'Smart Plating': Demand(name='Smart Plating', item=root_demand_item, rate=2.0, _type=DemandType.PRODUCE)}
@@ -59,6 +59,37 @@ This application is ready for deployment on [Render](https://render.com/).
     - **Runtime**: Python 3
     - **Build Command**: `pip install -r requirements.txt`
     - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+
+
+## Testing
+
+### Manual Execution
+To run unit tests manually, use `pytest` from the root directory:
+```bash
+# Using venv python directly (recommended)
+.venv\Scripts\python -m pytest
+
+# OR if you have poetry installed and configured
+poetry run pytest
+```
+
+### Antigravity Integration
+You can ask Antigravity to run tests for you by simply requesting "Run tests". It will execute the pytest command in the terminal.
+
+### Pre-push Checks
+To ensure tests pass before pushing to GitHub, you can use a git `pre-push` hook.
+1. Create a file `.git/hooks/pre-push` (no extension) with the following content:
+   ```bash
+   #!/bin/sh
+   echo "Running tests..."
+   # Adjust path to your python executable or use 'pytest' if in PATH
+   ./.venv/Scripts/python -m pytest
+   if [ $? -ne 0 ]; then
+       echo "Tests failed! Push aborted."
+       exit 1
+   fi
+   ```
+2. Make it executable (if on Linux/Mac, `chmod +x .git/hooks/pre-push`). Windows Git Bash usually handles this, or you can verify it via `ls -l .git/hooks/pre-push`.
 
 
 

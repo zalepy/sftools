@@ -15,7 +15,7 @@ class ProductionNode:
         return self._node_name
 
     @property
-    def ing(self):
+    def building(self):
         return self._building
 
     @property

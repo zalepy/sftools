@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 
 from sftools_service.domain.models.demand import Demand
 from sftools_service.domain.enums.demand_type import DemandType
-from calc_by_demand import load_models, calculate_demands, DATA_PATH
+from sftools_service.logic.demand_calculator import load_models, calculate_demands, DATA_PATH
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
