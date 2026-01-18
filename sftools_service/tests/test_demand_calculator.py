@@ -15,7 +15,7 @@ def test_load_models(data):
     assert len(recipes) > 0
     assert len(buildings) > 0
     assert 'Smart Plating' in items
-    assert 'Iron Ingots' in recipes
+    assert 'Iron Plate' in recipes
 
 def test_calculate_demands_basic(data):
     items, recipes, buildings = data
