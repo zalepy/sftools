@@ -1,7 +1,9 @@
-from typing import List, Optional
-from fastapi import FastAPI, Request, Form
+from typing import List, Optional, Dict, Any
+from fastapi import FastAPI, Request, Form, Body
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+import json
 
 from sftools_service.domain.models.demand import Demand
 from sftools_service.domain.enums.demand_type import DemandType
@@ -11,20 +13,38 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 # Load data on startup
-# In a production app you might want to do this in a lifespan event, 
-# but for this script top-level load is fine as it's read-only.
 print("Loading data...")
 items_map, recipes_map, buildings_map = load_models(DATA_PATH)
 all_item_names = sorted(list(items_map.keys()))
 print(f"Data loaded: {len(items_map)} items, {len(recipes_map)} recipes.")
 
 
+class ComparisonRequest(BaseModel):
+    items: List[str]
+    rates: List[float]
+    overrides: Optional[Dict[str, float]] = {}
+    round_up: bool = True
+
+def _serialize_node(node):
+    return {
+        "id": node.id,
+        "name": node.name,
+        "building": node.building.name,
+        "building_scale": node.building_scale,
+        "throughput": node.scaled_output,
+        "power": node.scaled_power,
+        "output_item": node.output_item_name,
+        "parents": [p.id for p in node.parents],
+        "children": [c.id for c in node.children]
+    }
+
 @app.get("/")
 def read_root(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
         "all_items": all_item_names,
-        "existing_demands": None
+        "existing_demands": None,
+        "graph_json": "null"
     })
 
 
@@ -34,11 +54,9 @@ def calculate(
     items: List[str] = Form(...),
     rates: List[float] = Form(...)
 ):
-    root_demand = {}
+    root_demands = []
     input_demands = []
     
-    # Process inputs
-    # items and rates should correspond by index
     for i in range(len(items)):
         item_name = items[i].strip()
         try:
@@ -51,22 +69,46 @@ def calculate(
             
         item = items_map.get(item_name)
         if item:
-             root_demand[item_name] = Demand(item_name, item, rate, DemandType.PRODUCE)
+             root_demands.append(Demand(item_name, item, rate, DemandType.PRODUCE))
              input_demands.append((item_name, rate))
 
-    if not root_demand:
+    if not root_demands:
          return templates.TemplateResponse("index.html", {
             "request": request,
              "all_items": all_item_names,
-             "error": "No valid items selected found in database."
+             "error": "No valid items selected found in database.",
+             "graph_json": "null"
         })
 
-    final_production_nodes, sub_demands = calculate_demands(items_map, root_demand)
+    # Initial calculation with defaults
+    final_nodes, _ = calculate_demands(items_map, root_demands, overrides={}, round_up=True)
+
+    # Serialize for Frontend
+    nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
+    graph_json = json.dumps(nodes_data)
 
     return templates.TemplateResponse("index.html", {
         "request": request,
         "all_items": all_item_names,
-        "production_nodes": final_production_nodes,
-        "sub_demands": sub_demands,
-        "existing_demands": input_demands
+        "production_nodes": final_nodes, # For fallback table
+        "existing_demands": input_demands,
+        "graph_json": graph_json
     })
+
+@app.post("/api/calculate")
+def api_calculate(payload: ComparisonRequest):
+    root_demands = []
+    for i in range(len(payload.items)):
+        item_name = payload.items[i]
+        rate = payload.rates[i]
+        item = items_map.get(item_name)
+        if item:
+             root_demands.append(Demand(item_name, item, rate, DemandType.PRODUCE))
+    
+    final_nodes, _ = calculate_demands(items_map, root_demands, overrides=payload.overrides, round_up=payload.round_up)
+    
+    nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
+    
+    return {
+        "nodes": nodes_data
+    }

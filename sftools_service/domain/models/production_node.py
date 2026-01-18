@@ -2,7 +2,8 @@ from sftools_service.domain.models.building import Building
 
 
 class ProductionNode:
-    def __init__(self, node_name: str, building: Building, building_scale: float, scaled_output: float, output_item_name: str, scaled_power: float):
+    def __init__(self, node_id: str, node_name: str, building: Building, building_scale: float, scaled_output: float, output_item_name: str, scaled_power: float):
+        self._id = node_id
         self._node_name = node_name
         self._building = building
         self._building_scale = building_scale
@@ -11,6 +12,10 @@ class ProductionNode:
         self._scaled_power = scaled_power
         self._parents = set()
         self._children = set()
+
+    @property
+    def id(self):
+        return self._id
 
     @property
     def name(self):
