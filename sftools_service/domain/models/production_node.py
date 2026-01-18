@@ -9,6 +9,8 @@ class ProductionNode:
         self._scaled_output = scaled_output
         self._output_item_name = output_item_name
         self._scaled_power = scaled_power
+        self._parents = set()
+        self._children = set()
 
     @property
     def name(self):
@@ -34,6 +36,20 @@ class ProductionNode:
     def scaled_power(self):
         return self._scaled_power
 
+    @property
+    def parents(self):
+        return self._parents
+
+    @property
+    def children(self):
+        return self._children
+
+    def add_parent(self, node: 'ProductionNode'):
+        self._parents.add(node)
+
+    def add_child(self, node: 'ProductionNode'):
+        self._children.add(node)
+
     def __add__(self, other: 'ProductionNode'):
         if self._node_name != other._node_name:
             raise TypeError('Cannot add ProductionNodes with different names')
@@ -42,6 +58,8 @@ class ProductionNode:
 
         self._building_scale += other._building_scale
         self._scaled_power += other._scaled_power
+        self._parents.update(other._parents)
+        self._children.update(other._children)
         return self
 
     def __repr__(self):
