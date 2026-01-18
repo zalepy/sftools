@@ -29,8 +29,36 @@ To start web server execute:
 `waitress-serve --port=8000 "sftools_service.main:app"`
 
 Plans are:
-* once full graph of the "round-up" demand is available, show it in a web page
+* once full graph of the "round-up" demand is available, show it in a web page (Done)
 * allow tweaks via web interface to adjust _production nodes_ e.g. by using power shards to overclock a building
 * allow representation of lines, and consideration of splitting limitations
+
+
+## Web Interface
+
+To run the web interface locally:
+
+1. Install requirements:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Run the server:
+   ```bash
+   uvicorn main:app --reload
+   ```
+3. Open http://127.0.0.1:8000 in your browser.
+
+
+## Deployment on Render
+
+This application is ready for deployment on [Render](https://render.com/).
+
+1. Create a new **Web Service**.
+2. Connect your repository.
+3. Use the following settings:
+    - **Runtime**: Python 3
+    - **Build Command**: `pip install -r requirements.txt`
+    - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+
 
 

@@ -304,6 +304,17 @@ def aggregate_models(models_by_name_1: Dict, models_by_name_2: Dict) -> Dict:
     return result_models_by_name
 
 
+def calculate_demands(items, root_demand: Dict[str, Demand]) -> Tuple[Dict[str, ProductionNode], Dict[str, Demand]]:
+    new_demand = root_demand
+    final_demand = root_demand
+    final_production_nodes = {}
+    for depth in range(10):
+        new_nodes, new_demand = find_production_and_demand(new_demand)
+        final_demand = aggregate_models(final_demand, new_demand)
+        final_production_nodes = aggregate_models(final_production_nodes, new_nodes)
+    return final_production_nodes, final_demand
+
+
 def main():
 
     data = load_models(DATA_PATH)
@@ -313,18 +324,18 @@ def main():
     print('Buildings count:', len(buildings))
 
     root_demand_item = items['Smart Plating']
-    root_demand = {'Smart Plating': Demand('Smart Plating', root_demand_item, 2.0, DemandType.PRODUCE)}
+    # root_demand = {'Smart Plating': Demand('Smart Plating', root_demand_item, 2.0, DemandType.PRODUCE)}
+    root_demand = {
+        'Smart Plating': Demand('Smart Plating', root_demand_item, 2.0, DemandType.PRODUCE),
+        'Versatile Framework': Demand('Versatile Framework', items['Versatile Framework'], 5.00, DemandType.PRODUCE),
+        'Encased Industrial Beam': Demand('Encased Industrial Beam', items['Encased Industrial Beam'], 12.00, DemandType.PRODUCE),
+        'Stator': Demand('Stator', items['Stator'], 6.00, DemandType.PRODUCE),
+        'Motor': Demand('Motor', items['Motor'], 10.00, DemandType.PRODUCE),
+        'Automated Wiring': Demand('Automated Wiring', items['Automated Wiring'], 7.50, DemandType.PRODUCE),
+        }
     print('[]'*50)
-    new_demand = root_demand
-    final_demand = root_demand
-    final_production_nodes = {}
-    for depth in range(10):
-        # print('-'*30)
-        # print('    >>> depth:', depth)
-        new_nodes, new_demand = find_production_and_demand(new_demand)
-        # aggregate
-        final_demand = aggregate_models(final_demand, new_demand)
-        final_production_nodes = aggregate_models(final_production_nodes, new_nodes)
+
+    final_production_nodes, final_demand = calculate_demands(items, root_demand)
 
     # print('[]'*10)
 
