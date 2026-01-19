@@ -137,6 +137,41 @@ class ProductionNode:
 
     # --- Operators ---
 
+    def absorb_node(self, other: 'ProductionNode'):
+        """
+        Absorbs another ProductionNode into this one.
+        This transfers all parents and children from 'other' to 'self',
+        and updates those parents/children to point to 'self' instead.
+        """
+        if self._output_item_name != other._output_item_name:
+            raise TypeError('Cannot merge ProductionNodes with different output items')
+        
+        # Transfer parents
+        for parent in list(other.parents):
+            # Remove from other's parents set
+            other.parents.remove(parent)
+            # Remove other from parent's children set
+            if other in parent.children:
+                parent.children.remove(other)
+            
+            # Add self to parent's children set if not already there
+            parent.add_child(self)
+            # Add parent to self's parents set
+            self.add_parent(parent)
+
+        # Transfer children
+        for child in list(other.children):
+            # Remove from other's children set
+            other.children.remove(child)
+            # Remove other from child's parents set
+            if other in child.parents:
+                child.parents.remove(other)
+            
+            # Add self to child's parents set if not already there
+            child.add_parent(self)
+            # Add child to self's children set
+            self.add_child(child)
+
     def __add__(self, other: 'ProductionNode'):
         if self._node_name != other._node_name:
             raise TypeError('Cannot add ProductionNodes with different names')

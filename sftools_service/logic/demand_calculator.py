@@ -210,7 +210,7 @@ def load_models(path: str):
     return items, recipes, buildings
 
 
-def calculate_demands(items_map, root_demands_list: List[Demand], scale_overrides: Dict[str, float] = None, round_up: bool = True) -> Tuple[Dict[str, ProductionNode], List[Demand]]:
+def calculate_demands(items_map, root_demands_list: List[Demand], scale_overrides: Dict[str, float] = None, round_up: bool = True) -> Dict[str, ProductionNode]:
     if scale_overrides is None:
         scale_overrides = {}
 
@@ -294,17 +294,18 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
     return all_nodes
 
 
-def recalculate_graph(nodes_map: Dict[str, ProductionNode], overrides: Dict[str, float], round_up: bool = True):
+def recalculate_graph(nodes_map: Dict[str, ProductionNode], overrides: Optional[Dict[str, float]] = None, round_up: bool = False):
     """
     Recalculates the scales of preexisting nodes based on user overrides and parent requirements.
     Propagation flows from consumers (parents) to producers (children).
     """
-    # 1. Apply overrides
-    for node_id, node in nodes_map.items():
-        if node_id in overrides:
-            node.user_scale = overrides[node_id]
-        else:
-            node.user_scale = None  # Clear if not in current overrides
+    # 1. Apply overrides if provided
+    if overrides is not None:
+        for node_id, node in nodes_map.items():
+            if node_id in overrides:
+                node.user_scale = overrides[node_id]
+            else:
+                node.user_scale = None  # Clear if not in current overrides
 
     # 2. Top-down propagation
     # Initialize in-degrees (number of parents to wait for)

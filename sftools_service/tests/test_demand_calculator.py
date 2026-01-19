@@ -24,7 +24,7 @@ def test_calculate_demands_basic(data):
     # New signature takes a List[Demand]
     root_demands = [Demand('Smart Plating', root_demand_item, rate, DemandType.PRODUCE)]
     
-    final_production_nodes, _ = calculate_demands(items, root_demands)
+    final_production_nodes = calculate_demands(items, root_demands)
     
     assert final_production_nodes
     
@@ -52,7 +52,7 @@ def test_calculate_demands_with_overrides(data):
     root_demands = [Demand('Smart Plating', root_demand_item, rate, DemandType.PRODUCE)]
     
     # First get the node ID
-    initial_nodes, _ = calculate_demands(items, root_demands, round_up=True)
+    initial_nodes = calculate_demands(items, root_demands, round_up=True)
     smart_plating_node_id = next(nid for nid, node in initial_nodes.items() if node.name == 'Smart Plating')
     
     # Apply override via recalculate_graph

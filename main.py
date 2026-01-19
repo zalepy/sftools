@@ -28,6 +28,10 @@ class CalculateRequest(BaseModel):
 class RecalculateRequest(BaseModel):
     scale_overrides: Dict[str, float]
 
+class MergeRequest(BaseModel):
+    source_id: str
+    target_id: str
+
 # In-memory store for the last calculated graph
 # Keys: 'nodes', 'items', 'rates', 'round_up'
 GLOBAL_STATE = {
@@ -101,6 +105,37 @@ def api_recalculate(payload: RecalculateRequest):
     final_nodes = recalculate_graph(
         GLOBAL_STATE["nodes"], 
         payload.scale_overrides, 
+        round_up=GLOBAL_STATE["round_up"]
+    )
+    
+    nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
+    return {"nodes": nodes_data}
+
+@app.post("/api/merge_nodes")
+def api_merge_nodes(payload: MergeRequest):
+    if GLOBAL_STATE["nodes"] is None:
+        return {"error": "No graph has been calculated yet."}, 400
+    
+    nodes_map = GLOBAL_STATE["nodes"]
+    source_node = nodes_map.get(payload.source_id)
+    target_node = nodes_map.get(payload.target_id)
+    
+    if not source_node or not target_node:
+        return {"error": "Source or target node not found."}, 404
+    
+    if source_node.output_item_name != target_node.output_item_name:
+        return {"error": "Cannot merge nodes with different output items."}, 400
+
+    # Execute merge
+    target_node.absorb_node(source_node)
+    
+    # Remove source from global state
+    del nodes_map[payload.source_id]
+    
+    # Recalculate graph to propagate changes
+    final_nodes = recalculate_graph(
+        nodes_map, 
+        None, # Preserve existing overrides
         round_up=GLOBAL_STATE["round_up"]
     )
     

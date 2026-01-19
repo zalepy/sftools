@@ -49,6 +49,7 @@
             margin: 0;
             background: linear-gradient(135deg, #f59e0b 0%, #f43f5e 100%);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -896,6 +897,57 @@
             document.getElementById('override-scale').value = currentVal ? currentVal : parseFloat(data.building_scale).toFixed(4);
 
             document.getElementById('node-details').style.display = 'block';
+        });
+
+        // --- Drag and Drop Merging ---
+        cy.on('dragfree', 'node', async function (evt) {
+            const dragNode = evt.target;
+            const dragPos = dragNode.position();
+            const dragData = dragNode.data('raw');
+
+            // Find overlapping nodes
+            const overlapping = cy.nodes().filter(n => {
+                if (n.id() === dragNode.id()) return false;
+                const pos = n.position();
+                const dist = Math.sqrt(Math.pow(pos.x - dragPos.x, 2) + Math.pow(pos.y - dragPos.y, 2));
+                return dist < 60; // Merging distance
+            });
+
+            if (overlapping.length > 0) {
+                const targetNode = overlapping[0];
+                const targetData = targetNode.data('raw');
+
+                if (dragData.output_item === targetData.output_item) {
+                    // Same item, trigger merge
+                    if (confirm(`Merge "${dragData.output_item}" production nodes?`)) {
+                        try {
+                            const response = await fetch('/api/merge_nodes', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    source_id: dragNode.id(),
+                                    target_id: targetNode.id()
+                                })
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json();
+                                // Clean up overrides if source was overridden
+                                if (currentOverrides[dragNode.id()]) {
+                                    delete currentOverrides[dragNode.id()];
+                                }
+                                renderGraph(data.nodes);
+                                saveState();
+                            } else {
+                                const err = await response.json();
+                                alert(`Merge failed: ${err.error}`);
+                            }
+                        } catch (e) {
+                            console.error("Merge failed", e);
+                        }
+                    }
+                }
+            }
         });
 
         // Enter key in override input triggers apply
