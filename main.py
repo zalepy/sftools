@@ -19,11 +19,22 @@ all_item_names = sorted(list(items_map.keys()))
 print(f"Data loaded: {len(items_map)} items, {len(recipes_map)} recipes.")
 
 
-class ComparisonRequest(BaseModel):
+class CalculateRequest(BaseModel):
     items: List[str]
     rates: List[float]
-    scale_overrides: Optional[Dict[str, float]] = {}
     round_up: bool = True
+
+class RecalculateRequest(BaseModel):
+    scale_overrides: Dict[str, float]
+
+# In-memory store for the last calculated graph
+# Keys: 'nodes', 'items', 'rates', 'round_up'
+GLOBAL_STATE = {
+    "nodes": None,
+    "items": None,
+    "rates": None,
+    "round_up": True
+}
 
 def _serialize_node(node):
     # Build scaled input rates from the node's recipe data
@@ -50,82 +61,47 @@ def _serialize_node(node):
 def read_root(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "all_items": all_item_names,
-        "existing_demands": None,
-        "graph_json": "null"
-    })
-
-
-@app.post("/")
-def calculate(
-    request: Request,
-    items: List[str] = Form(...),
-    rates: List[float] = Form(...)
-):
-    root_demands = []
-    input_demands = []
-    
-    for i in range(len(items)):
-        item_name = items[i].strip()
-        try:
-            rate = float(rates[i])
-        except (ValueError, IndexError):
-            continue
-            
-        if not item_name or rate <= 0:
-            continue
-            
-        item = items_map.get(item_name)
-        if item:
-             root_demands.append(Demand(item_name, item, rate, DemandType.PRODUCE))
-             input_demands.append((item_name, rate))
-
-    if not root_demands:
-         return templates.TemplateResponse("index.html", {
-            "request": request,
-             "all_items": all_item_names,
-             "error": "No valid items selected found in database.",
-             "graph_json": "null"
-        })
-
-    # Initial calculation with defaults
-    final_nodes, _ = calculate_demands(items_map, root_demands, overrides={}, round_up=True)
-
-    # Serialize for Frontend
-    nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
-    graph_json = json.dumps(nodes_data)
-
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "all_items": all_item_names,
-        "production_nodes": final_nodes, # For fallback table
-        "existing_demands": input_demands,
-        "graph_json": graph_json
+        "all_items": all_item_names
     })
 
 @app.post("/api/calculate")
-def api_calculate(payload: ComparisonRequest):
+def api_calculate(payload: CalculateRequest):
     root_demands = []
     for i in range(len(payload.items)):
         item_name = payload.items[i]
         rate = payload.rates[i]
         item = items_map.get(item_name)
         if item:
-             root_demands.append(Demand(item_name, item, rate, DemandType.PRODUCE))
+            root_demands.append(Demand(item_name, item, rate, DemandType.PRODUCE))
     
-    # Step 1: Base calculation to build graph and initial scales
-    base_nodes, _ = calculate_demands(
+    # Fresh build of graph structure
+    final_nodes = calculate_demands(
         items_map, 
         root_demands, 
-        scale_overrides={}, # Start from fresh scales
+        scale_overrides={}, 
         round_up=payload.round_up
     )
     
-    # Step 2: Recalculate based on overrides, propagating changes
-    final_nodes = recalculate_graph(base_nodes, payload.scale_overrides)
+    # Update GLOBAL_STATE
+    GLOBAL_STATE["nodes"] = final_nodes
+    GLOBAL_STATE["items"] = payload.items
+    GLOBAL_STATE["rates"] = payload.rates
+    GLOBAL_STATE["round_up"] = payload.round_up
     
     nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
+    return {"nodes": nodes_data}
+
+@app.post("/api/recalculate")
+def api_recalculate(payload: RecalculateRequest):
+    if GLOBAL_STATE["nodes"] is None:
+        return {"error": "No graph has been calculated yet. Click Calculate first."}, 400
     
-    return {
-        "nodes": nodes_data
-    }
+    # Recalculate values using the existing graph structure and stored round_up setting
+    final_nodes = recalculate_graph(
+        GLOBAL_STATE["nodes"], 
+        payload.scale_overrides, 
+        round_up=GLOBAL_STATE["round_up"]
+    )
+    
+    nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
+    return {"nodes": nodes_data}
