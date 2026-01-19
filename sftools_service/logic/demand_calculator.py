@@ -267,6 +267,7 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
 
         # Create Node
         node = recipe.generate_production_node(node_id, scaler)
+        node.ideal_building_scale = base_scaler
         all_nodes[node_id] = node
 
         # Link Graph
@@ -346,6 +347,8 @@ def recalculate_graph(nodes_map: Dict[str, ProductionNode], overrides: Optional[
                         child.original_building_scale = 1
                 else:
                     child.original_building_scale = base_scale
+                
+                child.ideal_building_scale = base_scale
             
             # Decrement in-degree and add to queue if 0
             in_degree[child.id] -= 1

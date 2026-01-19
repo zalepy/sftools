@@ -57,6 +57,7 @@ def _serialize_node(node):
         "building_scale": node.building_scale,
         "original_building_scale": node.original_building_scale,
         "user_scale": node.user_scale,
+        "ideal_building_scale": node.ideal_building_scale,
         "throughput": node.scaled_output,
         "power": node.scaled_power,
         "output_item": node.output_item_name,

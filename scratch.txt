@@ -1,9 +1,12 @@
 
 ideas/plans
 
-- add short codes/ handles for the items as some names are long and will make the UI cluttered
-- add color codes for items to ease the graph reading
-- consider the merging of production nodes from different root demands and the implications of that
+- add short codes/ handles for the items as some names are long and will make the UI cluttered (wontdo)
+- add color codes for items to ease the graph reading (done)
+- consider the merging of production nodes from different root demands and the implications of that (done)
+- refine selected node details
+- add text on the edges to show the transport rate
+- couple of node colors are too bright so they can use dark text
 - 
 
 todo fixes:

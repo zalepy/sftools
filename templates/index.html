@@ -284,6 +284,13 @@
         .color-input::-webkit-color-swatch {
             border: none;
         }
+
+        /* Status Colors */
+        :root {
+            --status-surplus: #22c55e;
+            --status-excessive: #3b82f6;
+            --status-shortage: #ef4444;
+        }
     </style>
 </head>
 
@@ -827,6 +834,42 @@
                 // Add Node
                 const label = `${node.output_item}\n${parseFloat(node.throughput).toFixed(2)}/m\n(${parseFloat(node.building_scale).toFixed(2)}x ${node.building})`;
 
+                // Indicators calculation
+                // Surplus: building_scale > ideal_building_scale
+                // Excessive: building_scale - ideal_building_scale >= 1.0
+                // Shortage: building_scale < ideal_building_scale - epsilon
+                const epsilon = 0.0001;
+                const buildingScale = parseFloat(node.building_scale);
+                const idealScale = parseFloat(node.ideal_building_scale);
+                const surplus = buildingScale - idealScale;
+
+                let indicatorColor = null;
+                if (surplus > 0.9999) {
+                    indicatorColor = '#3b82f6'; // blue (excessive)
+                } else if (surplus > epsilon) {
+                    indicatorColor = '#22c55e'; // green (surplus)
+                } else if (surplus < -epsilon) {
+                    indicatorColor = '#ef4444'; // red (shortage)
+                }
+
+                const nodeStyles = {
+                    'background-color': currentColorMapping[node.output_item] || '#334155'
+                };
+
+                if (indicatorColor) {
+                    // Create a data URI for a small circle in the top right
+                    const svg = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="150" height="80">
+                            <circle cx="140" cy="10" r="6" fill="${indicatorColor}" />
+                        </svg>
+                    `;
+                    const encodedSvg = btoa(svg);
+                    nodeStyles['background-image'] = `data:image/svg+xml;base64,${encodedSvg}`;
+                    nodeStyles['background-clip'] = 'node';
+                    nodeStyles['background-position-x'] = '0px';
+                    nodeStyles['background-position-y'] = '0px';
+                }
+
                 elements.push({
                     group: 'nodes',
                     data: {
@@ -834,9 +877,7 @@
                         label: label,
                         raw: node
                     },
-                    style: {
-                        'background-color': currentColorMapping[node.output_item] || '#334155'
-                    },
+                    style: nodeStyles,
                     classes: currentOverrides[node.id] ? 'overridden' : ''
                 });
 
@@ -844,18 +885,8 @@
             });
 
             // Add Edges
-            // Since our backend links parents (consumers) to children (producers),
-            // Edges go dependecy -> producer? No, Graph usually flows Producer -> Consumer (Material Flow).
-            // Current model: parent = consumer.
-            // So edge: Child (Producer) -> Parent (Consumer).
-
             nodesData.forEach(node => {
                 node.parents.forEach(parentId => {
-                    // Check if parent exists in this graph subset (it should)
-                    // Find the ingredient rate?
-                    // The backend didn't serialize the edge weight (ingredient rate).
-                    // We can infer it or update backend.
-                    // For now, simple connection.
                     if (processedNodes.has(parentId)) {
                         elements.push({
                             group: 'edges',
@@ -872,13 +903,9 @@
             cy.elements().remove();
             cy.add(elements);
 
-            // For first render, fit. Subsequent renders (overrides), stay put or fit?
-            // Usually if it's a completely new graph, fit is better.
             const layout = cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 50, rankSep: 100 });
 
             layout.one('layoutstop', () => {
-                // If it's a refresh from override, maybe don't auto-fit if user is zoomed
-                // But Dagre moves things. So fit is often safer.
                 cy.fit();
                 updateZoomSlider();
             });

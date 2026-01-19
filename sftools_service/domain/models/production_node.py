@@ -32,6 +32,7 @@ class ProductionNode:
         self._base_output_rate = base_output_rate
         self._base_power = base_power
         self._base_inputs = base_inputs or []  # List of {"item": str, "rate": float}
+        self._ideal_building_scale = building_scale # Default to same as initial
         
         # Graph relationships
         self._parents = set()
@@ -68,6 +69,14 @@ class ProductionNode:
     @user_scale.setter
     def user_scale(self, value: float):
         self._user_scale = value
+
+    @property
+    def ideal_building_scale(self):
+        return self._ideal_building_scale
+
+    @ideal_building_scale.setter
+    def ideal_building_scale(self, value: float):
+        self._ideal_building_scale = value
 
     @property
     def output_item_name(self):
