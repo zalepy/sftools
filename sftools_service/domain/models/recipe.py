@@ -118,8 +118,40 @@ class Recipe:
         return demands
 
 
-    def generate_production_node(self, scaler: float = 1.0):
-        return ProductionNode(self._name, self.building, scaler, self.output1_rate * scaler, self.output_item.name, self.building.power_generated * scaler)
+    def generate_production_node(self, node_id: str, scaler: float = 1.0):
+        # Build base inputs list (1x rates)
+        base_inputs = []
+        if self._ingredient1_item:
+            base_inputs.append({
+                "item": self._ingredient1_item.name,
+                "rate": self._ingredient1_rate
+            })
+        if self._ingredient2_item:
+            base_inputs.append({
+                "item": self._ingredient2_item.name,
+                "rate": self._ingredient2_rate
+            })
+        if self._ingredient3_item:
+            base_inputs.append({
+                "item": self._ingredient3_item.name,
+                "rate": self._ingredient3_rate
+            })
+        if self._ingredient4_item:
+            base_inputs.append({
+                "item": self._ingredient4_item.name,
+                "rate": self._ingredient4_rate
+            })
+        
+        return ProductionNode(
+            node_id=node_id,
+            node_name=self._name,
+            building=self.building,
+            building_scale=scaler,
+            output_item_name=self.output_item.name,
+            base_output_rate=self.output1_rate,
+            base_power=self.building.power_generated,
+            base_inputs=base_inputs
+        )
 
     # ----------------------------------------------------------------------------------------------------------------
 

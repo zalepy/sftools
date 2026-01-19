@@ -1,29 +1,2 @@
 
 ideas/plans
-
-based on https://medium.com/mlearning-ai/network-graphs-in-google-sheets-feda6891f18d
-* spin web server
-* serve calc result as json
-* serve html with canvas & cytoscape js
-
-waitress-serve --host 127.0.0.1 sftools_service.main:app
-
-
-the paradigm of flask is to build object of class Flask and use it to decorate methods defined in my own class
-unlike Falcon where each resource is its own class, and once a falcon object is instantiated, the resources are registered app.add_route
-
-Flask to get a resource-like structure
- - have the resource classes, with the endpoint methods
- - have a class for the app, that uses mixin on all resource classes
-
-^^ seems shitty
-
-going falcon
-
-waitress is not requirement for the app, it's required in deployment
-pytest pylint & etc should be in the /development/requirements.txt
-
-CONCEPT
-[1] working of craw is mostly defined by regex patterns - abstract out the loops, and allow the specific patterns to be data
-this will allow the user to adjust them over REST API
-[2] push the data resulting from the craws into DB, rather than files

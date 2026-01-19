@@ -1,6 +1,7 @@
 import json
 import os.path
-from typing import Optional, Dict, Tuple
+import math
+from typing import Optional, Dict, Tuple, List, Set
 
 from sftools_service.config.default import NAME_TO_BUILDING_CATEGORY_MAP, NAME_TO_ITEM_CATEGORY_MAP
 from sftools_service.domain.enums.demand_type import DemandType
@@ -13,7 +14,6 @@ from sftools_service.domain.models.recipe import Recipe
 
 
 DATA_PATH = 'data'
-ROUND_UP_SCALER_FLAG = True
 
 
 def get_int_or_none(data_dict, key, strippings) -> Optional[int]:
@@ -126,24 +126,29 @@ def load_items(path: str, buildings: Dict[str, Building]) -> Tuple[Dict[str, Ite
                 ingredient1_item = None
                 if item_recipe_json_by_name.get(ingredient1_name):
                     ingredient1_item = item_recipe_json_by_name.get(ingredient1_name)[0]
+                
+                # ... ingredients 2,3,4 ...
                 ingredient2_rate = get_float_or_none(recipe_details, 'ingredient2_rate', ' /minÂ³')
                 ingredient2_stack = get_int_or_none(recipe_details, 'ingredient2_stack', ' /minÂ³.')
-                ingredient2_name = recipe_details.get('ingredient2_name')  # "Electromagnetic Control Rod",
+                ingredient2_name = recipe_details.get('ingredient2_name')
                 ingredient2_item = None
                 if item_recipe_json_by_name.get(ingredient2_name):
                     ingredient2_item = item_recipe_json_by_name.get(ingredient2_name)[0]
+                    
                 ingredient3_rate = get_float_or_none(recipe_details, 'ingredient3_rate', ' /minÂ³')
                 ingredient3_stack = get_int_or_none(recipe_details, 'ingredient3_stack', ' /minÂ³.')
-                ingredient3_name = recipe_details.get('ingredient3_name')  # "Crystal Oscillator",
+                ingredient3_name = recipe_details.get('ingredient3_name')
                 ingredient3_item = None
                 if item_recipe_json_by_name.get(ingredient3_name):
                     ingredient3_item = item_recipe_json_by_name.get(ingredient3_name)[0]
+                    
                 ingredient4_rate = get_float_or_none(recipe_details, 'ingredient4_rate', ' /minÂ³')
                 ingredient4_stack = get_int_or_none(recipe_details, 'ingredient4_stack', ' /minÂ³.')
-                ingredient4_name = recipe_details.get('ingredient4_name')  # "Beacon",
+                ingredient4_name = recipe_details.get('ingredient4_name')
                 ingredient4_item = None
                 if item_recipe_json_by_name.get(ingredient4_name):
                     ingredient4_item = item_recipe_json_by_name.get(ingredient4_name)[0]
+                    
                 output1_rate = get_float_or_none(recipe_details, 'output1_rate', ' /minÂ³')
                 output1_stack = get_int_or_none(recipe_details, 'output1_stack', ' /minÂ³.')
                 output1_name = recipe_details.get('output1_name')  # "Uranium Fuel Rod",
@@ -205,149 +210,153 @@ def load_models(path: str):
     return items, recipes, buildings
 
 
-def find_production_and_demand(parent_demands: Dict[str, Demand]) -> Tuple[Dict[str, ProductionNode], Dict[str, Demand]]:
-    sub_demands = {}
-    production_nodes = {}
-    for demand_name, demand in parent_demands.items():
-        if demand.type == DemandType.SINK:
-            # TODO: process SINK demands
-            # this has to be processed after the full chain of PROD demands is determined
-            # this way we can utilize the SINK into the PROD
+def calculate_demands(items_map, root_demands_list: List[Demand], scale_overrides: Dict[str, float] = None, round_up: bool = True) -> Tuple[Dict[str, ProductionNode], List[Demand]]:
+    if scale_overrides is None:
+        scale_overrides = {}
+
+    all_nodes: Dict[str, ProductionNode] = {}
+    
+    # Queue: (Demand, ParentNodePath, ParentNode)
+    # ParentNode can be None for root
+    queue: List[Tuple[Demand, str, Optional[ProductionNode]]] = []
+    
+    for d in root_demands_list:
+        queue.append((d, "root", None))
+
+    processed_count = 0
+    max_nodes = 5000 # Safety brake
+
+    while queue and processed_count < max_nodes:
+        current_demand, parent_path, parent_node = queue.pop(0)
+        
+        if current_demand.type == DemandType.SINK:
+            # Sinks are terminal for this logic, we don't produce them
             continue
 
-        # filter alt recipes
-        non_alt_recipes = [r for r in demand.item.recipes if r.type == RecipeType.BASIC]
-        # pick recipe
+        item = items_map.get(current_demand.item.name)
+        if not item or not item.recipes:
+            continue
+            
+        # Select Recipe (Default / Basic)
+        non_alt_recipes = [r for r in item.recipes if r.type == RecipeType.BASIC]
         if not non_alt_recipes:
-            # print('!!!!!!!!!!!!!!!! Hit leaf recipe for', demand_name)
             continue
+        recipe = non_alt_recipes[0] # Pick first basic recipe
 
-        non_alt_recipe = non_alt_recipes[0]
-        # print('Demand recipe:', non_alt_recipe.name)
-
-        # determine scale
-        # ## round up demands -- this will result in surpluses
-        # ## replace with regular division to get float scaler
-
-        # TODO: improve calculation margin by considering production rate of the ingredients and splitter options
-        # TODO: add flow rate consideration
-        # ## Example:
-        # ## need 60/min item1 for prodA and 45/min for prodB, and 15/min prodC - total 120/min
-        # ## production output of item1 is 30/min, so to fill demand we need 4 producers
-        # ## 2 x producers of item1 can merge for the 60/min feed of prodA
-        # ## we need to split one producer to 15/min and feed that to prodC
-        # ## and merge the other 15/m to the forth producer, to get 45/m for prodB
-        # ## so the output should be something like
-        # ## Flow(
-        #       sources: {
-        #           src1: producer1 @ 20/m,
-        #           src2: producer2 @ 20/m,
-        #           src3: producer1 @ 20/m,
-        #           src4: producer2 @ 20/m,
-        #       },
-        #       logistics: {
-        #           merger1: {
-        #               sources: [src1, src2]
-        #               outflow: out1
-        #           },
-        #           splitter1: {
-        #               source: src3,
-        #               outflows: [tmp1, out3]
-        #           },
-        #           merger2: {
-        #               sources: [src4, tmp1],
-        #               outflow: out2
-        #           }
-        #       },
-        #       outflow: {
-        #           out1: prodA @ 60/m,
-        #           out2: prodB @ 45/m,
-        #           out3: prodC @ 15/m,
-
-        if ROUND_UP_SCALER_FLAG:
-            buildings_needed = demand.rate // non_alt_recipe.output_rate
-            if demand.rate % non_alt_recipe.output_rate:
-                buildings_needed += 1
+        # Determine Node ID
+        # Format: parent_path__Relationship__RecipeName because one parent might need same item for multiple things?
+        # Actually simplest is: parent_path / OutputItem
+        # But recipes produce items.
+        # Let's use: parent_path__RecipeName
+        node_id = f"{parent_path}__{recipe.name}"
+        
+        # Calculate Base Scaler from demand rate
+        target_rate = current_demand.rate
+        base_scaler = target_rate / recipe.output_rate
+        
+        # Apply rounding (only for initial generation when no override exists)
+        if node_id in scale_overrides:
+            # Use the scale override directly - this is the building multiplier
+            scaler = scale_overrides[node_id]
+        elif round_up:
+            # Round up to next integer for buildings
+            scaler = math.ceil(base_scaler - 0.00001) # epsilon for float precision
+            if scaler == 0 and base_scaler > 0: scaler = 1 # Safety
         else:
-            buildings_needed = demand.rate / non_alt_recipe.output_rate
+            scaler = base_scaler
 
-        scaler = buildings_needed
-        # print('Scaler:', scaler, '(', demand.rate, '/', non_alt_recipe.output_rate, ')')
+        # Create Node
+        node = recipe.generate_production_node(node_id, scaler)
+        all_nodes[node_id] = node
 
-        # generate production set (buildings (type, count), power)
-        new_production_node = non_alt_recipe.generate_production_node(scaler)
-        if production_nodes.get(non_alt_recipe.name):
-            production_nodes[non_alt_recipe.name] += new_production_node
+        # Link Graph
+        if parent_node:
+            node.add_parent(parent_node)
+            parent_node.add_child(node)
+        
+        # Generate Sub-Demands for the recipe
+        sub_demands = recipe.generate_demands(scaler)
+        
+        # Enqueue Sub-Demands
+        for sd in sub_demands:
+            queue.append((sd, node_id, node))
+            
+        processed_count += 1
+
+    # Return format
+    # Previously: flattened dict of nodes, flat dict of demands
+    # New: dict of nodes (by ID), logic handles structure
+    # We don't really need to return "sub_demands" list separately unless UI needs it specifically, 
+    # but the graph contains everything.
+    # We'll return empty sub_demands list for compatibility or just the list of roots/leaves? 
+    # Let's return empty list for 2nd arg as it was mostly for debug printing.
+    
+    return all_nodes, []
+
+
+def recalculate_graph(nodes_map: Dict[str, ProductionNode], overrides: Dict[str, float]):
+    """
+    Recalculates the scales of preexisting nodes based on user overrides and parent requirements.
+    Propagation flows from consumers (parents) to producers (children).
+    """
+    # 1. Apply overrides
+    for node_id, node in nodes_map.items():
+        if node_id in overrides:
+            node.user_scale = overrides[node_id]
         else:
-            production_nodes[non_alt_recipe.name] = new_production_node
+            node.user_scale = None  # Clear if not in current overrides
 
-        # generate sub demands
-        generated_demands = non_alt_recipe.generate_demands(scaler)
-        new_demands = {gd.name: gd for gd in generated_demands}
+    # 2. Top-down propagation
+    # Initialize in-degrees (number of parents to wait for)
+    in_degree = {node_id: 0 for node_id in nodes_map}
+    for node_id, node in nodes_map.items():
+        for child in node.children:
+            if child.id in in_degree:
+                in_degree[child.id] += 1
+    
+    # Start with nodes that have no parents in this graph (roots)
+    queue = [nodes_map[node_id] for node_id, degree in in_degree.items() if degree == 0]
+    processed_count = 0
 
-        # for gd in new_demands.values():
-        #     print('    >>>', '\n        '.join(str(gd).split('\n')))
+    while queue:
+        current = queue.pop(0)
+        processed_count += 1
+        
+        # Current node's scale is final. Update its children's needs.
+        for child in current.children:
+            if child.id not in nodes_map:
+                continue
+            
+            # Re-sum required rates for child from all its parents
+            sum_required_rate = 0.0
+            for parent in child.parents:
+                if parent.id not in nodes_map:
+                    continue
+                # Use parent's effective scale (which is final now) to get its needs
+                for inp in parent.scaled_inputs:
+                    if inp["item"] == child.output_item_name:
+                        sum_required_rate += inp["rate"]
+            
+            if child.base_output_rate > 0:
+                child.original_building_scale = sum_required_rate / child.base_output_rate
+            
+            # Decrement in-degree and add to queue if 0
+            in_degree[child.id] -= 1
+            if in_degree[child.id] == 0:
+                queue.append(child)
 
-        aggregate_models(sub_demands, new_demands)
+    return nodes_map
 
-    return production_nodes, sub_demands
-
-
-def aggregate_models(models_by_name_1: Dict, models_by_name_2: Dict) -> Dict:
-    result_models_by_name = models_by_name_1
-    for model2_name, model2 in models_by_name_2.items():
-        if result_models_by_name.get(model2_name):
-            result_models_by_name[model2_name] += model2
-        else:
-            result_models_by_name[model2_name] = model2
-
-    return result_models_by_name
-
-
-def calculate_demands(items, root_demand: Dict[str, Demand]) -> Tuple[Dict[str, ProductionNode], Dict[str, Demand]]:
-    new_demand = root_demand
-    final_demand = root_demand
-    final_production_nodes = {}
-    for depth in range(10):
-        new_nodes, new_demand = find_production_and_demand(new_demand)
-        final_demand = aggregate_models(final_demand, new_demand)
-        final_production_nodes = aggregate_models(final_production_nodes, new_nodes)
-    return final_production_nodes, final_demand
-
-
+# Keep main for simple testing if needed
 def main():
-
     data = load_models(DATA_PATH)
     items, recipes, buildings = data
-    print('Items count:', len(items))
-    print('Recipes count:', len(recipes))
-    print('Buildings count:', len(buildings))
-
     root_demand_item = items['Smart Plating']
-    # root_demand = {'Smart Plating': Demand('Smart Plating', root_demand_item, 2.0, DemandType.PRODUCE)}
-    root_demand = {
-        'Smart Plating': Demand('Smart Plating', root_demand_item, 2.0, DemandType.PRODUCE),
-        'Versatile Framework': Demand('Versatile Framework', items['Versatile Framework'], 5.00, DemandType.PRODUCE),
-        'Encased Industrial Beam': Demand('Encased Industrial Beam', items['Encased Industrial Beam'], 12.00, DemandType.PRODUCE),
-        'Stator': Demand('Stator', items['Stator'], 6.00, DemandType.PRODUCE),
-        'Motor': Demand('Motor', items['Motor'], 10.00, DemandType.PRODUCE),
-        'Automated Wiring': Demand('Automated Wiring', items['Automated Wiring'], 7.50, DemandType.PRODUCE),
-        }
-    print('[]'*50)
-
-    final_production_nodes, final_demand = calculate_demands(items, root_demand)
-
-    # print('[]'*10)
-
-    for pn in final_production_nodes.values():
-        print('>>> Production Node:', '\n        '.join(str(pn).split('\n')))
-        sd = final_demand.get(pn.output_item_name)
-        if sd:
-            print('>>> Sub demands:', '\n        '.join(str(sd).split('\n')))
-        else:
-            print('>>> Sub demands: None (KeyError avoided for', pn.output_item_name, ')')
-        print('-'*10)
-
+    root = Demand('Smart Plating', root_demand_item, 2.0, DemandType.PRODUCE)
+    
+    nodes, _ = calculate_demands(items, [root], round_up=True)
+    for nid, node in nodes.items():
+        print(f"{nid}: {node}")
 
 if __name__ == "__main__":
     main()

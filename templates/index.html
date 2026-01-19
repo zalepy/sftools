@@ -4,7 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Satisfactory Demand Calculator</title>
+    <title>Satisfactory Demand Planner</title>
+    <!-- Cytoscape.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+    <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+
     <style>
         :root {
             --bg-color: #0f172a;
@@ -12,11 +17,10 @@
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
             --accent: #f59e0b;
-            /* Orange-ish for Satisfactory */
             --accent-hover: #d97706;
             --border: #334155;
-            --table-head-bg: #334155;
-            --table-row-hover: #263445;
+            --node-bg: #334155;
+            --node-border: #94a3b8;
         }
 
         body {
@@ -25,305 +29,588 @@
             color: var(--text-primary);
             margin: 0;
             padding: 0;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         header {
-            text-align: center;
-            margin-bottom: 3rem;
-            padding-bottom: 1rem;
+            background-color: var(--card-bg);
             border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
         }
 
         h1 {
-            font-size: 2.5rem;
+            font-size: 1.5rem;
             margin: 0;
             background: linear-gradient(135deg, #f59e0b 0%, #f43f5e 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        h2 {
-            border-left: 4px solid var(--accent);
-            padding-left: 1rem;
-            margin-top: 2rem;
-            color: var(--text-primary);
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            margin-bottom: 2rem;
-            border: 1px solid var(--border);
-        }
-
-        /* Form Styles */
-        .demand-row {
+        .main-container {
             display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            align-items: center;
+            flex: 1;
+            overflow: hidden;
         }
 
-        .input-group {
+        .sidebar {
+            width: 350px;
+            background-color: var(--card-bg);
+            border-right: 1px solid var(--border);
+            padding: 1.5rem;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            flex: 1;
+            gap: 1.5rem;
         }
 
-        .input-group label {
-            font-size: 0.875rem;
+        .graph-container {
+            flex: 1;
+            background-color: var(--bg-color);
+            position: relative;
+        }
+
+        #cy {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Forms & Inputs */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
             color: var(--text-secondary);
-            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
         }
 
         input {
+            width: 100%;
             background-color: var(--bg-color);
             border: 1px solid var(--border);
             color: var(--text-primary);
-            padding: 0.75rem;
-            border-radius: 6px;
-            font-size: 1rem;
-            transition: border-color 0.2s;
+            padding: 0.5rem;
+            border-radius: 4px;
+            box-sizing: border-box;
         }
 
         input:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
         }
 
         button {
-            cursor: pointer;
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            font-weight: 600;
-            transition: all 0.2s;
-            border: none;
-        }
-
-        .btn-primary {
             background-color: var(--accent);
             color: white;
-            font-size: 1.1rem;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
             width: 100%;
-            margin-top: 1rem;
         }
 
-        .btn-primary:hover {
+        button:hover {
             background-color: var(--accent-hover);
-            transform: translateY(-1px);
         }
 
-        .btn-secondary {
+        button.secondary {
             background-color: var(--border);
             color: var(--text-primary);
         }
 
-        .btn-secondary:hover {
-            background-color: #475569;
+        .demand-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
         }
 
-        .btn-icon {
-            padding: 0.75rem;
+        .toggle-switch {
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
         }
 
-        /* Table Styles */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-            font-size: 0.95rem;
+        /* Node Details Panel */
+        #node-details {
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+            display: none;
         }
 
-        th {
-            background-color: var(--table-head-bg);
-            text-align: left;
-            padding: 1rem;
-            font-weight: 600;
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .stat-label {
             color: var(--text-secondary);
-            border-bottom: 2px solid var(--border);
         }
 
-        td {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border);
+        .stat-value {
+            font-weight: 500;
         }
 
-        tr:hover td {
-            background-color: var(--table-row-hover);
-        }
-
-        .empty-state {
-            text-align: center;
-            color: var(--text-secondary);
-            padding: 3rem;
-            font-style: italic;
-        }
-
-        .tag {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
+        .hint {
             font-size: 0.75rem;
-            font-weight: 600;
-            background-color: rgba(245, 158, 11, 0.1);
-            color: var(--accent);
+            color: var(--text-secondary);
+            font-style: italic;
+            margin-top: 0.25rem;
+        }
+
+        /* Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            bottom: 2rem;
+            right: 2rem;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            width: 200px;
+        }
+
+        .zoom-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        #zoom-slider {
+            flex: 1;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .zoom-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            min-width: 35px;
+            text-align: right;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <header>
+    <header>
+        <div style="display: flex; align-items: center; gap: 1rem;">
             <h1>Satisfactory Planner</h1>
-            <p style="color: var(--text-secondary);">Plan your factory production by demand</p>
-        </header>
+        </div>
+        <div class="toggle-switch">
+            <input type="checkbox" id="round-up-toggle" checked>
+            <label for="round-up-toggle" style="margin:0; cursor:pointer;">Round Up Buildings</label>
+        </div>
+    </header>
 
-        <!-- Input Section -->
-        <section class="card">
-            <h2>Desired Output</h2>
-            <form action="/" method="post">
-                <div id="demand-rows">
-                    {% if existing_demands %}
-                    {% for item_name, rate in existing_demands %}
-                    <div class="demand-row">
-                        <div class="input-group" style="flex: 2;">
-                            <label>Item Name</label>
-                            <input type="text" name="items" list="items_list" value="{{ item_name }}" required
-                                placeholder="e.g. Smart Plating">
+    <div class="main-container">
+        <!-- Left Sidebar: Inputs -->
+        <div class="sidebar">
+            <section>
+                <h3>Demand Targets</h3>
+                <form id="demand-form" onsubmit="event.preventDefault(); triggerRecalculate();">
+                    <div id="demand-rows">
+                        {% if existing_demands %}
+                        {% for item_name, rate in existing_demands %}
+                        <div class="demand-row">
+                            <input type="text" name="items" list="items_list" value="{{ item_name }}"
+                                placeholder="Item">
+                            <input type="number" step="any" name="rates" value="{{ rate }}" placeholder="Rate">
+                            <button type="button" class="secondary" style="width: auto;"
+                                onclick="removeRow(this)">✕</button>
                         </div>
-                        <div class="input-group">
-                            <label>Rate (/min)</label>
-                            <input type="number" step="any" name="rates" value="{{ rate }}" required placeholder="10">
+                        {% endfor %}
+                        {% else %}
+                        <div class="demand-row">
+                            <input type="text" name="items" list="items_list" placeholder="Item">
+                            <input type="number" step="any" name="rates" placeholder="Rate">
+                            <button type="button" class="secondary" style="width: auto;"
+                                onclick="removeRow(this)">✕</button>
                         </div>
-                        <button type="button" class="btn-secondary btn-icon" onclick="removeRow(this)"
-                            title="Remove">✕</button>
+                        {% endif %}
                     </div>
-                    {% endfor %}
-                    {% else %}
-                    <div class="demand-row">
-                        <div class="input-group" style="flex: 2;">
-                            <label>Item Name</label>
-                            <input type="text" name="items" list="items_list" required placeholder="e.g. Smart Plating">
-                        </div>
-                        <div class="input-group">
-                            <label>Rate (/min)</label>
-                            <input type="number" step="any" name="rates" required placeholder="10">
-                        </div>
-                        <button type="button" class="btn-secondary btn-icon" onclick="removeRow(this)"
-                            title="Remove">✕</button>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <button type="button" class="btn-secondary" onclick="addRow()">+ Add Item</button>
-                <button type="submit" class="btn-primary">Calculate Production</button>
+                    <button type="button" class="secondary" onclick="addRow()" style="margin-bottom: 0.5rem;">+ Add
+                        Item</button>
+                    <button type="submit">Calculate</button>
+                </form>
 
                 <datalist id="items_list">
                     {% for item in all_items %}
                     <option value="{{ item }}">
                         {% endfor %}
                 </datalist>
-            </form>
-        </section>
+            </section>
 
-        <!-- Results Section -->
-        {% if production_nodes %}
-        <section class="card">
-            <h2>Production Plan</h2>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Building</th>
-                            <th>Count</th>
-                            <th>Output Rate</th>
-                            <th>Power</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for node in production_nodes.values() %}
-                        <tr>
-                            <td><span style="font-weight: 500;">{{ node.output_item_name }}</span></td>
-                            <td>{{ node.ing.name }}</td>
-                            <td><span class="tag">{{ "%.2f"|format(node.building_scale) }}</span></td>
-                            <td>{{ "%.2f"|format(node.scaled_output) }} /min</td>
-                            <td>{{ node.scaled_power }} MW</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <!-- Node Details Panel (Appears on Selection) -->
+            <section id="node-details">
+                <h3>Selected Node</h3>
+                <div class="stat-row">
+                    <span class="stat-label">Item:</span>
+                    <span class="stat-value" id="detail-item">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Recipe:</span>
+                    <span class="stat-value" id="detail-recipe">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Building:</span>
+                    <span class="stat-value" id="detail-building">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Scale:</span>
+                    <span class="stat-value" id="detail-scale">-</span>
+                </div>
+
+                <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; color: var(--text-secondary);">Scaled Rates</h4>
+                <div class="stat-row">
+                    <span class="stat-label">Output Rate:</span>
+                    <span class="stat-value" id="detail-output-rate">-</span>
+                </div>
+                <div id="detail-inputs-container">
+                    <!-- Input rates will be dynamically populated -->
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Power:</span>
+                    <span class="stat-value" id="detail-power">-</span>
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label>Override Scale Factor</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="number" id="override-scale" step="any" placeholder="Default">
+                        <button class="secondary" style="width: auto;" onclick="clearOverride()">Clear</button>
+                    </div>
+                    <div class="hint">Number of buildings (can be fractional). Changes cascade to child nodes.</div>
+                </div>
+
+                <button onclick="applyOverride()">Apply Override</button>
+            </section>
+        </div>
+
+        <!-- Graph Viewer -->
+        <div class="graph-container">
+            <div id="cy"></div>
+
+            <!-- Zoom Controls Overlay -->
+            <div class="zoom-controls">
+                <div class="zoom-slider-container">
+                    <span class="zoom-label">Zoom</span>
+                    <input type="range" id="zoom-slider" min="0.1" max="5" step="0.01" value="1">
+                    <span id="zoom-percent" class="zoom-label">100%</span>
+                </div>
+                <button class="secondary" onclick="cy.fit(); updateZoomSlider();">Fit View</button>
             </div>
-        </section>
-
-        <section class="card">
-            <h2>Sub Demands</h2>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Total Rate Needed</th>
-                            <th>Type</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for demand in sub_demands.values() %}
-                        <tr>
-                            <td>{{ demand.name }}</td>
-                            <td>{{ "%.2f"|format(demand.rate) }} /min</td>
-                            <td>{{ demand.type.name }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </section>
-        {% endif %}
-
+        </div>
     </div>
 
     <script>
+        // Initialize Cytoscape
+        try {
+            if (typeof cytoscapeDagre !== 'undefined') {
+                cytoscape.use(cytoscapeDagre);
+            }
+        } catch (e) {
+            console.warn("Could not register cytoscape-dagre", e);
+        }
+
+        let currentOverrides = {};
+
+        let cy = cytoscape({
+            container: document.getElementById('cy'),
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'background-color': '#334155',
+                        'border-width': 2,
+                        'border-color': '#f59e0b',
+                        'label': 'data(label)',
+                        'color': '#f8fafc',
+                        'text-valign': 'center',
+                        'text-halign': 'center',
+                        'text-wrap': 'wrap',
+                        'width': 150,
+                        'height': 80,
+                        'shape': 'round-rectangle',
+                        'font-size': '12px'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 2,
+                        'line-color': '#475569',
+                        'target-arrow-color': '#475569',
+                        'target-arrow-shape': 'triangle',
+                        'curve-style': 'bezier',
+                        'color': '#94a3b8',
+                        'font-size': '10px',
+                        'text-background-opacity': 1,
+                        'text-background-color': '#0f172a',
+                        'text-background-padding': '2px'
+                    }
+                },
+                {
+                    selector: ':selected',
+                    style: {
+                        'border-width': 4,
+                        'border-color': '#f43f5e',
+                        'background-color': '#475569'
+                    }
+                },
+                {
+                    selector: '.overridden',
+                    style: {
+                        'border-color': '#22d3ee',
+                        'border-style': 'dashed'
+                    }
+                }
+            ],
+            layout: {
+                name: 'dagre',
+                rankDir: 'LR',
+                nodeSep: 60,
+                rankSep: 120
+            },
+            minZoom: 0.05,
+            maxZoom: 10,
+            wheelSensitivity: 0.2
+        });
+
+        // --- Zoom Control Sync ---
+        const zoomSlider = document.getElementById('zoom-slider');
+        const zoomPercent = document.getElementById('zoom-percent');
+
+        function updateZoomSlider() {
+            const z = cy.zoom();
+            zoomSlider.value = z;
+            zoomPercent.innerText = Math.round(z * 100) + '%';
+        }
+
+        zoomSlider.addEventListener('input', (e) => {
+            const z = parseFloat(e.target.value);
+            cy.zoom({
+                level: z,
+                renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 }
+            });
+            zoomPercent.innerText = Math.round(z * 100) + '%';
+        });
+
+        cy.on('zoom', updateZoomSlider);
+
+        // Load Initial Data (if any)
+        try {
+            const initialGraphData = JSON.parse(`{{ graph_json | safe }}`);
+            if (initialGraphData) {
+                renderGraph(initialGraphData);
+            }
+        } catch (e) {
+            console.error("Failed to load initial graph", e);
+        }
+
+
+        // --- Functions ---
+
         function addRow() {
             const container = document.getElementById('demand-rows');
             const newRow = document.createElement('div');
             newRow.className = 'demand-row';
             newRow.innerHTML = `
-                <div class="input-group" style="flex: 2;">
-                    <label>Item Name</label>
-                    <input type="text" name="items" list="items_list" required placeholder="e.g. Iron Plate">
-                </div>
-                <div class="input-group">
-                    <label>Rate (/min)</label>
-                    <input type="number" step="any" name="rates" required placeholder="60">
-                </div>
-                <button type="button" class="btn-secondary btn-icon" onclick="removeRow(this)" title="Remove">✕</button>
+                <input type="text" name="items" list="items_list" placeholder="Item">
+                <input type="number" step="any" name="rates" placeholder="Rate">
+                <button type="button" class="secondary" style="width: auto;" onclick="removeRow(this)">✕</button>
             `;
             container.appendChild(newRow);
         }
 
         function removeRow(btn) {
-            const rows = document.querySelectorAll('.demand-row');
+            const rows = document.getElementById('demand-rows').children;
             if (rows.length > 1) {
-                btn.closest('.demand-row').remove();
+                btn.parentElement.remove();
             } else {
-                // Clear inputs if it's the last row
-                const inputs = btn.closest('.demand-row').querySelectorAll('input');
-                inputs.forEach(input => input.value = '');
+                btn.parentElement.querySelectorAll('input').forEach(i => i.value = '');
             }
+        }
+
+        function getDemands() {
+            const items = [];
+            const rates = [];
+            document.querySelectorAll('#demand-rows .demand-row').forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                if (inputs[0].value && inputs[1].value) {
+                    items.push(inputs[0].value.trim());
+                    rates.push(parseFloat(inputs[1].value));
+                }
+            });
+            return { items, rates };
+        }
+
+        async function triggerRecalculate() {
+            const { items, rates } = getDemands();
+            const roundUp = document.getElementById('round-up-toggle').checked;
+
+            if (items.length === 0) return;
+
+            const payload = {
+                items: items,
+                rates: rates,
+                scale_overrides: currentOverrides,
+                round_up: roundUp
+            };
+
+            try {
+                const response = await fetch('/api/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    renderGraph(data.nodes);
+                }
+            } catch (e) {
+                console.error("Calculation failed", e);
+            }
+        }
+
+        function renderGraph(nodesData) {
+            const elements = [];
+            const processedNodes = new Set();
+
+            nodesData.forEach(node => {
+                // Add Node
+                const label = `${node.output_item}\n${parseFloat(node.throughput).toFixed(2)}/m\n(${parseFloat(node.building_scale).toFixed(2)}x ${node.building})`;
+
+                elements.push({
+                    group: 'nodes',
+                    data: {
+                        id: node.id,
+                        label: label,
+                        raw: node
+                    },
+                    classes: currentOverrides[node.id] ? 'overridden' : ''
+                });
+
+                processedNodes.add(node.id);
+            });
+
+            // Add Edges
+            // Since our backend links parents (consumers) to children (producers),
+            // Edges go dependecy -> producer? No, Graph usually flows Producer -> Consumer (Material Flow).
+            // Current model: parent = consumer.
+            // So edge: Child (Producer) -> Parent (Consumer).
+
+            nodesData.forEach(node => {
+                node.parents.forEach(parentId => {
+                    // Check if parent exists in this graph subset (it should)
+                    // Find the ingredient rate?
+                    // The backend didn't serialize the edge weight (ingredient rate).
+                    // We can infer it or update backend.
+                    // For now, simple connection.
+                    if (processedNodes.has(parentId)) {
+                        elements.push({
+                            group: 'edges',
+                            data: {
+                                source: node.id,
+                                target: parentId,
+                                label: '' // TODO: Add flow rate to edge
+                            }
+                        });
+                    }
+                });
+            });
+
+            cy.elements().remove();
+            cy.add(elements);
+
+            // For first render, fit. Subsequent renders (overrides), stay put or fit?
+            // Usually if it's a completely new graph, fit is better.
+            const layout = cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 50, rankSep: 100 });
+
+            layout.one('layoutstop', () => {
+                // If it's a refresh from override, maybe don't auto-fit if user is zoomed
+                // But Dagre moves things. So fit is often safer.
+                cy.fit();
+                updateZoomSlider();
+            });
+
+            layout.run();
+        }
+
+        // --- Interaction ---
+
+        let selectedNodeId = null;
+
+        cy.on('tap', 'node', function (evt) {
+            const node = evt.target;
+            const data = node.data('raw');
+            selectedNodeId = node.id();
+
+            // Populate Details
+            document.getElementById('detail-item').innerText = data.output_item;
+            document.getElementById('detail-recipe').innerText = data.name.split('__').pop(); // Simple hack for name
+            document.getElementById('detail-building').innerText = data.building;
+            document.getElementById('detail-scale').innerText = parseFloat(data.building_scale).toFixed(2) + 'x';
+
+            // Scaled Rates
+            document.getElementById('detail-output-rate').innerText = parseFloat(data.throughput).toFixed(2) + '/min';
+            document.getElementById('detail-power').innerText = parseFloat(data.power).toFixed(2) + ' MW';
+
+            // Populate scaled inputs
+            const inputsContainer = document.getElementById('detail-inputs-container');
+            inputsContainer.innerHTML = '';
+            if (data.scaled_inputs && data.scaled_inputs.length > 0) {
+                data.scaled_inputs.forEach(input => {
+                    const row = document.createElement('div');
+                    row.className = 'stat-row';
+                    row.innerHTML = `
+                        <span class="stat-label">Input (${input.item}):</span>
+                        <span class="stat-value">${parseFloat(input.rate).toFixed(2)}/min</span>
+                    `;
+                    inputsContainer.appendChild(row);
+                });
+            }
+
+            // Override Input - show current scale or override value
+            const currentVal = currentOverrides[selectedNodeId];
+            document.getElementById('override-scale').value = currentVal ? currentVal : parseFloat(data.building_scale).toFixed(4);
+
+            document.getElementById('node-details').style.display = 'block';
+        });
+
+        function applyOverride() {
+            if (!selectedNodeId) return;
+            const val = parseFloat(document.getElementById('override-scale').value);
+
+            if (!isNaN(val) && val > 0) {
+                currentOverrides[selectedNodeId] = val;
+            } else {
+                delete currentOverrides[selectedNodeId];
+            }
+
+            triggerRecalculate();
+        }
+
+        function clearOverride() {
+            document.getElementById('override-scale').value = '';
+            if (selectedNodeId) delete currentOverrides[selectedNodeId];
+            triggerRecalculate();
         }
     </script>
 </body>
