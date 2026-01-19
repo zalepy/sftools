@@ -24,6 +24,8 @@ class CalculateRequest(BaseModel):
     items: List[str]
     rates: List[float]
     round_up: bool = True
+    merges: Dict[str, str] = {}
+    overrides: Dict[str, float] = {}
 
 class RecalculateRequest(BaseModel):
     scale_overrides: Dict[str, float]
@@ -38,7 +40,8 @@ GLOBAL_STATE = {
     "nodes": None,
     "items": None,
     "rates": None,
-    "round_up": True
+    "round_up": True,
+    "merges": {}
 }
 
 def _serialize_node(node):
@@ -87,11 +90,28 @@ def api_calculate(payload: CalculateRequest):
         round_up=payload.round_up
     )
     
+    # Apply merges from persistence
+    if payload.merges:
+        for source_id, target_id in payload.merges.items():
+            if source_id in final_nodes and target_id in final_nodes:
+                source_node = final_nodes[source_id]
+                target_node = final_nodes[target_id]
+                target_node.absorb_node(source_node)
+                del final_nodes[source_id]
+        
+        # Recalculate to update following the structural changes
+        # Use provided overrides to preserve manual adjustments
+        recalculate_graph(final_nodes, overrides=payload.overrides, round_up=payload.round_up)
+    elif payload.overrides:
+        # Even if no merges, apply overrides to the fresh graph
+        recalculate_graph(final_nodes, overrides=payload.overrides, round_up=payload.round_up)
+
     # Update GLOBAL_STATE
     GLOBAL_STATE["nodes"] = final_nodes
     GLOBAL_STATE["items"] = payload.items
     GLOBAL_STATE["rates"] = payload.rates
     GLOBAL_STATE["round_up"] = payload.round_up
+    GLOBAL_STATE["merges"] = payload.merges
     
     nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
     return {"nodes": nodes_data}
@@ -131,7 +151,11 @@ def api_merge_nodes(payload: MergeRequest):
     
     # Remove source from global state
     del nodes_map[payload.source_id]
-    
+
+    # Record merge in GLOBAL_STATE for persistence
+    if "merges" not in GLOBAL_STATE: GLOBAL_STATE["merges"] = {}
+    GLOBAL_STATE["merges"][payload.source_id] = payload.target_id
+
     # Recalculate graph to propagate changes
     final_nodes = recalculate_graph(
         nodes_map, 
