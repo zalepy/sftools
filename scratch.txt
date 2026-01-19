@@ -17,4 +17,4 @@ todo fixes:
  - above will need to persist the graph between calls (done (but state is in the context of the main.py file) )
  - remove 2nd return value from calculate_demands (done)
  
- 
+ - fix big demands e.g. AI Expansion Server

@@ -204,6 +204,85 @@
             min-width: 35px;
             text-align: right;
         }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1rem;
+            flex-shrink: 0;
+        }
+
+        .tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-content {
+            display: none;
+            flex-direction: column;
+            gap: 1.5rem;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        .color-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem;
+            background-color: var(--bg-color);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            margin-bottom: 0.5rem;
+        }
+
+        .color-label {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .color-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .color-input {
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            background: none;
+            overflow: hidden;
+        }
+
+        .color-input::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-input::-webkit-color-swatch {
+            border: none;
+        }
     </style>
 </head>
 
@@ -221,80 +300,100 @@
     <div class="main-container">
         <!-- Left Sidebar: Inputs -->
         <div class="sidebar">
-            <section>
-                <h3>Demand Targets</h3>
-                <form id="demand-form" onsubmit="event.preventDefault(); triggerRecalculate();">
-                    <div id="demand-rows">
-                        <div class="demand-row">
-                            <input type="text" name="items" list="items_list" placeholder="Item">
-                            <input type="number" step="any" name="rates" placeholder="Rate">
-                            <button type="button" class="secondary" style="width: auto;"
-                                onclick="removeRow(this)">✕</button>
+            <div class="tabs">
+                <div class="tab active" data-tab="planner">Planner</div>
+                <div class="tab" data-tab="colors">Colors</div>
+            </div>
+
+            <!-- Planner Tab -->
+            <div id="planner-tab" class="tab-content active">
+                <section>
+                    <h3>Demand Targets</h3>
+                    <form id="demand-form" onsubmit="event.preventDefault(); triggerRecalculate();">
+                        <div id="demand-rows">
+                            <div class="demand-row">
+                                <input type="text" name="items" list="items_list" placeholder="Item">
+                                <input type="number" step="any" name="rates" placeholder="Rate">
+                                <button type="button" class="secondary" style="width: auto;"
+                                    onclick="removeRow(this)">✕</button>
+                            </div>
                         </div>
+                        <button type="button" class="secondary" onclick="addRow()" style="margin-bottom: 0.5rem;">+ Add
+                            Item</button>
+                        <button type="submit" style="margin-bottom: 0.5rem;">Calculate</button>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button type="button" class="secondary" onclick="exportToJSON()">Export JSON</button>
+                            <button type="button" class="secondary"
+                                onclick="document.getElementById('import-input').click()">Import JSON</button>
+                            <input type="file" id="import-input" style="display: none;" accept=".json"
+                                onchange="importFromJSON(this)">
+                        </div>
+                    </form>
+
+                    <datalist id="items_list">
+                        {% for item in all_items %}
+                        <option value="{{ item }}">
+                            {% endfor %}
+                    </datalist>
+                </section>
+
+                <!-- Node Details Panel (Appears on Selection) -->
+                <section id="node-details">
+                    <h3>Selected Node</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Item:</span>
+                        <span class="stat-value" id="detail-item">-</span>
                     </div>
-                    <button type="button" class="secondary" onclick="addRow()" style="margin-bottom: 0.5rem;">+ Add
-                        Item</button>
-                    <button type="submit" style="margin-bottom: 0.5rem;">Calculate</button>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button type="button" class="secondary" onclick="exportToJSON()">Export JSON</button>
-                        <button type="button" class="secondary"
-                            onclick="document.getElementById('import-input').click()">Import JSON</button>
-                        <input type="file" id="import-input" style="display: none;" accept=".json"
-                            onchange="importFromJSON(this)">
+                    <div class="stat-row">
+                        <span class="stat-label">Recipe:</span>
+                        <span class="stat-value" id="detail-recipe">-</span>
                     </div>
-                </form>
-
-                <datalist id="items_list">
-                    {% for item in all_items %}
-                    <option value="{{ item }}">
-                        {% endfor %}
-                </datalist>
-            </section>
-
-            <!-- Node Details Panel (Appears on Selection) -->
-            <section id="node-details">
-                <h3>Selected Node</h3>
-                <div class="stat-row">
-                    <span class="stat-label">Item:</span>
-                    <span class="stat-value" id="detail-item">-</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Recipe:</span>
-                    <span class="stat-value" id="detail-recipe">-</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Building:</span>
-                    <span class="stat-value" id="detail-building">-</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Scale:</span>
-                    <span class="stat-value" id="detail-scale">-</span>
-                </div>
-
-                <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; color: var(--text-secondary);">Scaled Rates</h4>
-                <div class="stat-row">
-                    <span class="stat-label">Output Rate:</span>
-                    <span class="stat-value" id="detail-output-rate">-</span>
-                </div>
-                <div id="detail-inputs-container">
-                    <!-- Input rates will be dynamically populated -->
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Power:</span>
-                    <span class="stat-value" id="detail-power">-</span>
-                </div>
-
-                <div class="form-group" style="margin-top: 1rem;">
-                    <label>Override Scale Factor</label>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <input type="number" id="override-scale" step="any" placeholder="Default">
-                        <button class="secondary" style="width: auto;" onclick="clearOverride()">Clear</button>
+                    <div class="stat-row">
+                        <span class="stat-label">Building:</span>
+                        <span class="stat-value" id="detail-building">-</span>
                     </div>
-                    <div class="hint">Number of buildings (can be fractional). Changes cascade to child nodes.</div>
-                </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Scale:</span>
+                        <span class="stat-value" id="detail-scale">-</span>
+                    </div>
 
-                <button onclick="applyOverride()">Apply Override</button>
-            </section>
+                    <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; color: var(--text-secondary);">Scaled Rates</h4>
+                    <div class="stat-row">
+                        <span class="stat-label">Output Rate:</span>
+                        <span class="stat-value" id="detail-output-rate">-</span>
+                    </div>
+                    <div id="detail-inputs-container">
+                        <!-- Input rates will be dynamically populated -->
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Power:</span>
+                        <span class="stat-value" id="detail-power">-</span>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label>Override Scale Factor</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="number" id="override-scale" step="any" placeholder="Default">
+                            <button class="secondary" style="width: auto;" onclick="clearOverride()">Clear</button>
+                        </div>
+                        <div class="hint">Number of buildings (can be fractional). Changes cascade to child nodes.</div>
+                    </div>
+
+                    <button onclick="applyOverride()">Apply Override</button>
+                </section>
+            </div>
+
+            <!-- Colors Tab -->
+            <div id="colors-tab" class="tab-content">
+                <section>
+                    <h3>Node Color Mapping</h3>
+                    <p class="hint" style="margin-bottom: 1rem;">Colors are based on the output item of the node.</p>
+                    <div id="color-list">
+                        <!-- Polulated by JS -->
+                    </div>
+                    <button onclick="saveColors()" style="margin-top: 1rem;">Save Colors</button>
+                </section>
+            </div>
         </div>
 
         <!-- Graph Viewer -->
@@ -324,6 +423,91 @@
         }
 
         let currentOverrides = {};
+        let currentColorMapping = {};
+
+        // --- Tabs ---
+        document.querySelectorAll('.tab').forEach(t => {
+            t.addEventListener('click', () => {
+                const tabId = t.getAttribute('data-tab');
+
+                // Update UI
+                document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+                t.classList.add('active');
+
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+
+                // If switching to planner, refresh graph colors
+                if (tabId === 'planner' && cy.nodes().length > 0) {
+                    refreshNodeColors();
+                }
+            });
+        });
+
+        // --- Color Management ---
+        async function loadColors() {
+            try {
+                const response = await fetch('/api/colors');
+                if (response.ok) {
+                    currentColorMapping = await response.json();
+                    renderColorList();
+                }
+            } catch (e) {
+                console.error("Failed to load colors", e);
+            }
+        }
+
+        function renderColorList() {
+            const container = document.getElementById('color-list');
+            container.innerHTML = '';
+
+            // Sort items by name
+            const items = Object.keys(currentColorMapping).sort();
+
+            items.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'color-item';
+                row.innerHTML = `
+                    <span class="color-label">${item}</span>
+                    <div class="color-input-wrapper">
+                        <input type="color" class="color-input" value="${currentColorMapping[item]}" data-item="${item}">
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        async function saveColors() {
+            const inputs = document.querySelectorAll('.color-input');
+            const newMapping = {};
+            inputs.forEach(input => {
+                newMapping[input.getAttribute('data-item')] = input.value;
+            });
+
+            try {
+                const response = await fetch('/api/colors', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newMapping)
+                });
+                if (response.ok) {
+                    currentColorMapping = newMapping;
+                    alert('Colors saved successfully!');
+                }
+            } catch (e) {
+                console.error("Failed to save colors", e);
+            }
+        }
+
+        function refreshNodeColors() {
+            cy.nodes().forEach(node => {
+                const data = node.data('raw');
+                const color = currentColorMapping[data.output_item] || '#334155';
+                node.style('background-color', color);
+            });
+        }
 
         let cy = cytoscape({
             container: document.getElementById('cy'),
@@ -410,6 +594,7 @@
 
         // --- Load state on start ---
         window.addEventListener('DOMContentLoaded', () => {
+            loadColors();
             loadState();
         });
 
@@ -619,6 +804,9 @@
                         id: node.id,
                         label: label,
                         raw: node
+                    },
+                    style: {
+                        'background-color': currentColorMapping[node.output_item] || '#334155'
                     },
                     classes: currentOverrides[node.id] ? 'overridden' : ''
                 });

@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import json
+import os
 
 from sftools_service.domain.models.demand import Demand
 from sftools_service.domain.enums.demand_type import DemandType
@@ -105,3 +106,18 @@ def api_recalculate(payload: RecalculateRequest):
     
     nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
     return {"nodes": nodes_data}
+
+COLORS_FILE = os.path.join(DATA_PATH, 'node_colors.json')
+
+@app.get("/api/colors")
+def get_colors():
+    if os.path.exists(COLORS_FILE):
+        with open(COLORS_FILE, 'r') as f:
+            return json.load(f)
+    return {}
+
+@app.post("/api/colors")
+def save_colors(colors: Dict[str, str] = Body(...)):
+    with open(COLORS_FILE, 'w') as f:
+        json.dump(colors, f, indent=2)
+    return {"status": "success"}
