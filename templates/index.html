@@ -369,7 +369,7 @@
                         <span class="stat-value" id="detail-output-rate">-</span>
                     </div>
 
-                    <div id="selected-node-details" class="card" style="display: none; height: fit-content;">
+                    <div id="detail-inputs-container" style="display: none; margin-bottom: 1rem;">
                         <!-- Input rates will be dynamically populated -->
                     </div>
                     <div class="stat-row">
@@ -909,6 +909,7 @@
             const inputsContainer = document.getElementById('detail-inputs-container');
             inputsContainer.innerHTML = '';
             if (data.scaled_inputs && data.scaled_inputs.length > 0) {
+                inputsContainer.style.display = 'block';
                 data.scaled_inputs.forEach(input => {
                     const row = document.createElement('div');
                     row.className = 'stat-row';
@@ -918,6 +919,8 @@
                     `;
                     inputsContainer.appendChild(row);
                 });
+            } else {
+                inputsContainer.style.display = 'none';
             }
 
             // Override Input - show current scale or override value
@@ -928,7 +931,7 @@
         });
 
         // --- Drag and Drop Merging ---
-        cy.on('dragfree', 'node', async function (evt) {
+        cy.on('dragfree', 'node', function (evt) {
             const dragNode = evt.target;
             const dragPos = dragNode.position();
             const dragData = dragNode.data('raw');
@@ -946,47 +949,48 @@
                 const targetData = targetNode.data('raw');
 
                 if (dragData.output_item === targetData.output_item) {
-                    // Same item, trigger merge
-                    if (confirm(`Merge "${dragData.output_item}" production nodes?`)) {
-                        try {
-                            const response = await fetch('/api/merge_nodes', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    source_id: dragNode.id(),
-                                    target_id: targetNode.id()
-                                })
-                            });
+                    // Delay block to allow Cytoscape to finish drag processing (unsticking)
+                    setTimeout(async () => {
+                        if (confirm(`Merge "${dragData.output_item}" production nodes?`)) {
+                            try {
+                                const response = await fetch('/api/merge_nodes', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        source_id: dragNode.id(),
+                                        target_id: targetNode.id()
+                                    })
+                                });
 
-                            if (response.ok) {
-                                const data = await response.json();
+                                if (response.ok) {
+                                    const data = await response.json();
 
-                                // Update frontend merges mapping
-                                const sourceId = dragNode.id();
-                                const targetId = targetNode.id();
+                                    // Update frontend merges mapping
+                                    const sourceId = dragNode.id();
+                                    const targetId = targetNode.id();
 
-                                // Flattening: if anything previously pointed to source, now point to target
-                                for (let id in currentMerges) {
-                                    if (currentMerges[id] === sourceId) {
-                                        currentMerges[id] = targetId;
+                                    // Flattening
+                                    for (let id in currentMerges) {
+                                        if (currentMerges[id] === sourceId) {
+                                            currentMerges[id] = targetId;
+                                        }
                                     }
-                                }
-                                currentMerges[sourceId] = targetId;
+                                    currentMerges[sourceId] = targetId;
 
-                                // Clean up overrides if source was overridden
-                                if (currentOverrides[sourceId]) {
-                                    delete currentOverrides[sourceId];
+                                    if (currentOverrides[sourceId]) {
+                                        delete currentOverrides[sourceId];
+                                    }
+                                    renderGraph(data.nodes);
+                                    saveState();
+                                } else {
+                                    const err = await response.json();
+                                    alert(`Merge failed: ${err.error}`);
                                 }
-                                renderGraph(data.nodes);
-                                saveState();
-                            } else {
-                                const err = await response.json();
-                                alert(`Merge failed: ${err.error}`);
+                            } catch (e) {
+                                console.error("Merge failed", e);
                             }
-                        } catch (e) {
-                            console.error("Merge failed", e);
                         }
-                    }
+                    }, 50);
                 }
             }
         });
