@@ -19,7 +19,7 @@ def test_scaling_does_not_inflate_sub_demands(data):
     root_demands = [Demand('Concrete', concrete_item, rate, DemandType.PRODUCE)]
     
     # calculate_demands with round_up=True
-    final_nodes, _ = calculate_demands(items, root_demands, round_up=True)
+    final_nodes = calculate_demands(items, root_demands, round_up=True)
     
     # 20 required, recipe produces 15 per min.
     # 20 / 15 = 1.33... -> ceiling(1.33) = 2 buildings.

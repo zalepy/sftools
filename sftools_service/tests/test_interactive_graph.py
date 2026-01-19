@@ -11,7 +11,7 @@ def test_graph_structure_and_ids(data_models):
     root_item = items['Smart Plating']
     root_demand = Demand('Smart Plating', root_item, 2.0, DemandType.PRODUCE)
     
-    nodes, _ = calculate_demands(items, [root_demand], round_up=True)
+    nodes = calculate_demands(items, [root_demand], round_up=True)
     
     # Check we have nodes
     assert len(nodes) > 0
@@ -43,7 +43,7 @@ def test_overrides(data_models):
     root_demand = Demand('Smart Plating', root_item, 2.0, DemandType.PRODUCE)
     
     # 1. Initial Calculation to get IDs
-    nodes, _ = calculate_demands(items, [root_demand], round_up=False)
+    nodes = calculate_demands(items, [root_demand], round_up=False)
     
     rotor_node = next(n for n in nodes.values() if n.output_item_name == 'Rotor')
     original_rate = rotor_node.scaled_output
@@ -91,11 +91,11 @@ def test_rounding_toggle(data_models):
     root = Demand('Smart Plating', items['Smart Plating'], 0.1, DemandType.PRODUCE)
     
     # With Rounding
-    nodes_up, _ = calculate_demands(items, [root], round_up=True)
+    nodes_up = calculate_demands(items, [root], round_up=True)
     sp_node_up = next(n for n in nodes_up.values() if n.output_item_name == 'Smart Plating')
     assert sp_node_up.building_scale == 1.0 # Ceil(0.1 / 2.5) -> Ceil(0.04) -> 1
     
     # Without Rounding
-    nodes_float, _ = calculate_demands(items, [root], round_up=False)
+    nodes_float = calculate_demands(items, [root], round_up=False)
     sp_node_float = next(n for n in nodes_float.values() if n.output_item_name == 'Smart Plating')
     assert sp_node_float.building_scale < 1.0

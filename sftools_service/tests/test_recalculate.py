@@ -16,7 +16,7 @@ def test_basic_recalculation(project_data):
     root_demand = Demand('Smart Plating', root_item, 2.0, DemandType.PRODUCE)
     
     # 1. Base Calculation
-    nodes, _ = calculate_demands(items_map, [root_demand], round_up=False)
+    nodes = calculate_demands(items_map, [root_demand], round_up=False)
     
     # Find root node ID
     root_node_id = next(nid for nid, n in nodes.items() if n.output_item_name == 'Smart Plating')
@@ -56,7 +56,7 @@ def test_complex_propagation(project_data):
     root_item = items_map['Modular Frame']
     root_demand = Demand('Modular Frame', root_item, 2.0, DemandType.PRODUCE)
     
-    nodes, _ = calculate_demands(items_map, [root_demand], round_up=False)
+    nodes = calculate_demands(items_map, [root_demand], round_up=False)
     
     root_node_id = next(nid for nid, n in nodes.items() if n.output_item_name == 'Modular Frame')
     root_node = nodes[root_node_id]
@@ -83,7 +83,7 @@ def test_clearing_overrides(project_data):
     root_item = items_map['Smart Plating']
     root_demand = Demand('Smart Plating', root_item, 2.0, DemandType.PRODUCE)
     
-    nodes, _ = calculate_demands(items_map, [root_demand], round_up=False)
+    nodes = calculate_demands(items_map, [root_demand], round_up=False)
     root_node_id = next(nid for nid, n in nodes.items() if n.output_item_name == 'Smart Plating')
     
     # Apply override
