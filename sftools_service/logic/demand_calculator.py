@@ -210,9 +210,9 @@ def load_models(path: str):
     return items, recipes, buildings
 
 
-def calculate_demands(items_map, root_demands_list: List[Demand], overrides: Dict[str, float] = None, round_up: bool = True) -> Tuple[Dict[str, ProductionNode], List[Demand]]:
-    if overrides is None:
-        overrides = {}
+def calculate_demands(items_map, root_demands_list: List[Demand], scale_overrides: Dict[str, float] = None, round_up: bool = True) -> Tuple[Dict[str, ProductionNode], List[Demand]]:
+    if scale_overrides is None:
+        scale_overrides = {}
 
     all_nodes: Dict[str, ProductionNode] = {}
     
@@ -250,20 +250,15 @@ def calculate_demands(items_map, root_demands_list: List[Demand], overrides: Dic
         # Let's use: parent_path__RecipeName
         node_id = f"{parent_path}__{recipe.name}"
         
-        # Determine Target Rate
-        # Check for Overrides
+        # Calculate Base Scaler from demand rate
         target_rate = current_demand.rate
-        
-        # NOTE: If we use the simple ID logic, uniqueness is guaranteed by path.
-        if node_id in overrides:
-            # If overridden, we use the override rate. 
-            # Note: This might create surplus if override > demand, or shortage if < demand.
-            # But the requirement is "user decides they want some extra... so they adjust computed demand"
-            target_rate = overrides[node_id]
-
-        # Calculate Scaler
         base_scaler = target_rate / recipe.output_rate
-        if round_up:
+        
+        # Apply rounding (only for initial generation when no override exists)
+        if node_id in scale_overrides:
+            # Use the scale override directly - this is the building multiplier
+            scaler = scale_overrides[node_id]
+        elif round_up:
             # Round up to next integer for buildings
             scaler = math.ceil(base_scaler - 0.00001) # epsilon for float precision
             if scaler == 0 and base_scaler > 0: scaler = 1 # Safety

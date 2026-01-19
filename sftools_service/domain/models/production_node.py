@@ -1,15 +1,38 @@
+from typing import List, Dict
 from sftools_service.domain.models.building import Building
 
 
 class ProductionNode:
-    def __init__(self, node_id: str, node_name: str, building: Building, building_scale: float, scaled_output: float, output_item_name: str, scaled_power: float):
+    """
+    Represents a production node in the factory graph.
+    
+    Stores base recipe rates and computes scaled values internally based on building_scale.
+    The building_scale represents the number of buildings (can be fractional) operating this recipe.
+    """
+    
+    def __init__(
+        self, 
+        node_id: str, 
+        node_name: str, 
+        building: Building, 
+        building_scale: float,
+        output_item_name: str,
+        base_output_rate: float,
+        base_power: float,
+        base_inputs: List[Dict] = None
+    ):
         self._id = node_id
         self._node_name = node_name
         self._building = building
         self._building_scale = building_scale
-        self._scaled_output = scaled_output
         self._output_item_name = output_item_name
-        self._scaled_power = scaled_power
+        
+        # Base rates (per 1x building/recipe)
+        self._base_output_rate = base_output_rate
+        self._base_power = base_power
+        self._base_inputs = base_inputs or []  # List of {"item": str, "rate": float}
+        
+        # Graph relationships
         self._parents = set()
         self._children = set()
 
@@ -30,16 +53,44 @@ class ProductionNode:
         return self._building_scale
 
     @property
-    def scaled_output(self):
-        return self._scaled_output
-
-    @property
     def output_item_name(self):
         return self._output_item_name
 
+    # --- Computed Scaled Properties ---
+    
+    @property
+    def scaled_output(self):
+        """Scaled output rate based on building_scale."""
+        return self._base_output_rate * self._building_scale
+
     @property
     def scaled_power(self):
-        return self._scaled_power
+        """Scaled power consumption/generation based on building_scale."""
+        return self._base_power * self._building_scale
+
+    @property
+    def scaled_inputs(self):
+        """List of scaled input rates based on building_scale."""
+        return [
+            {"item": inp["item"], "rate": inp["rate"] * self._building_scale}
+            for inp in self._base_inputs
+        ]
+
+    # --- Base Rate Accessors (for reference) ---
+    
+    @property
+    def base_output_rate(self):
+        return self._base_output_rate
+    
+    @property
+    def base_power(self):
+        return self._base_power
+    
+    @property
+    def base_inputs(self):
+        return self._base_inputs
+
+    # --- Graph Relationships ---
 
     @property
     def parents(self):
@@ -55,6 +106,17 @@ class ProductionNode:
     def add_child(self, node: 'ProductionNode'):
         self._children.add(node)
 
+    # --- Scale Adjustment ---
+    
+    def update_building_scale(self, new_scale: float):
+        """
+        Update the building scale. All scaled properties (output, power, inputs) 
+        are automatically recomputed since they are derived properties.
+        """
+        self._building_scale = new_scale
+
+    # --- Operators ---
+
     def __add__(self, other: 'ProductionNode'):
         if self._node_name != other._node_name:
             raise TypeError('Cannot add ProductionNodes with different names')
@@ -62,10 +124,13 @@ class ProductionNode:
             raise TypeError('Cannot add ProductionNodes with different buildings')
 
         self._building_scale += other._building_scale
-        self._scaled_power += other._scaled_power
         self._parents.update(other._parents)
         self._children.update(other._children)
         return self
 
     def __repr__(self):
-        return self.name + ': {:6.2f}'.format(self._building_scale) + 'x' + self._building.name + ' -> {:6.2f}'.format(self._scaled_output) + ' of ' + self._output_item_name + ' at ' + '{:6.2f}'.format(self._scaled_power) + 'MW'
+        return (
+            f"{self.name}: {self._building_scale:6.2f}x {self._building.name} "
+            f"-> {self.scaled_output:6.2f} of {self._output_item_name} "
+            f"at {self.scaled_power:6.2f}MW"
+        )

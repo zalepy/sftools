@@ -177,7 +177,7 @@
             <h1>Satisfactory Planner</h1>
         </div>
         <div class="toggle-switch">
-            <input type="checkbox" id="round-up-toggle" checked onchange="triggerRecalculate()">
+            <input type="checkbox" id="round-up-toggle" checked>
             <label for="round-up-toggle" style="margin:0; cursor:pointer;">Round Up Buildings</label>
         </div>
     </header>
@@ -239,18 +239,27 @@
                     <span class="stat-label">Scale:</span>
                     <span class="stat-value" id="detail-scale">-</span>
                 </div>
+
+                <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; color: var(--text-secondary);">Scaled Rates</h4>
+                <div class="stat-row">
+                    <span class="stat-label">Output Rate:</span>
+                    <span class="stat-value" id="detail-output-rate">-</span>
+                </div>
+                <div id="detail-inputs-container">
+                    <!-- Input rates will be dynamically populated -->
+                </div>
                 <div class="stat-row">
                     <span class="stat-label">Power:</span>
                     <span class="stat-value" id="detail-power">-</span>
                 </div>
 
                 <div class="form-group" style="margin-top: 1rem;">
-                    <label>Override Output Rate</label>
+                    <label>Override Scale Factor</label>
                     <div style="display: flex; gap: 0.5rem;">
-                        <input type="number" id="override-rate" step="any" placeholder="Default">
+                        <input type="number" id="override-scale" step="any" placeholder="Default">
                         <button class="secondary" style="width: auto;" onclick="clearOverride()">Clear</button>
                     </div>
-                    <div class="hint">Adjusting this will scale this node and its inputs.</div>
+                    <div class="hint">Number of buildings (can be fractional). Changes cascade to child nodes.</div>
                 </div>
 
                 <button onclick="applyOverride()">Apply Override</button>
@@ -390,7 +399,7 @@
             const payload = {
                 items: items,
                 rates: rates,
-                overrides: currentOverrides,
+                scale_overrides: currentOverrides,
                 round_up: roundUp
             };
 
@@ -476,18 +485,36 @@
             document.getElementById('detail-recipe').innerText = data.name.split('__').pop(); // Simple hack for name
             document.getElementById('detail-building').innerText = data.building;
             document.getElementById('detail-scale').innerText = parseFloat(data.building_scale).toFixed(2) + 'x';
-            document.getElementById('detail-power').innerText = data.power + ' MW';
 
-            // Override Input
+            // Scaled Rates
+            document.getElementById('detail-output-rate').innerText = parseFloat(data.throughput).toFixed(2) + '/min';
+            document.getElementById('detail-power').innerText = parseFloat(data.power).toFixed(2) + ' MW';
+
+            // Populate scaled inputs
+            const inputsContainer = document.getElementById('detail-inputs-container');
+            inputsContainer.innerHTML = '';
+            if (data.scaled_inputs && data.scaled_inputs.length > 0) {
+                data.scaled_inputs.forEach(input => {
+                    const row = document.createElement('div');
+                    row.className = 'stat-row';
+                    row.innerHTML = `
+                        <span class="stat-label">Input (${input.item}):</span>
+                        <span class="stat-value">${parseFloat(input.rate).toFixed(2)}/min</span>
+                    `;
+                    inputsContainer.appendChild(row);
+                });
+            }
+
+            // Override Input - show current scale or override value
             const currentVal = currentOverrides[selectedNodeId];
-            document.getElementById('override-rate').value = currentVal ? currentVal : '';
+            document.getElementById('override-scale').value = currentVal ? currentVal : parseFloat(data.building_scale).toFixed(4);
 
             document.getElementById('node-details').style.display = 'block';
         });
 
         function applyOverride() {
             if (!selectedNodeId) return;
-            const val = parseFloat(document.getElementById('override-rate').value);
+            const val = parseFloat(document.getElementById('override-scale').value);
 
             if (!isNaN(val) && val > 0) {
                 currentOverrides[selectedNodeId] = val;
@@ -499,7 +526,7 @@
         }
 
         function clearOverride() {
-            document.getElementById('override-rate').value = '';
+            document.getElementById('override-scale').value = '';
             if (selectedNodeId) delete currentOverrides[selectedNodeId];
             triggerRecalculate();
         }

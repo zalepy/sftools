@@ -22,10 +22,15 @@ print(f"Data loaded: {len(items_map)} items, {len(recipes_map)} recipes.")
 class ComparisonRequest(BaseModel):
     items: List[str]
     rates: List[float]
-    overrides: Optional[Dict[str, float]] = {}
+    scale_overrides: Optional[Dict[str, float]] = {}
     round_up: bool = True
 
 def _serialize_node(node):
+    # Build scaled input rates from the node's recipe data
+    scaled_inputs = []
+    if hasattr(node, 'scaled_inputs') and node.scaled_inputs:
+        scaled_inputs = node.scaled_inputs
+    
     return {
         "id": node.id,
         "name": node.name,
@@ -35,7 +40,8 @@ def _serialize_node(node):
         "power": node.scaled_power,
         "output_item": node.output_item_name,
         "parents": [p.id for p in node.parents],
-        "children": [c.id for c in node.children]
+        "children": [c.id for c in node.children],
+        "scaled_inputs": scaled_inputs
     }
 
 @app.get("/")
@@ -105,7 +111,12 @@ def api_calculate(payload: ComparisonRequest):
         if item:
              root_demands.append(Demand(item_name, item, rate, DemandType.PRODUCE))
     
-    final_nodes, _ = calculate_demands(items_map, root_demands, overrides=payload.overrides, round_up=payload.round_up)
+    final_nodes, _ = calculate_demands(
+        items_map, 
+        root_demands, 
+        scale_overrides=payload.scale_overrides, 
+        round_up=payload.round_up
+    )
     
     nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
     
