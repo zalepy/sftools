@@ -28,10 +28,11 @@ Notes on calculation:
 To start web server execute:
 `waitress-serve --port=8000 "sftools_service.main:app"`
 
-Plans are:
-* once full graph of the "round-up" demand is available, show it in a web page (Done)
-* allow tweaks via web interface to adjust _production nodes_ e.g. by using power shards to overclock a building
-* allow representation of lines, and consideration of splitting limitations
+Plans and Features:
+* **Graph Visualization**: High-performance SVG/Cytoscape chart representation of the production chain. (Done)
+* **Interactive Adjustments**: Users can override the scale (number of buildings) for any node in the graph. These changes automatically propagate through the dependency chain. (Done)
+* **Recalculation Mode**: Unlike the initial construction which uses a BFS expansion, the "recalculate" mode operates on the preexisting graph, preserving topological links while adjusting throughput. (Done)
+* **Lines and Logistics**: Future plans include representing physical lines and considering splitting/merging limitations.
 
 
 ## Web Interface

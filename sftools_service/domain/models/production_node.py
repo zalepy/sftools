@@ -24,7 +24,8 @@ class ProductionNode:
         self._id = node_id
         self._node_name = node_name
         self._building = building
-        self._building_scale = building_scale
+        self._original_building_scale = building_scale
+        self._user_scale = None
         self._output_item_name = output_item_name
         
         # Base rates (per 1x building/recipe)
@@ -50,7 +51,23 @@ class ProductionNode:
 
     @property
     def building_scale(self):
-        return self._building_scale
+        return self._user_scale if self._user_scale is not None else self._original_building_scale
+
+    @property
+    def original_building_scale(self):
+        return self._original_building_scale
+
+    @original_building_scale.setter
+    def original_building_scale(self, value: float):
+        self._original_building_scale = value
+
+    @property
+    def user_scale(self):
+        return self._user_scale
+
+    @user_scale.setter
+    def user_scale(self, value: float):
+        self._user_scale = value
 
     @property
     def output_item_name(self):
@@ -61,18 +78,18 @@ class ProductionNode:
     @property
     def scaled_output(self):
         """Scaled output rate based on building_scale."""
-        return self._base_output_rate * self._building_scale
+        return self._base_output_rate * self.building_scale
 
     @property
     def scaled_power(self):
         """Scaled power consumption/generation based on building_scale."""
-        return self._base_power * self._building_scale
+        return self._base_power * self.building_scale
 
     @property
     def scaled_inputs(self):
         """List of scaled input rates based on building_scale."""
         return [
-            {"item": inp["item"], "rate": inp["rate"] * self._building_scale}
+            {"item": inp["item"], "rate": inp["rate"] * self.building_scale}
             for inp in self._base_inputs
         ]
 
@@ -113,7 +130,10 @@ class ProductionNode:
         Update the building scale. All scaled properties (output, power, inputs) 
         are automatically recomputed since they are derived properties.
         """
-        self._building_scale = new_scale
+        self._original_building_scale = new_scale
+
+    def clear_user_scale(self):
+        self._user_scale = None
 
     # --- Operators ---
 
@@ -123,14 +143,17 @@ class ProductionNode:
         if self._building != other._building:
             raise TypeError('Cannot add ProductionNodes with different buildings')
 
-        self._building_scale += other._building_scale
+        self._original_building_scale += other._original_building_scale
+        # If adding nodes, user scale reset? or sum? 
+        # Usually adding happens during initial construction.
+        # Let's just sum original.
         self._parents.update(other._parents)
         self._children.update(other._children)
         return self
 
     def __repr__(self):
         return (
-            f"{self.name}: {self._building_scale:6.2f}x {self._building.name} "
+            f"{self.name}: {self.building_scale:6.2f}x {self._building.name} "
             f"-> {self.scaled_output:6.2f} of {self._output_item_name} "
             f"at {self.scaled_power:6.2f}MW"
         )

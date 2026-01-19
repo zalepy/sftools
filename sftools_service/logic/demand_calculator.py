@@ -293,6 +293,60 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
     
     return all_nodes, []
 
+
+def recalculate_graph(nodes_map: Dict[str, ProductionNode], overrides: Dict[str, float]):
+    """
+    Recalculates the scales of preexisting nodes based on user overrides and parent requirements.
+    Propagation flows from consumers (parents) to producers (children).
+    """
+    # 1. Apply overrides
+    for node_id, node in nodes_map.items():
+        if node_id in overrides:
+            node.user_scale = overrides[node_id]
+        else:
+            node.user_scale = None  # Clear if not in current overrides
+
+    # 2. Top-down propagation
+    # Initialize in-degrees (number of parents to wait for)
+    in_degree = {node_id: 0 for node_id in nodes_map}
+    for node_id, node in nodes_map.items():
+        for child in node.children:
+            if child.id in in_degree:
+                in_degree[child.id] += 1
+    
+    # Start with nodes that have no parents in this graph (roots)
+    queue = [nodes_map[node_id] for node_id, degree in in_degree.items() if degree == 0]
+    processed_count = 0
+
+    while queue:
+        current = queue.pop(0)
+        processed_count += 1
+        
+        # Current node's scale is final. Update its children's needs.
+        for child in current.children:
+            if child.id not in nodes_map:
+                continue
+            
+            # Re-sum required rates for child from all its parents
+            sum_required_rate = 0.0
+            for parent in child.parents:
+                if parent.id not in nodes_map:
+                    continue
+                # Use parent's effective scale (which is final now) to get its needs
+                for inp in parent.scaled_inputs:
+                    if inp["item"] == child.output_item_name:
+                        sum_required_rate += inp["rate"]
+            
+            if child.base_output_rate > 0:
+                child.original_building_scale = sum_required_rate / child.base_output_rate
+            
+            # Decrement in-degree and add to queue if 0
+            in_degree[child.id] -= 1
+            if in_degree[child.id] == 0:
+                queue.append(child)
+
+    return nodes_map
+
 # Keep main for simple testing if needed
 def main():
     data = load_models(DATA_PATH)

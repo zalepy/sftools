@@ -36,6 +36,8 @@ def _serialize_node(node):
         "name": node.name,
         "building": node.building.name,
         "building_scale": node.building_scale,
+        "original_building_scale": node.original_building_scale,
+        "user_scale": node.user_scale,
         "throughput": node.scaled_output,
         "power": node.scaled_power,
         "output_item": node.output_item_name,
@@ -111,12 +113,16 @@ def api_calculate(payload: ComparisonRequest):
         if item:
              root_demands.append(Demand(item_name, item, rate, DemandType.PRODUCE))
     
-    final_nodes, _ = calculate_demands(
+    # Step 1: Base calculation to build graph and initial scales
+    base_nodes, _ = calculate_demands(
         items_map, 
         root_demands, 
-        scale_overrides=payload.scale_overrides, 
+        scale_overrides={}, # Start from fresh scales
         round_up=payload.round_up
     )
+    
+    # Step 2: Recalculate based on overrides, propagating changes
+    final_nodes = recalculate_graph(base_nodes, payload.scale_overrides)
     
     nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
     

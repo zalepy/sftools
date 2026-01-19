@@ -43,5 +43,26 @@ Rates are calculated linearly based on the scaler.
 
 ### Power Calculation
 Power consumption is derived from the building type associated with the chosen recipe.
-- **Power Usage**: `Building Base Power * Number of Buildings (Scaler)`.
+- **Power Usage**: `Building Base Power * Number of Buildings (Effective Scaler)`.
 - *Note: Some buildings may have variable power definitions (like particle accelerators), which are handled during the building load phase.*
+
+## Interactive Recalculation
+
+Once the graph is constructed, the user can apply overrides to specific nodes via the UI.
+
+### 1. Scale Properties
+`ProductionNode` maintains two scale properties:
+- **`original_building_scale`**: The computed requirement based on its parents' throughput.
+- **`user_scale`**: An optional override set by the user. If `None`, the computation falls back to `original_building_scale`.
+- **`building_scale` (Effective)**: `user_scale ?? original_building_scale`.
+
+### 2. Propagation Algorithm
+The `recalculate_graph` method propagates changes top-down (from consumers to producers) using a **Topological Sort** (Kahn's Algorithm):
+
+1.  **Initialize In-Degrees**: Count how many parent nodes each node has.
+2.  **Queue Roots**: Add nodes with zero in-degree (direct demands/graph roots) to the processing queue.
+3.  **Process and Propagate**:
+    *   For each node in the queue, its effective `building_scale` determines its current `scaled_inputs`.
+    *   For each child of the current node, update its `original_building_scale` by summing the input requirements from **all** its parents.
+    *   Decrement the in-degree of the children. If a child's in-degree reaches zero, add it to the queue.
+4.  **Result**: The entire graph's throughput and power stats are updated to reflect the overrides while maintaining the architectural integrity of the production chain.

@@ -11,6 +11,9 @@ class TestProductionNodeGraph:
         node = ProductionNode("id1", "TestNode", building_mock, 1.0, "Item", 10.0, 5.0)
         assert len(node.parents) == 0
         assert len(node.children) == 0
+        assert node.original_building_scale == 1.0
+        assert node.user_scale is None
+        assert node.building_scale == 1.0
 
     def test_add_parent_and_child(self):
         building_mock = MagicMock(spec=Building)
@@ -45,6 +48,7 @@ class TestProductionNodeGraph:
         result = node_a1 + node_a2
 
         assert result is node_a1
+        assert result.original_building_scale == 3.0
         assert result.building_scale == 3.0
         
         # Check Children merged

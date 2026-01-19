@@ -50,28 +50,28 @@ def test_overrides(data_models):
     # Standard: 2 Smart Plating needs 2 Rotors.
     assert abs(original_rate - 2.0) < 0.001
     
-    # 2. Apply Override
-    # Override Rotor to 10.0
-    override_map = {rotor_node.id: 10.0}
+    # 2. Apply Override using the NEW logic
+    from sftools_service.logic.demand_calculator import recalculate_graph
     
-    new_nodes, _ = calculate_demands(items, [root_demand], overrides=override_map, round_up=False)
+    # Recalculate based on overrides, propagating changes
+    new_nodes = recalculate_graph(nodes, {rotor_node.id: 10.0})
     
     new_rotor_node = new_nodes[rotor_node.id]
-    assert abs(new_rotor_node.scaled_output - 10.0) < 0.001
+    # user_scale should be 10.0
+    assert new_rotor_node.user_scale == 10.0
+    assert abs(new_rotor_node.building_scale - 10.0) < 0.001
     
     # Check downstream (ingredients of Rotor)
     # Rotor needs Iron Rod and Screw.
-    # 10 Rotors -> More Screws.
-    # 2 Rotors -> 26 Screws (Standard: 4 Rotors = 52 Screws -> 1 Rotor = 13 Screws)
-    # 2 Rotors = 26 Screws. 10 Rotors = 130 Screws.
+    # Implementation might have "Screw" or "Screws"
+    screw_nodes = [c for c in new_rotor_node.children if "Screw" in c.output_item_name]
+    assert len(screw_nodes) > 0
+    screw_node = screw_nodes[0]
     
-    try:
-        screw_node = next(c for c in new_rotor_node.children if c.output_item_name == 'Screws')
-    except StopIteration:
-        print(f"DEBUG: Rotor ID: {new_rotor_node.id}")
-        print(f"DEBUG: Children of Rotor: {[c.output_item_name for c in new_rotor_node.children]}")
-        raise
-    assert screw_node.scaled_output > 30.0 # Should be around 130
+    # Verify propagation - original_building_scale should have increased
+    # Default: 2 Rotors needed. Now 10 Rotors (user_scale).
+    # Child's original_building_scale should have scaled up by 5x (from 2 to 10)
+    assert screw_node.original_building_scale > 1.0 
     
     # Check NON-impacted nodes
     # Reinforced Iron Plate also uses Screws. check that they are NOT scaled up if they are separate nodes.

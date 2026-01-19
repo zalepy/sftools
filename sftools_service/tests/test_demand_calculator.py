@@ -55,8 +55,9 @@ def test_calculate_demands_with_overrides(data):
     initial_nodes, _ = calculate_demands(items, root_demands, round_up=True)
     smart_plating_node_id = next(nid for nid, node in initial_nodes.items() if node.name == 'Smart Plating')
     
-    # Apply override
-    overrides = {smart_plating_node_id: 5.0}
-    final_nodes, _ = calculate_demands(items, root_demands, scale_overrides=overrides)
+    # Apply override via recalculate_graph
+    from sftools_service.logic.demand_calculator import recalculate_graph
+    final_nodes = recalculate_graph(initial_nodes, {smart_plating_node_id: 5.0})
     
+    assert final_nodes[smart_plating_node_id].user_scale == 5.0
     assert final_nodes[smart_plating_node_id].building_scale == 5.0
