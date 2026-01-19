@@ -7,6 +7,7 @@ ideas/plans
 - refine selected node details
 - add text on the edges to show the transport rate
 - couple of node colors are too bright so they can use dark text
+- option for folding the side panel to allow more space for the graph
 - 
 
 todo fixes:

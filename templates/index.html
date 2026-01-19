@@ -291,6 +291,45 @@
             --status-excessive: #3b82f6;
             --status-shortage: #ef4444;
         }
+
+        /* Collapsible Sections */
+        details {
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        summary {
+            padding: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: "▼";
+            font-size: 0.7rem;
+            transition: transform 0.2s;
+        }
+
+        details[open] summary::after {
+            transform: rotate(180deg);
+        }
+
+        .details-content {
+            padding: 0.5rem;
+            border-top: 1px solid var(--border);
+        }
     </style>
 </head>
 
@@ -353,36 +392,86 @@
                 <!-- Node Details Panel (Appears on Selection) -->
                 <section id="node-details">
                     <h3>Selected Node</h3>
+
                     <div class="stat-row">
                         <span class="stat-label">Item:</span>
                         <span class="stat-value" id="detail-item">-</span>
                     </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Recipe:</span>
-                        <span class="stat-value" id="detail-recipe">-</span>
-                    </div>
+
                     <div class="stat-row">
                         <span class="stat-label">Building:</span>
                         <span class="stat-value" id="detail-building">-</span>
                     </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Scale:</span>
-                        <span class="stat-value" id="detail-scale">-</span>
+
+                    <details id="details-recipe-collapsible">
+                        <summary>Recipe Details</summary>
+                        <div class="details-content">
+                            <div class="stat-row">
+                                <span class="stat-label">Recipe:</span>
+                                <span class="stat-value" id="detail-recipe">-</span>
+                            </div>
+                            <div id="base-recipe-details"
+                                style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                                <!-- Base rates at 100% -->
+                            </div>
+                        </div>
+                    </details>
+
+                    <div id="performance-stats"
+                        style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.5rem;">
+                        <h4 style="margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">Performance
+                            & Stats</h4>
+                        <div class="stat-row">
+                            <span class="stat-label">Current Scale:</span>
+                            <span class="stat-value" id="detail-scale">-</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Output Rate:</span>
+                            <span class="stat-value" id="detail-output-rate">-</span>
+                        </div>
+                        <div id="detail-surplus-row" class="stat-row">
+                            <span class="stat-label" id="detail-surplus-label">Surplus/Shortage:</span>
+                            <span class="stat-value" id="detail-surplus-value">-</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Equilibrium Clock Speed:</span>
+                            <span class="stat-value" id="detail-clock">-</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Power:</span>
+                            <span class="stat-value" id="detail-power">-</span>
+                        </div>
                     </div>
 
-                    <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; color: var(--text-secondary);">Scaled Rates</h4>
-                    <div class="stat-row">
-                        <span class="stat-label">Output Rate:</span>
-                        <span class="stat-value" id="detail-output-rate">-</span>
-                    </div>
-
+                    <h4
+                        style="margin-top: 1rem; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                        Scaled Inputs</h4>
                     <div id="detail-inputs-container" style="display: none; margin-bottom: 1rem;">
                         <!-- Input rates will be dynamically populated -->
                     </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Power:</span>
-                        <span class="stat-value" id="detail-power">-</span>
-                    </div>
+
+                    <details id="details-tech-collapsible">
+                        <summary>Technical Info</summary>
+                        <div class="details-content">
+                            <div class="stat-row">
+                                <span class="stat-label">Node ID:</span>
+                                <span class="stat-value" style="font-family: monospace; font-size: 0.75rem;"
+                                    id="detail-id">-</span>
+                            </div>
+                            <div class="stat-row" style="flex-direction: column; align-items: flex-start;">
+                                <span class="stat-label">Parents:</span>
+                                <span class="stat-value"
+                                    style="font-family: monospace; font-size: 0.7rem; word-break: break-all;"
+                                    id="detail-parents">-</span>
+                            </div>
+                            <div class="stat-row" style="flex-direction: column; align-items: flex-start;">
+                                <span class="stat-label">Children:</span>
+                                <span class="stat-value"
+                                    style="font-family: monospace; font-size: 0.7rem; word-break: break-all;"
+                                    id="detail-children">-</span>
+                            </div>
+                        </div>
+                    </details>
 
                     <div class="form-group" style="margin-top: 1rem;">
                         <label>Override Scale Factor</label>
@@ -922,15 +1011,56 @@
             const data = node.data('raw');
             selectedNodeId = node.id();
 
-            // Populate Details
+            // Populate Basic Details
             document.getElementById('detail-item').innerText = data.output_item;
-            document.getElementById('detail-recipe').innerText = data.name.split('__').pop(); // Simple hack for name
+            document.getElementById('detail-recipe').innerText = data.recipe_name || data.name;
             document.getElementById('detail-building').innerText = data.building;
-            document.getElementById('detail-scale').innerText = parseFloat(data.building_scale).toFixed(2) + 'x';
 
-            // Scaled Rates
+            // Populate Technical Info (Collapsible)
+            document.getElementById('detail-id').innerText = data.id;
+            document.getElementById('detail-parents').innerText = data.parents.length > 0 ? data.parents.join(', ') : 'None';
+            document.getElementById('detail-children').innerText = data.children.length > 0 ? data.children.join(', ') : 'None';
+
+            // Base Recipe Details
+            const baseRecipeDiv = document.getElementById('base-recipe-details');
+            let baseRecipeHtml = `<strong>100% Rate:</strong><br>${parseFloat(data.base_output_rate).toFixed(2)}/min ${data.output_item}<br>`;
+            if (data.base_inputs && data.base_inputs.length > 0) {
+                baseRecipeHtml += '<div style="margin-top:0.4rem;"><strong>Inputs (100%):</strong></div>';
+                baseRecipeHtml += data.base_inputs.map(inp => `${parseFloat(inp.rate).toFixed(2)}/min ${inp.item}`).join('<br>');
+            }
+            baseRecipeDiv.innerHTML = baseRecipeHtml;
+
+            // Performance & Stats
+            const buildingScale = parseFloat(data.building_scale);
+            const idealScale = parseFloat(data.ideal_building_scale);
+            const surplus = buildingScale - idealScale;
+            const epsilon = 0.0001;
+
+            document.getElementById('detail-scale').innerText = buildingScale.toFixed(2) + 'x';
             document.getElementById('detail-output-rate').innerText = parseFloat(data.throughput).toFixed(2) + '/min';
             document.getElementById('detail-power').innerText = parseFloat(data.power).toFixed(2) + ' MW';
+
+            // Surplus/Shortage Display
+            const surplusValEl = document.getElementById('detail-surplus-value');
+            const surplusRowEl = document.getElementById('detail-surplus-row');
+            if (Math.abs(surplus) < epsilon) {
+                surplusValEl.innerText = 'Perfect Match';
+                surplusValEl.style.color = 'var(--text-secondary)';
+            } else {
+                const itemSurplus = surplus * parseFloat(data.base_output_rate);
+                const sign = surplus > 0 ? '+' : '';
+                surplusValEl.innerText = `${sign}${surplus.toFixed(2)} bldgs (${sign}${itemSurplus.toFixed(2)}/min)`;
+                surplusValEl.style.color = surplus > epsilon ? 'var(--status-surplus)' : 'var(--status-shortage)';
+                if (surplus > 0.9999) surplusValEl.style.color = 'var(--status-excessive)';
+            }
+
+            // Clock Speed (Per Building)
+            // Clock speed = ideal_scale / ceil(ideal_scale) * 100% if manually set building counts?
+            // Actually, in Satisfactory, if you have 1.5 buildings required, you might build 2 and run them at 75%.
+            // If the user has building_scale 2.0 (manually overridden), and ideal is 1.5, then clock speed is 1.5/2.0 = 75%.
+            const clockSpeed = (idealScale / buildingScale) * 100;
+            document.getElementById('detail-clock').innerText = clockSpeed.toFixed(1) + '%';
+
 
             // Populate scaled inputs
             const inputsContainer = document.getElementById('detail-inputs-container');
@@ -941,7 +1071,7 @@
                     const row = document.createElement('div');
                     row.className = 'stat-row';
                     row.innerHTML = `
-                        <span class="stat-label">Input (${input.item}):</span>
+                        <span class="stat-label">${input.item}:</span>
                         <span class="stat-value">${parseFloat(input.rate).toFixed(2)}/min</span>
                     `;
                     inputsContainer.appendChild(row);

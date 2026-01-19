@@ -53,6 +53,7 @@ def _serialize_node(node):
     return {
         "id": node.id,
         "name": node.name,
+        "recipe_name": node.name.split('__')[-1] if '__' in node.name else node.name,
         "building": node.building.name,
         "building_scale": node.building_scale,
         "original_building_scale": node.original_building_scale,
@@ -63,7 +64,10 @@ def _serialize_node(node):
         "output_item": node.output_item_name,
         "parents": [p.id for p in node.parents],
         "children": [c.id for c in node.children],
-        "scaled_inputs": scaled_inputs
+        "scaled_inputs": scaled_inputs,
+        "base_output_rate": node.base_output_rate,
+        "base_inputs": node.base_inputs,
+        "base_power": node.base_power
     }
 
 @app.get("/")
