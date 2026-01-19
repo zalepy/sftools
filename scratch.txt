@@ -1,2 +1,20 @@
 
 ideas/plans
+
+- add short codes/ handles for the items as some names are long and will make the UI cluttered
+- add color codes for items to ease the graph reading
+- consider the merging of production nodes from different root demands and the implications of that
+- 
+
+todo fixes:
+ - rename endpoint api/calculate to /recaclulate (done)
+ - fix calls to in recalculate : (done?)
+ it has 2 calls to calculate_demands:
+   # Step 1: Base calculation to build graph and initial scales
+    # Step 2: Recalculate based on overrides, propagating changes
+    instead there should be just the 2nd call
+
+ - above will need to persist the graph between calls (done (but state is in the context of the main.py file) )
+ - remove 2nd return value from calculate_demands (done)
+ 
+ 

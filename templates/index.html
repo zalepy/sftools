@@ -225,28 +225,23 @@
                 <h3>Demand Targets</h3>
                 <form id="demand-form" onsubmit="event.preventDefault(); triggerRecalculate();">
                     <div id="demand-rows">
-                        {% if existing_demands %}
-                        {% for item_name, rate in existing_demands %}
-                        <div class="demand-row">
-                            <input type="text" name="items" list="items_list" value="{{ item_name }}"
-                                placeholder="Item">
-                            <input type="number" step="any" name="rates" value="{{ rate }}" placeholder="Rate">
-                            <button type="button" class="secondary" style="width: auto;"
-                                onclick="removeRow(this)">✕</button>
-                        </div>
-                        {% endfor %}
-                        {% else %}
                         <div class="demand-row">
                             <input type="text" name="items" list="items_list" placeholder="Item">
                             <input type="number" step="any" name="rates" placeholder="Rate">
                             <button type="button" class="secondary" style="width: auto;"
                                 onclick="removeRow(this)">✕</button>
                         </div>
-                        {% endif %}
                     </div>
                     <button type="button" class="secondary" onclick="addRow()" style="margin-bottom: 0.5rem;">+ Add
                         Item</button>
-                    <button type="submit">Calculate</button>
+                    <button type="submit" style="margin-bottom: 0.5rem;">Calculate</button>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button type="button" class="secondary" onclick="exportToJSON()">Export JSON</button>
+                        <button type="button" class="secondary"
+                            onclick="document.getElementById('import-input').click()">Import JSON</button>
+                        <input type="file" id="import-input" style="display: none;" accept=".json"
+                            onchange="importFromJSON(this)">
+                    </div>
                 </form>
 
                 <datalist id="items_list">
@@ -413,15 +408,10 @@
 
         cy.on('zoom', updateZoomSlider);
 
-        // Load Initial Data (if any)
-        try {
-            const initialGraphData = JSON.parse(`{{ graph_json | safe }}`);
-            if (initialGraphData) {
-                renderGraph(initialGraphData);
-            }
-        } catch (e) {
-            console.error("Failed to load initial graph", e);
-        }
+        // --- Load state on start ---
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+        });
 
 
         // --- Functions ---
@@ -469,7 +459,6 @@
             const payload = {
                 items: items,
                 rates: rates,
-                scale_overrides: currentOverrides,
                 round_up: roundUp
             };
 
@@ -483,11 +472,138 @@
                 if (response.ok) {
                     const data = await response.json();
                     renderGraph(data.nodes);
+                    saveState();
                 }
             } catch (e) {
                 console.error("Calculation failed", e);
             }
         }
+
+        async function applyOverridesOnly() {
+            const payload = {
+                scale_overrides: currentOverrides
+            };
+
+            try {
+                const response = await fetch('/api/recalculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    renderGraph(data.nodes);
+                    saveState();
+                } else if (response.status === 400) {
+                    // Try full calculate if no graph in memory
+                    triggerRecalculate();
+                }
+            } catch (e) {
+                console.error("Recalculation failed", e);
+            }
+        }
+
+
+        // --- Persistence ---
+
+        function saveState() {
+            const { items, rates } = getDemands();
+            const roundUp = document.getElementById('round-up-toggle').checked;
+            const state = {
+                items,
+                rates,
+                overrides: currentOverrides,
+                roundUp
+            };
+            localStorage.setItem('sf_planner_state', JSON.stringify(state));
+        }
+
+        function loadState(importedData = null) {
+            const saved = importedData || JSON.parse(localStorage.getItem('sf_planner_state'));
+            if (!saved) return;
+
+            // Clear existing rows
+            const container = document.getElementById('demand-rows');
+            container.innerHTML = '';
+
+            // Populate rows
+            if (saved.items && saved.items.length > 0) {
+                saved.items.forEach((item, i) => {
+                    const newRow = document.createElement('div');
+                    newRow.className = 'demand-row';
+                    newRow.innerHTML = `
+                        <input type="text" name="items" list="items_list" value="${item}" placeholder="Item">
+                        <input type="number" step="any" name="rates" value="${saved.rates[i]}" placeholder="Rate">
+                        <button type="button" class="secondary" style="width: auto;" onclick="removeRow(this)">✕</button>
+                    `;
+                    container.appendChild(newRow);
+                });
+            } else {
+                addRow(); // Default row
+            }
+
+            // Populate settings
+            document.getElementById('round-up-toggle').checked = saved.roundUp ?? true;
+            currentOverrides = saved.overrides || {};
+
+            // Trigger calc
+            triggerRecalculate();
+        }
+
+        function exportToJSON() {
+            const { items, rates } = getDemands();
+            const roundUp = document.getElementById('round-up-toggle').checked;
+            const state = {
+                items,
+                rates,
+                overrides: currentOverrides,
+                roundUp,
+                exportedAt: new Date().toISOString()
+            };
+
+            // Using octet-stream to force the browser to treat it as a download
+            const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+
+            a.href = url;
+            a.setAttribute('download', 'sf_planner_save.json');
+            a.style.display = 'none';
+
+            document.body.appendChild(a);
+            a.click();
+
+            // Cleanup
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 100);
+        }
+
+        function importFromJSON(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    loadState(data);
+                    saveState();
+                } catch (err) {
+                    alert("Failed to parse JSON file.");
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; // Reset for next time
+        }
+
+        // Save state on toggle change
+        document.getElementById('round-up-toggle').addEventListener('change', () => {
+            triggerRecalculate();
+        });
 
         function renderGraph(nodesData) {
             const elements = [];
@@ -594,6 +710,13 @@
             document.getElementById('node-details').style.display = 'block';
         });
 
+        // Enter key in override input triggers apply
+        document.getElementById('override-scale').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                applyOverride();
+            }
+        });
+
         function applyOverride() {
             if (!selectedNodeId) return;
             const val = parseFloat(document.getElementById('override-scale').value);
@@ -604,13 +727,13 @@
                 delete currentOverrides[selectedNodeId];
             }
 
-            triggerRecalculate();
+            applyOverridesOnly();
         }
 
         function clearOverride() {
             document.getElementById('override-scale').value = '';
             if (selectedNodeId) delete currentOverrides[selectedNodeId];
-            triggerRecalculate();
+            applyOverridesOnly();
         }
     </script>
 </body>

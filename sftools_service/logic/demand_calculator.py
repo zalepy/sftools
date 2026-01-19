@@ -291,10 +291,10 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
     # We'll return empty sub_demands list for compatibility or just the list of roots/leaves? 
     # Let's return empty list for 2nd arg as it was mostly for debug printing.
     
-    return all_nodes, []
+    return all_nodes
 
 
-def recalculate_graph(nodes_map: Dict[str, ProductionNode], overrides: Dict[str, float]):
+def recalculate_graph(nodes_map: Dict[str, ProductionNode], overrides: Dict[str, float], round_up: bool = True):
     """
     Recalculates the scales of preexisting nodes based on user overrides and parent requirements.
     Propagation flows from consumers (parents) to producers (children).
@@ -338,7 +338,13 @@ def recalculate_graph(nodes_map: Dict[str, ProductionNode], overrides: Dict[str,
                         sum_required_rate += inp["rate"]
             
             if child.base_output_rate > 0:
-                child.original_building_scale = sum_required_rate / child.base_output_rate
+                base_scale = sum_required_rate / child.base_output_rate
+                if round_up:
+                    child.original_building_scale = math.ceil(base_scale - 0.00001)
+                    if child.original_building_scale == 0 and base_scale > 0:
+                        child.original_building_scale = 1
+                else:
+                    child.original_building_scale = base_scale
             
             # Decrement in-degree and add to queue if 0
             in_degree[child.id] -= 1
@@ -354,7 +360,7 @@ def main():
     root_demand_item = items['Smart Plating']
     root = Demand('Smart Plating', root_demand_item, 2.0, DemandType.PRODUCE)
     
-    nodes, _ = calculate_demands(items, [root], round_up=True)
+    nodes = calculate_demands(items, [root], round_up=True)
     for nid, node in nodes.items():
         print(f"{nid}: {node}")
 
