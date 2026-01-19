@@ -168,6 +168,42 @@
             font-style: italic;
             margin-top: 0.25rem;
         }
+
+        /* Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            bottom: 2rem;
+            right: 2rem;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            width: 200px;
+        }
+
+        .zoom-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        #zoom-slider {
+            flex: 1;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .zoom-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            min-width: 35px;
+            text-align: right;
+        }
     </style>
 </head>
 
@@ -269,6 +305,16 @@
         <!-- Graph Viewer -->
         <div class="graph-container">
             <div id="cy"></div>
+
+            <!-- Zoom Controls Overlay -->
+            <div class="zoom-controls">
+                <div class="zoom-slider-container">
+                    <span class="zoom-label">Zoom</span>
+                    <input type="range" id="zoom-slider" min="0.1" max="5" step="0.01" value="1">
+                    <span id="zoom-percent" class="zoom-label">100%</span>
+                </div>
+                <button class="secondary" onclick="cy.fit(); updateZoomSlider();">Fit View</button>
+            </div>
         </div>
     </div>
 
@@ -340,8 +386,32 @@
                 rankDir: 'LR',
                 nodeSep: 60,
                 rankSep: 120
-            }
+            },
+            minZoom: 0.05,
+            maxZoom: 10,
+            wheelSensitivity: 0.2
         });
+
+        // --- Zoom Control Sync ---
+        const zoomSlider = document.getElementById('zoom-slider');
+        const zoomPercent = document.getElementById('zoom-percent');
+
+        function updateZoomSlider() {
+            const z = cy.zoom();
+            zoomSlider.value = z;
+            zoomPercent.innerText = Math.round(z * 100) + '%';
+        }
+
+        zoomSlider.addEventListener('input', (e) => {
+            const z = parseFloat(e.target.value);
+            cy.zoom({
+                level: z,
+                renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 }
+            });
+            zoomPercent.innerText = Math.round(z * 100) + '%';
+        });
+
+        cy.on('zoom', updateZoomSlider);
 
         // Load Initial Data (if any)
         try {
@@ -468,7 +538,19 @@
 
             cy.elements().remove();
             cy.add(elements);
-            cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 50, rankSep: 100 }).run();
+
+            // For first render, fit. Subsequent renders (overrides), stay put or fit?
+            // Usually if it's a completely new graph, fit is better.
+            const layout = cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 50, rankSep: 100 });
+
+            layout.one('layoutstop', () => {
+                // If it's a refresh from override, maybe don't auto-fit if user is zoomed
+                // But Dagre moves things. So fit is often safer.
+                cy.fit();
+                updateZoomSlider();
+            });
+
+            layout.run();
         }
 
         // --- Interaction ---
