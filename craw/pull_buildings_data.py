@@ -5,8 +5,16 @@ from typing import Dict
 import requests
 
 
+def clean_str(val):
+    val = re.sub(r'<[^>]+>', '', val)
+    val = " ".join(val.split())
+    val = val.replace(" MW", "").replace(" MJ", "").replace(" m", "")
+    val = val.replace("\u00b3", "").replace("/ min", "")
+    return val.strip()
+
+
 def grep_recipe(item_dict: dict, data: str) -> dict:
-    name_n_building = re.findall(r'<h5 class="card-title">\s*?(\w.+?)\s*?</h5>[^~]+?<em><small>\([^\)]+?alt="(\w+?)"[^\)]+?>.+?</a>\)</small></em>', data)
+    name_n_building = re.findall(r'<h5 class="card-title">\s*?(\w.+?)\s*?</h5>[^~]+?<em><small>\([^\)]+?alt="([^"]+?)"[^\)]+?>.+?</a>\)</small></em>', data)
     if not name_n_building:
         return item_dict
 
@@ -25,19 +33,6 @@ def grep_recipe(item_dict: dict, data: str) -> dict:
             match_name = match_item[2]
 
             # Clean data
-            for val in [match_rate, match_stack, match_name]: 
-                # This doesn't write back to the variables, need to do it explicitly or use a helper
-                pass
-            
-
-            # Helper to clean string
-            def clean_str(val):
-                val = re.sub(r'<[^>]+>', '', val)
-                val = " ".join(val.split())
-                val = val.replace(" MW", "").replace(" MJ", "").replace(" m", "")
-                val = val.replace("\u00b3", "").replace("/ min", "")
-                return val.strip()
-
             match_rate = clean_str(match_rate)
             match_stack = clean_str(match_stack)
             match_name = clean_str(match_name)
@@ -117,9 +112,9 @@ def parse_item_page_sections(data: str) -> Dict[str, str]:
 # =================================================================================================================================================
 def main():
     url_base = 'https://satisfactory-calculator.com'
-    raw_response = requests.get(f'{url_base}/en/buildings?switchGameBranch=Experimental')
+    raw_response = requests.get(f'{url_base}/en/buildings')
 
-    item_matches = re.findall(r'<a href="(?P<link>[^"]+?)">\s+<strong>(?P<name>[\w\s]+?)</strong>', raw_response.text)
+    item_matches = re.findall(r'<a href="(?P<link>[^"]+?)">\s+<strong>(?P<name>.+?)</strong>', raw_response.text)
     items = []
 
     for item_match in item_matches:
