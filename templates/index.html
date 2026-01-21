@@ -641,6 +641,7 @@
                         'target-arrow-color': '#475569',
                         'target-arrow-shape': 'triangle',
                         'curve-style': 'bezier',
+                        'label': 'data(label)',
                         'color': '#94a3b8',
                         'font-size': '10px',
                         'text-background-opacity': 1,
@@ -973,16 +974,31 @@
                 processedNodes.add(node.id);
             });
 
+            const nodeMap = {};
+            nodesData.forEach(node => {
+                nodeMap[node.id] = node;
+            });
+
             // Add Edges
             nodesData.forEach(node => {
                 node.parents.forEach(parentId => {
-                    if (processedNodes.has(parentId)) {
+                    const parentNode = nodeMap[parentId];
+                    if (parentNode) {
+                        // Find flow rate: how much of node.output_item does parentNode need?
+                        let rate = 0;
+                        if (parentNode.scaled_inputs) {
+                            const input = parentNode.scaled_inputs.find(inp => inp.item === node.output_item);
+                            if (input) {
+                                rate = input.rate;
+                            }
+                        }
+
                         elements.push({
                             group: 'edges',
                             data: {
                                 source: node.id,
                                 target: parentId,
-                                label: '' // TODO: Add flow rate to edge
+                                label: rate > 0 ? `${rate.toFixed(2)}/m` : ''
                             }
                         });
                     }
