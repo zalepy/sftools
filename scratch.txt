@@ -2,9 +2,9 @@
 ideas/plans
 
 - add short codes/ handles for the items as some names are long and will make the UI cluttered (wontdo)
-- add text on the edges to show the transport rate
+- add text on the edges to show the transport rate (done)
 - option for folding the side panel to allow more space for the graph
-- represent miners in the graph
+- represent miners in the graph (Add a new type of node e.g. RawNode. This would typically be a building with Category: Extraction. )
 - un-merge specific ProductionNode based on chain demands. eg. I had Wire merged with Cable and Stator:
   add a new button that would specifically split the Wire node into two separate nodes 
   one with edge to Cable and the other to Stator.

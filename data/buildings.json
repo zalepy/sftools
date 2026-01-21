@@ -1,5 +1,32 @@
 [
   {
+    "name": "Miner Mk.1",
+    "Category": "Extraction",
+    "Power used": "5",
+    "Width": "8",
+    "Length": "14",
+    "Height": "18",
+    "Output": "1"
+  },
+  {
+    "name": "Miner Mk.2",
+    "Category": "Extraction",
+    "Power used": "15",
+    "Width": "8",
+    "Length": "14",
+    "Height": "18",
+    "Output": "1"
+  },
+  {
+    "name": "Miner Mk.3",
+    "Category": "Extraction",
+    "Power used": "45",
+    "Width": "8",
+    "Length": "14",
+    "Height": "18",
+    "Output": "1"
+  },
+  {
     "name": "Oil Extractor",
     "Category": "Extraction",
     "Power used": "40",
@@ -194,6 +221,25 @@
     "Input": "1"
   },
   {
+    "name": "Coal-Powered Generator",
+    "Category": "Generators",
+    "Power generated": "75",
+    "Width": "10",
+    "Length": "26",
+    "Height": "32",
+    "Input": "1",
+    "Supplemental Load": "45 Water"
+  },
+  {
+    "name": "Fuel-Powered Generator",
+    "Category": "Generators",
+    "Power generated": "250",
+    "Width": "20",
+    "Length": "20",
+    "Height": "27",
+    "Input": "1"
+  },
+  {
     "name": "Geothermal Generator",
     "Category": "Generators",
     "Power generated (Impure)": "50 - 150",
@@ -251,6 +297,27 @@
     "Length": "54",
     "Height": "118",
     "Input": "6"
+  },
+  {
+    "name": "Blueprint Designer Mk.1",
+    "Category": "Special",
+    "Width": "42",
+    "Length": "42",
+    "Height": "42"
+  },
+  {
+    "name": "Blueprint Designer Mk.2",
+    "Category": "Special",
+    "Width": "50",
+    "Length": "50",
+    "Height": "50"
+  },
+  {
+    "name": "Blueprint Designer Mk.3",
+    "Category": "Special",
+    "Width": "58",
+    "Length": "58",
+    "Height": "58"
   },
   {
     "name": "AWESOME Sink",
