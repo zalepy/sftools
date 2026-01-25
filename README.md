@@ -2,8 +2,7 @@
 tools for satisfactory
 
 Current operation:
-* scripts under `craw` were used to scrape data from 'https://satisfactory-calculator.com' and store it under the `data` directory. 
-  You can re-run if data is outdated, but be sure to make a copy of the current data, as the scrape may be outdated too. 
+* Data scraping: Scripts under `craw` are used to scrape data from [Satisfactory-Calculator](https://satisfactory-calculator.com). See [craw/README.md](file:///d:/gits/sftools/craw/README.md) for details on how to run them and what they do.
 * setup root demand in `sftools_service.logic.demand_calculator`
   ```
     root_demand_item = items['Smart Plating']
