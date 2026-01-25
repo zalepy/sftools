@@ -29,8 +29,11 @@ def grep_recipe(item_dict: dict, data: str) -> dict:
             def clean_str(val):
                 val = re.sub(r'<[^>]+>', '', val)
                 val = " ".join(val.split())
-                val = val.replace(" MW", "").replace(" MJ", "").replace(" m", "")
-                val = val.replace("\u00b3", "").replace("/ min", "")
+                val = val.replace(" MW", "").replace(" MJ", "")
+                val = val.replace("\u00b3", "3")
+                val = val.replace(" / min", "").replace("/ min", "").replace("/min", "")
+                val = val.replace(" m3", "m3")
+                val = val.replace(" m", "")
                 return val.strip()
 
             match_rate = clean_str(match_rate)
@@ -110,7 +113,7 @@ def parse_item_page_sections(data: str) -> Dict[str, str]:
 
 # =================================================================================================================================================
 # =================================================================================================================================================
-def main():
+def pull_items():
     url_base = 'https://satisfactory-calculator.com'
     
     session = requests.Session()
@@ -121,7 +124,7 @@ def main():
     print("Fetching items list...")
     raw_response = session.get(f'{url_base}/en/items?switchGameBranch=Experimental', timeout=30)
 
-    item_matches = re.findall(r'<a href="(?P<link>[^"]+?)">\s+<strong>(?P<name>[\w\s]+?)</strong>', raw_response.text)
+    item_matches = re.findall(r'<a href="(?P<link>[^"]+?)">\s+<strong>(?P<name>[\w\s\-\:]+?)</strong>', raw_response.text)
     items = []
 
     for item_match in item_matches:
@@ -129,9 +132,6 @@ def main():
         item_name = item_match[1]
         item_dict = {'name': item_name}
         print('>>> processing', item_name)
-        # if item_name == 'Automated Wiring':
-        # if item_name == 'Polymer Resin' or item_name == 'Plastic':
-        # if item_name == 'Battery':
         try:
             raw_response = session.get(url_base + item_url_path, timeout=30)
             trimmed = raw_response.text.split('<h4>' + item_name + '</h4>')[-1]
@@ -146,7 +146,11 @@ def main():
         except Exception as e:
             print(f"Failed to process {item_name}: {e}")
 
+    return items
 
+
+def main():
+    items = pull_items()
     with open('data/items.json', 'w') as f:
         json.dump(items, f, indent=2)
     print(f"Successfully processed {len(items)} items.")
