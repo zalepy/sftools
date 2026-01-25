@@ -330,6 +330,21 @@
             padding: 0.5rem;
             border-top: 1px solid var(--border);
         }
+
+        .breakdown-list {
+            padding-left: 1rem;
+            margin-bottom: 0.5rem;
+            border-left: 1px dashed var(--border);
+            margin-left: 0.5rem;
+        }
+
+        .breakdown-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.2rem;
+        }
     </style>
 </head>
 
@@ -1034,6 +1049,16 @@
 
         let selectedNodeId = null;
 
+        function getParentLabel(parentId) {
+            if (parentId === 'External Demand') return 'External Demand';
+            const node = cy.getElementById(parentId);
+            if (node && node.length > 0) {
+                const raw = node.data('raw');
+                return `${raw.output_item} (id: ${parentId.split('__').pop()})`;
+            }
+            return parentId;
+        }
+
         cy.on('tap', 'node', function (evt) {
             const node = evt.target;
             const data = node.data('raw');
@@ -1083,9 +1108,6 @@
             }
 
             // Clock Speed (Per Building)
-            // Clock speed = ideal_scale / ceil(ideal_scale) * 100% if manually set building counts?
-            // Actually, in Satisfactory, if you have 1.5 buildings required, you might build 2 and run them at 75%.
-            // If the user has building_scale 2.0 (manually overridden), and ideal is 1.5, then clock speed is 1.5/2.0 = 75%.
             const clockSpeed = (idealScale / buildingScale) * 100;
             document.getElementById('detail-clock').innerText = clockSpeed.toFixed(1) + '%';
 
@@ -1095,14 +1117,63 @@
             inputsContainer.innerHTML = '';
             if (data.scaled_inputs && data.scaled_inputs.length > 0) {
                 inputsContainer.style.display = 'block';
+
+                const totalOutput = parseFloat(data.throughput);
+                const parentDemands = data.parent_demands || {};
+
                 data.scaled_inputs.forEach(input => {
-                    const row = document.createElement('div');
-                    row.className = 'stat-row';
-                    row.innerHTML = `
-                        <span class="stat-label">${input.item}:</span>
-                        <span class="stat-value">${parseFloat(input.rate).toFixed(2)}/min</span>
+                    const totalInputRate = parseFloat(input.rate);
+
+                    const details = document.createElement('details');
+                    details.style.marginBottom = '0.5rem';
+
+                    const summary = document.createElement('summary');
+                    summary.style.listStyle = 'none';
+                    summary.style.padding = '0';
+                    summary.style.display = 'block';
+
+                    summary.innerHTML = `
+                        <div class="stat-row" style="margin-bottom:0; cursor:pointer;">
+                            <span class="stat-label">${input.item}:</span>
+                            <span class="stat-value">${totalInputRate.toFixed(2)}/min</span>
+                        </div>
                     `;
-                    inputsContainer.appendChild(row);
+                    details.appendChild(summary);
+
+                    const breakdownList = document.createElement('div');
+                    breakdownList.className = 'breakdown-list';
+
+                    // Ratio of total output
+                    let sumDemand = 0;
+                    for (const [pid, rate] of Object.entries(parentDemands)) {
+                        const label = getParentLabel(pid);
+                        const inputPart = totalOutput > 0 ? totalInputRate * (rate / totalOutput) : 0;
+
+                        const row = document.createElement('div');
+                        row.className = 'breakdown-row';
+                        row.innerHTML = `
+                            <span>for ${label}:</span>
+                            <span>${inputPart.toFixed(2)}/min</span>
+                        `;
+                        breakdownList.appendChild(row);
+                        sumDemand += rate;
+                    }
+
+                    // Override/Surplus
+                    const surplusDemand = totalOutput - sumDemand;
+                    if (surplusDemand > 0.0001) {
+                        const surplusPart = totalOutput > 0 ? totalInputRate * (surplusDemand / totalOutput) : totalInputRate;
+                        const row = document.createElement('div');
+                        row.className = 'breakdown-row';
+                        row.innerHTML = `
+                            <span>Override/Surplus:</span>
+                            <span>${surplusPart.toFixed(2)}/min</span>
+                         `;
+                        breakdownList.appendChild(row);
+                    }
+
+                    details.appendChild(breakdownList);
+                    inputsContainer.appendChild(details);
                 });
             } else {
                 inputsContainer.style.display = 'none';

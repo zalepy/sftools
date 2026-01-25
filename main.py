@@ -70,6 +70,7 @@ def _serialize_node(node):
         "parents": [p.id for p in node.parents],
         "children": [c.id for c in node.children],
         "scaled_inputs": scaled_inputs,
+        "parent_demands": node.parent_demands,
         "base_output_rate": node.base_output_rate,
         "base_inputs": node.base_inputs,
         "base_power": node.base_power

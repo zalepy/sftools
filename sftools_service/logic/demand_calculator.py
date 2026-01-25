@@ -268,6 +268,13 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
         # Create Node
         node = recipe.generate_production_node(node_id, scaler)
         node.ideal_building_scale = base_scaler
+        
+        # Track where demand came from
+        if parent_node:
+            node.parent_demands[parent_node.id] = target_rate
+        else:
+            node.parent_demands["External Demand"] = target_rate
+
         all_nodes[node_id] = node
 
         # Link Graph
@@ -331,13 +338,23 @@ def recalculate_graph(nodes_map: Dict[str, ProductionNode], overrides: Optional[
             
             # Re-sum required rates for child from all its parents
             sum_required_rate = 0.0
+            
+            # Reset parent demands for this child (but preserve External Demand if it's a root as well)
+            external = child.parent_demands.get("External Demand", 0)
+            child.parent_demands = {} 
+            if external > 0:
+                child.parent_demands["External Demand"] = external
+                sum_required_rate += external
+
             for parent in child.parents:
                 if parent.id not in nodes_map:
                     continue
                 # Use parent's effective scale (which is final now) to get its needs
                 for inp in parent.scaled_inputs:
                     if inp["item"] == child.output_item_name:
-                        sum_required_rate += inp["rate"]
+                        rate = inp["rate"]
+                        sum_required_rate += rate
+                        child.parent_demands[parent.id] = child.parent_demands.get(parent.id, 0) + rate
             
             if child.base_output_rate > 0:
                 base_scale = sum_required_rate / child.base_output_rate
