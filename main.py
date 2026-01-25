@@ -34,6 +34,10 @@ class MergeRequest(BaseModel):
     source_id: str
     target_id: str
 
+class UnmergeRequest(BaseModel):
+    node_id: str
+    overrides: Dict[str, float] = {}
+
 # In-memory store for the last calculated graph
 # Keys: 'nodes', 'items', 'rates', 'round_up'
 GLOBAL_STATE = {
@@ -167,6 +171,52 @@ def api_merge_nodes(payload: MergeRequest):
         None, # Preserve existing overrides
         round_up=GLOBAL_STATE["round_up"]
     )
+    
+    nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
+    return {"nodes": nodes_data}
+
+@app.post("/api/unmerge_node")
+def api_unmerge_node(payload: UnmergeRequest):
+    if GLOBAL_STATE["nodes"] is None:
+        return {"error": "No graph has been calculated yet."}, 400
+    
+    # Remove all merges targeting this node
+    if "merges" in GLOBAL_STATE:
+        keys_to_remove = [s_id for s_id, t_id in GLOBAL_STATE["merges"].items() if t_id == payload.node_id]
+        for k in keys_to_remove:
+            del GLOBAL_STATE["merges"][k]
+
+    # Return to original demands to rebuild the graph structure
+    root_demands = []
+    for i in range(len(GLOBAL_STATE["items"])):
+        item_name = GLOBAL_STATE["items"][i]
+        rate = GLOBAL_STATE["rates"][i]
+        item = items_map.get(item_name)
+        if item:
+            root_demands.append(Demand(item_name, item, rate, DemandType.PRODUCE))
+            
+    # Fresh build
+    final_nodes = calculate_demands(
+        items_map, 
+        root_demands, 
+        scale_overrides={}, 
+        round_up=GLOBAL_STATE["round_up"]
+    )
+    
+    # Re-apply remaining merges
+    if GLOBAL_STATE["merges"]:
+        for source_id, target_id in GLOBAL_STATE["merges"].items():
+            if source_id in final_nodes and target_id in final_nodes:
+                source_node = final_nodes[source_id]
+                target_node = final_nodes[target_id]
+                target_node.absorb_node(source_node)
+                del final_nodes[source_id]
+    
+    # Recalculate with provided overrides
+    recalculate_graph(final_nodes, overrides=payload.overrides, round_up=GLOBAL_STATE["round_up"])
+    
+    # Update GLOBAL_STATE
+    GLOBAL_STATE["nodes"] = final_nodes
     
     nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
     return {"nodes": nodes_data}
