@@ -2,6 +2,7 @@ from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Request, Form, Body
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import json
 import os
@@ -128,7 +129,7 @@ def api_calculate(payload: CalculateRequest):
 @app.post("/api/recalculate")
 def api_recalculate(payload: RecalculateRequest):
     if GLOBAL_STATE["nodes"] is None:
-        return {"error": "No graph has been calculated yet. Click Calculate first."}, 400
+        return JSONResponse(status_code=400, content={"error": "No graph has been calculated yet. Click Calculate first."})
     
     # Recalculate values using the existing graph structure and stored round_up setting
     final_nodes = recalculate_graph(
@@ -143,7 +144,7 @@ def api_recalculate(payload: RecalculateRequest):
 @app.post("/api/merge_nodes")
 def api_merge_nodes(payload: MergeRequest):
     if GLOBAL_STATE["nodes"] is None:
-        return {"error": "No graph has been calculated yet."}, 400
+        return JSONResponse(status_code=400, content={"error": "No graph has been calculated yet."})
     
     nodes_map = GLOBAL_STATE["nodes"]
     source_node = nodes_map.get(payload.source_id)
@@ -153,7 +154,7 @@ def api_merge_nodes(payload: MergeRequest):
         return {"error": "Source or target node not found."}, 404
     
     if source_node.output_item_name != target_node.output_item_name:
-        return {"error": "Cannot merge nodes with different output items."}, 400
+        return JSONResponse(status_code=400, content={"error": "Cannot merge nodes with different output items."})
 
     # Execute merge
     target_node.absorb_node(source_node)
@@ -178,7 +179,7 @@ def api_merge_nodes(payload: MergeRequest):
 @app.post("/api/unmerge_node")
 def api_unmerge_node(payload: UnmergeRequest):
     if GLOBAL_STATE["nodes"] is None:
-        return {"error": "No graph has been calculated yet."}, 400
+        return JSONResponse(status_code=400, content={"error": "No graph has been calculated yet."})
     
     # Remove all merges targeting this node
     if "merges" in GLOBAL_STATE:

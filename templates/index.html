@@ -790,11 +790,18 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    renderGraph(data.nodes);
-                    saveState();
-                } else if (response.status === 400) {
-                    // Try full calculate if no graph in memory
-                    triggerRecalculate();
+                    if (data && data.nodes) {
+                        renderGraph(data.nodes);
+                        saveState();
+                    }
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error("Recalculation failed", response.status, errorData);
+
+                    if (response.status === 400) {
+                        // Try full calculate if no graph in memory
+                        triggerRecalculate();
+                    }
                 }
             } catch (e) {
                 console.error("Recalculation failed", e);
@@ -922,6 +929,10 @@
         });
 
         function renderGraph(nodesData) {
+            if (!nodesData || !Array.isArray(nodesData)) {
+                console.warn("renderGraph called with invalid nodesData", nodesData);
+                return;
+            }
             const elements = [];
             const processedNodes = new Set();
 
