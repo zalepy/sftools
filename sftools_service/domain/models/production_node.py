@@ -37,10 +37,19 @@ class ProductionNode:
         # Graph relationships
         self._parents = set()
         self._children = set()
+        self._parent_demands = {} # parent_id -> rate
 
     @property
     def id(self):
         return self._id
+
+    @property
+    def parent_demands(self):
+        return self._parent_demands
+
+    @parent_demands.setter
+    def parent_demands(self, value: Dict[str, float]):
+        self._parent_demands = value
 
     @property
     def name(self):
