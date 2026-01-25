@@ -483,6 +483,8 @@
                     </div>
 
                     <button onclick="applyOverride()">Apply Override</button>
+                    <button id="unmerge-btn" class="secondary" style="margin-top: 0.5rem; display: none;"
+                        onclick="unmergeSelectedNode()">Unmerge Node</button>
                 </section>
             </div>
 
@@ -619,7 +621,7 @@
                 {
                     selector: 'node',
                     style: {
-                        'background-color': '#334155',
+                        'background-color': 'data(backgroundColor)',
                         'border-width': 2,
                         'border-color': '#f59e0b',
                         'label': 'data(label)',
@@ -630,7 +632,11 @@
                         'width': 150,
                         'height': 80,
                         'shape': 'round-rectangle',
-                        'font-size': '12px'
+                        'font-size': '12px',
+                        'background-image': 'data(backgroundImage)',
+                        'background-clip': 'node',
+                        'background-position-x': '0px',
+                        'background-position-y': '0px'
                     }
                 },
                 {
@@ -672,8 +678,7 @@
                 rankSep: 120
             },
             minZoom: 0.05,
-            maxZoom: 10,
-            wheelSensitivity: 0.2
+            maxZoom: 10
         });
 
         // --- Zoom Control Sync ---
@@ -942,10 +947,7 @@
                     indicatorColor = '#ef4444'; // red (shortage)
                 }
 
-                const nodeStyles = {
-                    'background-color': currentColorMapping[node.output_item] || '#334155'
-                };
-
+                let backgroundImage = null;
                 if (indicatorColor) {
                     // Create a data URI for a small circle in the top right
                     const svg = `
@@ -953,11 +955,7 @@
                             <circle cx="140" cy="10" r="6" fill="${indicatorColor}" />
                         </svg>
                     `;
-                    const encodedSvg = btoa(svg);
-                    nodeStyles['background-image'] = `data:image/svg+xml;base64,${encodedSvg}`;
-                    nodeStyles['background-clip'] = 'node';
-                    nodeStyles['background-position-x'] = '0px';
-                    nodeStyles['background-position-y'] = '0px';
+                    backgroundImage = `data:image/svg+xml;base64,${btoa(svg)}`;
                 }
 
                 elements.push({
@@ -965,9 +963,10 @@
                     data: {
                         id: node.id,
                         label: label,
-                        raw: node
+                        raw: node,
+                        backgroundColor: currentColorMapping[node.output_item] || '#334155',
+                        backgroundImage: backgroundImage
                     },
-                    style: nodeStyles,
                     classes: currentOverrides[node.id] ? 'overridden' : ''
                 });
 
@@ -981,28 +980,30 @@
 
             // Add Edges
             nodesData.forEach(node => {
-                node.parents.forEach(parentId => {
-                    const parentNode = nodeMap[parentId];
-                    if (parentNode) {
-                        // Find flow rate: how much of node.output_item does parentNode need?
-                        let rate = 0;
-                        if (parentNode.scaled_inputs) {
-                            const input = parentNode.scaled_inputs.find(inp => inp.item === node.output_item);
-                            if (input) {
-                                rate = input.rate;
+                if (node.parents && Array.isArray(node.parents)) {
+                    node.parents.forEach(parentId => {
+                        const parentNode = nodeMap[parentId];
+                        if (parentNode) {
+                            // Find flow rate: how much of node.output_item does parentNode need?
+                            let rate = 0;
+                            if (parentNode.scaled_inputs && Array.isArray(parentNode.scaled_inputs)) {
+                                const input = parentNode.scaled_inputs.find(inp => inp.item === node.output_item);
+                                if (input) {
+                                    rate = input.rate;
+                                }
                             }
-                        }
 
-                        elements.push({
-                            group: 'edges',
-                            data: {
-                                source: node.id,
-                                target: parentId,
-                                label: rate > 0 ? `${rate.toFixed(2)}/m` : ''
-                            }
-                        });
-                    }
-                });
+                            elements.push({
+                                group: 'edges',
+                                data: {
+                                    source: node.id,
+                                    target: parentId,
+                                    label: rate > 0 ? `${rate.toFixed(2)}/m` : ''
+                                }
+                            });
+                        }
+                    });
+                }
             });
 
             cy.elements().remove();
@@ -1100,6 +1101,11 @@
             const currentVal = currentOverrides[selectedNodeId];
             document.getElementById('override-scale').value = currentVal ? currentVal : parseFloat(data.building_scale).toFixed(4);
 
+            // Show/Hide Unmerge Button
+            // A node is "merged" if it is a target of some merge in currentMerges
+            const hasMerges = Object.values(currentMerges).includes(selectedNodeId);
+            document.getElementById('unmerge-btn').style.display = hasMerges ? 'block' : 'none';
+
             document.getElementById('node-details').style.display = 'block';
         });
 
@@ -1124,44 +1130,42 @@
                 if (dragData.output_item === targetData.output_item) {
                     // Delay block to allow Cytoscape to finish drag processing (unsticking)
                     setTimeout(async () => {
-                        if (confirm(`Merge "${dragData.output_item}" production nodes?`)) {
-                            try {
-                                const response = await fetch('/api/merge_nodes', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        source_id: dragNode.id(),
-                                        target_id: targetNode.id()
-                                    })
-                                });
+                        try {
+                            const response = await fetch('/api/merge_nodes', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    source_id: dragNode.id(),
+                                    target_id: targetNode.id()
+                                })
+                            });
 
-                                if (response.ok) {
-                                    const data = await response.json();
+                            if (response.ok) {
+                                const data = await response.json();
 
-                                    // Update frontend merges mapping
-                                    const sourceId = dragNode.id();
-                                    const targetId = targetNode.id();
+                                // Update frontend merges mapping
+                                const sourceId = dragNode.id();
+                                const targetId = targetNode.id();
 
-                                    // Flattening
-                                    for (let id in currentMerges) {
-                                        if (currentMerges[id] === sourceId) {
-                                            currentMerges[id] = targetId;
-                                        }
+                                // Flattening
+                                for (let id in currentMerges) {
+                                    if (currentMerges[id] === sourceId) {
+                                        currentMerges[id] = targetId;
                                     }
-                                    currentMerges[sourceId] = targetId;
-
-                                    if (currentOverrides[sourceId]) {
-                                        delete currentOverrides[sourceId];
-                                    }
-                                    renderGraph(data.nodes);
-                                    saveState();
-                                } else {
-                                    const err = await response.json();
-                                    alert(`Merge failed: ${err.error}`);
                                 }
-                            } catch (e) {
-                                console.error("Merge failed", e);
+                                currentMerges[sourceId] = targetId;
+
+                                if (currentOverrides[sourceId]) {
+                                    delete currentOverrides[sourceId];
+                                }
+                                renderGraph(data.nodes);
+                                saveState();
+                            } else {
+                                const err = await response.json();
+                                alert(`Merge failed: ${err.error}`);
                             }
+                        } catch (e) {
+                            console.error("Merge failed", e);
                         }
                     }, 50);
                 }
@@ -1192,6 +1196,39 @@
             document.getElementById('override-scale').value = '';
             if (selectedNodeId) delete currentOverrides[selectedNodeId];
             applyOverridesOnly();
+        }
+
+        async function unmergeSelectedNode() {
+            if (!selectedNodeId) return;
+
+            try {
+                const response = await fetch('/api/unmerge_node', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        node_id: selectedNodeId,
+                        overrides: currentOverrides
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Update currentMerges locally
+                    for (let s_id in currentMerges) {
+                        if (currentMerges[s_id] === selectedNodeId) {
+                            delete currentMerges[s_id];
+                        }
+                    }
+
+                    renderGraph(data.nodes);
+                    saveState();
+                    document.getElementById('node-details').style.display = 'none';
+                    selectedNodeId = null;
+                }
+            } catch (e) {
+                console.error("Unmerge failed", e);
+            }
         }
     </script>
 </body>
