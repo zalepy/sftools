@@ -21,7 +21,7 @@ def test_persistence_logic(data):
     nodes = calculate_demands(items_map, root_demands, round_up=False)
     
     # Find the two RIP nodes
-    rip_nodes = [n for n in nodes.values() if n.output_item_name == 'Reinforced Iron Plate']
+    rip_nodes = [n for n in nodes.all_nodes.values() if n.output_item_name == 'Reinforced Iron Plate']
     assert len(rip_nodes) == 2
     
     node_a = rip_nodes[0]
@@ -31,8 +31,7 @@ def test_persistence_logic(data):
     target_id = node_a.id
     
     # 2. Simulate Merge (Absorption)
-    node_a.absorb_node(node_b)
-    del nodes[source_id]
+    nodes.apply_merge(source_id, target_id)
     
     # Recalculate to verify consistency
     recalculate_graph(nodes, overrides={}, round_up=False)
@@ -43,15 +42,11 @@ def test_persistence_logic(data):
     fresh_nodes = calculate_demands(items_map, root_demands, round_up=False)
     
     for s_id, t_id in merges.items():
-        if s_id in fresh_nodes and t_id in fresh_nodes:
-            s_node = fresh_nodes[s_id]
-            t_node = fresh_nodes[t_id]
-            t_node.absorb_node(s_node)
-            del fresh_nodes[s_id]
+        fresh_nodes.apply_merge(s_id, t_id)
             
     recalculate_graph(fresh_nodes, overrides={}, round_up=False)
     
-    remaining_rip = [n for n in fresh_nodes.values() if n.output_item_name == 'Reinforced Iron Plate']
+    remaining_rip = [n for n in fresh_nodes.all_nodes.values() if n.output_item_name == 'Reinforced Iron Plate' and not n.absorbed_by]
     assert len(remaining_rip) == 1
     reconstructed_node = remaining_rip[0]
     assert reconstructed_node.id == target_id
@@ -89,7 +84,7 @@ def test_persistence_with_overrides(data):
     ]
     
     nodes = calculate_demands(items_map, root_demands, round_up=False)
-    rip_nodes = [n for n in nodes.values() if n.output_item_name == 'Reinforced Iron Plate']
+    rip_nodes = [n for n in nodes.all_nodes.values() if n.output_item_name == 'Reinforced Iron Plate']
     source_id = rip_nodes[1].id
     target_id = rip_nodes[0].id
     
@@ -101,16 +96,12 @@ def test_persistence_with_overrides(data):
     
     # Apply merges
     for s_id, t_id in merges.items():
-        if s_id in fresh_nodes and t_id in fresh_nodes:
-            s_node = fresh_nodes[s_id]
-            t_node = fresh_nodes[t_id]
-            t_node.absorb_node(s_node)
-            del fresh_nodes[s_id]
+        fresh_nodes.apply_merge(s_id, t_id)
             
     # Apply overrides
     recalculate_graph(fresh_nodes, overrides=overrides, round_up=False)
     
-    node = fresh_nodes[target_id]
+    node = fresh_nodes.get_node(target_id)
     assert node.user_scale == 10.0
     assert node.building_scale == 10.0
     
@@ -131,8 +122,8 @@ def test_unmerge_flow(data):
     ]
     
     initial_nodes = calculate_demands(items_map, root_demands, round_up=False)
-    initial_ids = set(initial_nodes.keys())
-    initial_rip_scales = {n.id: n.original_building_scale for n in initial_nodes.values() if n.output_item_name == 'Reinforced Iron Plate'}
+    initial_ids = set(initial_nodes.all_nodes.keys())
+    initial_rip_scales = {n.id: n.original_building_scale for n in initial_nodes.all_nodes.values() if n.output_item_name == 'Reinforced Iron Plate'}
     assert len(initial_rip_scales) == 2
     
     # 2. Perform Merge
@@ -145,17 +136,25 @@ def test_unmerge_flow(data):
     # Simulate first build with merge
     merged_nodes = calculate_demands(items_map, root_demands, round_up=False)
     for s_id, t_id in merges.items():
-        if s_id in merged_nodes and t_id in merged_nodes:
-            merged_nodes[t_id].absorb_node(merged_nodes[s_id])
-            del merged_nodes[s_id]
+        merged_nodes.apply_merge(s_id, t_id)
     
     recalculate_graph(merged_nodes, overrides={}, round_up=False)
     
-    assert source_id not in merged_nodes
-    assert target_id in merged_nodes
+    assert source_id in merged_nodes.all_nodes
+    assert target_id in merged_nodes.all_nodes
+    assert merged_nodes.get_node(source_id).absorbed_by == target_id
     # Sum of scales should be correct (e.g. 0.5 + 0.5 = 1.0)
     expected_sum = sum(initial_rip_scales.values())
-    assert merged_nodes[target_id].building_scale == pytest.approx(expected_sum)
+    # Note: building_scale on the node itself is its OWN scale. 
+    # The UI representation sums them up.
+    # In recalculate, nodes are separate?
+    # Wait, my FactoryGraph.recalculate treats them as separate nodes unless merged?
+    # Yes, but merges REDIRECT children to target.
+    # So target.building_scale will depend on its own needs + source's needs.
+    # If initial_rip_scales were [0.5, 0.5], and they are merged into target:
+    # target now needs to satisfy all consumers.
+    # So target.building_scale should be 1.0.
+    assert merged_nodes.get_node(target_id).building_scale == pytest.approx(expected_sum)
     
     # 3. Perform Unmerge (simulate backend logic)
     # Remove the specific merge
@@ -167,16 +166,14 @@ def test_unmerge_flow(data):
     unmerged_nodes = calculate_demands(items_map, root_demands, round_up=False)
     # Re-apply remaining merges (if any)
     for s_id, t_id in merges.items():
-        if s_id in unmerged_nodes and t_id in unmerged_nodes:
-            unmerged_nodes[t_id].absorb_node(unmerged_nodes[s_id])
-            del unmerged_nodes[s_id]
+        unmerged_nodes.apply_merge(s_id, t_id)
             
     recalculate_graph(unmerged_nodes, overrides={}, round_up=False)
     
     # 4. Compare to initial
-    assert set(unmerged_nodes.keys()) == initial_ids
-    for node_id, node in unmerged_nodes.items():
-        assert node.original_building_scale == pytest.approx(initial_nodes[node_id].original_building_scale)
+    assert set(unmerged_nodes.all_nodes.keys()) == initial_ids
+    for node_id, node in unmerged_nodes.all_nodes.items():
+        assert node.original_building_scale == pytest.approx(initial_nodes.get_node(node_id).original_building_scale)
 
 def test_unmerge_with_overrides(data):
     items_map, _, _ = data
@@ -188,23 +185,22 @@ def test_unmerge_with_overrides(data):
     
     # 1. Setup initial graph
     nodes = calculate_demands(items_map, root_demands, round_up=False)
-    rip_nodes = [n for n in nodes.values() if n.output_item_name == 'Reinforced Iron Plate']
+    rip_nodes = [n for n in nodes.all_nodes.values() if n.output_item_name == 'Reinforced Iron Plate']
     source_id = rip_nodes[1].id
     target_id = rip_nodes[0].id
     
     # 2. Add override to the target
     overrides = {target_id: 100.0}
     recalculate_graph(nodes, overrides=overrides, round_up=False)
-    assert nodes[target_id].user_scale == 100.0
+    assert nodes.get_node(target_id).user_scale == 100.0
     
     # 3. Perform Merge
     # In practice, merge transfers links. Recalculate will apply the override.
     fresh_nodes = calculate_demands(items_map, root_demands, round_up=False)
-    fresh_nodes[target_id].absorb_node(fresh_nodes[source_id])
-    del fresh_nodes[source_id]
+    fresh_nodes.apply_merge(source_id, target_id)
     
     recalculate_graph(fresh_nodes, overrides=overrides, round_up=False)
-    assert fresh_nodes[target_id].building_scale == 100.0 # Override wins
+    assert fresh_nodes.get_node(target_id).building_scale == 100.0 # Override wins
     
     # 4. Perform Unmerge (unmerge instruction removed, overrides preserved)
     # The logic in api_unmerge_node: rebuild and re-apply overrides
@@ -212,10 +208,10 @@ def test_unmerge_with_overrides(data):
     # No merges applied here to simulate the unmerged state
     recalculate_graph(unmerged_nodes, overrides=overrides, round_up=False)
     
-    assert source_id in unmerged_nodes
-    assert target_id in unmerged_nodes
-    assert unmerged_nodes[target_id].user_scale == 100.0
-    assert unmerged_nodes[target_id].building_scale == 100.0
-    assert unmerged_nodes[source_id].user_scale is None
+    assert source_id in unmerged_nodes.all_nodes
+    assert target_id in unmerged_nodes.all_nodes
+    assert unmerged_nodes.get_node(target_id).user_scale == 100.0
+    assert unmerged_nodes.get_node(target_id).building_scale == 100.0
+    assert unmerged_nodes.get_node(source_id).user_scale is None
     # Source node should have its original calculated scale (Modular Frame needs 3.0 RIP, recipe is 5.0, so 3/5 = 0.6)
-    assert unmerged_nodes[source_id].original_building_scale == pytest.approx(0.6) 
+    assert unmerged_nodes.get_node(source_id).original_building_scale == pytest.approx(0.6) 

@@ -39,9 +39,20 @@ class ProductionNode:
         self._children = set()
         self._parent_demands = {} # parent_id -> rate
 
+        # Stateful attributes
+        self._absorbed_by = None # ID of the node this node is merged into
+
     @property
     def id(self):
         return self._id
+
+    @property
+    def absorbed_by(self):
+        return self._absorbed_by
+
+    @absorbed_by.setter
+    def absorbed_by(self, value: str):
+        self._absorbed_by = value
 
     @property
     def parent_demands(self):

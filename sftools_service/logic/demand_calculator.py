@@ -210,11 +210,14 @@ def load_models(path: str):
     return items, recipes, buildings
 
 
-def calculate_demands(items_map, root_demands_list: List[Demand], scale_overrides: Dict[str, float] = None, round_up: bool = True) -> Dict[str, ProductionNode]:
+from sftools_service.domain.models.factory_graph import FactoryGraph
+
+
+def calculate_demands(items_map, root_demands_list: List[Demand], scale_overrides: Dict[str, float] = None, round_up: bool = True) -> FactoryGraph:
     if scale_overrides is None:
         scale_overrides = {}
 
-    all_nodes: Dict[str, ProductionNode] = {}
+    graph = FactoryGraph()
     
     # Queue: (Demand, ParentNodePath, ParentNode)
     # ParentNode can be None for root
@@ -275,7 +278,7 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
         else:
             node.parent_demands["External Demand"] = target_rate
 
-        all_nodes[node_id] = node
+        graph.add_node(node)
 
         # Link Graph
         if parent_node:
@@ -298,81 +301,17 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
     # but the graph contains everything.
     # We'll return empty sub_demands list for compatibility or just the list of roots/leaves? 
     # Let's return empty list for 2nd arg as it was mostly for debug printing.
-    
-    return all_nodes
+    graph.capture_initial_structure()
+    return graph
 
 
-def recalculate_graph(nodes_map: Dict[str, ProductionNode], overrides: Optional[Dict[str, float]] = None, round_up: bool = False):
+def recalculate_graph(graph: FactoryGraph, overrides: Optional[Dict[str, float]] = None, round_up: bool = False):
     """
-    Recalculates the scales of preexisting nodes based on user overrides and parent requirements.
-    Propagation flows from consumers (parents) to producers (children).
+    Recalculates the scales of nodes based on user overrides and parent requirements.
+    This is now a wrapper around FactoryGraph.recalculate.
     """
-    # 1. Apply overrides if provided
-    if overrides is not None:
-        for node_id, node in nodes_map.items():
-            if node_id in overrides:
-                node.user_scale = overrides[node_id]
-            else:
-                node.user_scale = None  # Clear if not in current overrides
-
-    # 2. Top-down propagation
-    # Initialize in-degrees (number of parents to wait for)
-    in_degree = {node_id: 0 for node_id in nodes_map}
-    for node_id, node in nodes_map.items():
-        for child in node.children:
-            if child.id in in_degree:
-                in_degree[child.id] += 1
-    
-    # Start with nodes that have no parents in this graph (roots)
-    queue = [nodes_map[node_id] for node_id, degree in in_degree.items() if degree == 0]
-    processed_count = 0
-
-    while queue:
-        current = queue.pop(0)
-        processed_count += 1
-        
-        # Current node's scale is final. Update its children's needs.
-        for child in current.children:
-            if child.id not in nodes_map:
-                continue
-            
-            # Re-sum required rates for child from all its parents
-            sum_required_rate = 0.0
-            
-            # Reset parent demands for this child (but preserve External Demand if it's a root as well)
-            external = child.parent_demands.get("External Demand", 0)
-            child.parent_demands = {} 
-            if external > 0:
-                child.parent_demands["External Demand"] = external
-                sum_required_rate += external
-
-            for parent in child.parents:
-                if parent.id not in nodes_map:
-                    continue
-                # Use parent's effective scale (which is final now) to get its needs
-                for inp in parent.scaled_inputs:
-                    if inp["item"] == child.output_item_name:
-                        rate = inp["rate"]
-                        sum_required_rate += rate
-                        child.parent_demands[parent.id] = child.parent_demands.get(parent.id, 0) + rate
-            
-            if child.base_output_rate > 0:
-                base_scale = sum_required_rate / child.base_output_rate
-                if round_up:
-                    child.original_building_scale = math.ceil(base_scale - 0.00001)
-                    if child.original_building_scale == 0 and base_scale > 0:
-                        child.original_building_scale = 1
-                else:
-                    child.original_building_scale = base_scale
-                
-                child.ideal_building_scale = base_scale
-            
-            # Decrement in-degree and add to queue if 0
-            in_degree[child.id] -= 1
-            if in_degree[child.id] == 0:
-                queue.append(child)
-
-    return nodes_map
+    graph.recalculate(overrides, round_up)
+    return graph
 
 # Keep main for simple testing if needed
 def main():
@@ -381,8 +320,8 @@ def main():
     root_demand_item = items['Smart Plating']
     root = Demand('Smart Plating', root_demand_item, 2.0, DemandType.PRODUCE)
     
-    nodes = calculate_demands(items, [root], round_up=True)
-    for nid, node in nodes.items():
+    graph = calculate_demands(items, [root], round_up=True)
+    for nid, node in graph.all_nodes.items():
         print(f"{nid}: {node}")
 
 if __name__ == "__main__":
