@@ -112,6 +112,18 @@ class FactoryGraph:
                 source.absorbed_by = t_id
                 self._execute_merge_links(source, target)
 
+    def set_subtree_dormancy(self, node_id: str, dormant: bool):
+        """
+        Recursively sets the dormancy state for a node and all its descendants.
+        """
+        node = self.get_node(node_id)
+        if not node:
+            return
+            
+        node.is_dormant = dormant
+        for child in node.children:
+            self.set_subtree_dormancy(child.id, dormant)
+
     def recalculate(self, overrides: Dict[str, float] = None, round_up: bool = False):
         """
         Propagates scales through the graph.
@@ -126,13 +138,15 @@ class FactoryGraph:
 
         # 2. Topological Sort
         nodes_map = self.all_nodes
-        in_degree = {node_id: 0 for node_id in nodes_map}
+        in_degree = {node_id: 0 for node_id, n in nodes_map.items() if not n.is_dormant}
         for node_id, node in nodes_map.items():
+            if node.is_dormant:
+                continue
             for child in node.children:
                 if child.id in in_degree:
                     in_degree[child.id] += 1
         
-        # Initialize queue with nodes that have no parents
+        # Initialize queue with nodes that have no active parents
         queue = []
         for node_id, degree in in_degree.items():
             if degree == 0:
@@ -163,7 +177,7 @@ class FactoryGraph:
             
             # Current node's scale is final. Update its children's needs.
             for child in current.children:
-                if child.id not in nodes_map:
+                if child.id not in nodes_map or child.is_dormant:
                     continue
                 
                 # Re-sum required rates for child from all its parents
@@ -177,7 +191,7 @@ class FactoryGraph:
                     sum_required_rate += external
 
                 for parent in child.parents:
-                    if parent.id not in nodes_map:
+                    if parent.id not in nodes_map or parent.is_dormant:
                         continue
                     # Use parent's effective scale
                     # If parent is absorbed, it shouldn't have children in our manipulated graph?
@@ -233,10 +247,10 @@ class FactoryGraph:
                 target_to_constituents[target_id].append(node)
         
         for node in self.all_nodes.values():
-            if node.absorbed_by:
-                continue # Skip absorbed nodes from top level
+            if node.absorbed_by or node.is_dormant:
+                continue # Skip absorbed or dormant nodes from top level
                 
-            constituents = target_to_constituents.get(node.id, [])
+            constituents = [c for c in target_to_constituents.get(node.id, []) if not c.is_dormant]
             
             # Serialize representative
             data = self._serialize_node(node)
@@ -284,5 +298,6 @@ class FactoryGraph:
             "parent_demands": node.parent_demands.copy(),
             "base_output_rate": node.base_output_rate,
             "base_inputs": node.base_inputs,
-            "base_power": node.base_power
+            "base_power": node.base_power,
+            "is_dormant": node.is_dormant
         }

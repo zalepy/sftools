@@ -16,30 +16,34 @@ from sftools_service.domain.models.recipe import Recipe
 DATA_PATH = 'data'
 
 
-def get_int_or_none(data_dict, key, strippings) -> Optional[int]:
+import re
+
+def get_int_or_none(data_dict, key, strippings=None) -> Optional[int]:
     value_as_str = data_dict.get(key)
     if not value_as_str:
         return None
     try:
-        value = int(value_as_str.strip(strippings).replace(',', ''))
+        # Remove anything that isn't a digit, minus, or comma/period
+        cleaned = re.sub(r'[^-0-9]', '', value_as_str)
+        if not cleaned: return None
+        return int(cleaned)
     except (ValueError, AttributeError) as ex:
         print('failed converting', key, ': >' + value_as_str + '< to int')
-        value = None
-
-    return value
+        return None
 
 
-def get_float_or_none(data_dict, key, strippings) -> Optional[float]:
+def get_float_or_none(data_dict, key, strippings=None) -> Optional[float]:
     value_as_str = data_dict.get(key)
     if not value_as_str:
         return None
     try:
-        value = float(value_as_str.strip(strippings).replace(',', ''))
+        # Keep digits, minus, and one decimal point
+        cleaned = re.sub(r'[^-0-9.]', '', value_as_str.replace(',', ''))
+        if not cleaned: return None
+        return float(cleaned)
     except (ValueError, AttributeError) as ex:
-        print('failed converting', key, ': >' + value_as_str + '< to int')
-        value = None
-
-    return value
+        print('failed converting', key, ': >' + value_as_str + '< to float')
+        return None
 
 
 def load_buildings(path: str) -> Dict[str, Building]:
@@ -247,11 +251,12 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
         recipe = non_alt_recipes[0] # Pick first basic recipe
 
         # Determine Node ID
-        # Format: parent_path__Relationship__RecipeName because one parent might need same item for multiple things?
-        # Actually simplest is: parent_path / OutputItem
-        # But recipes produce items.
-        # Let's use: parent_path__RecipeName
-        node_id = f"{parent_path}__{recipe.name}"
+        # Format: parent_path__[r]ParentRecipeName__RecipeName
+        # For root nodes, parent_path is "root" and there is no ParentRecipeName
+        if parent_node and parent_node.recipe:
+            node_id = f"{parent_path}__[r]{parent_node.recipe.name}__{recipe.name}"
+        else:
+            node_id = f"{parent_path}__{recipe.name}"
         
         # Calculate Base Scaler from demand rate
         target_rate = current_demand.rate
@@ -305,6 +310,78 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
     return graph
 
 
+def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_map: Dict, round_up: bool = True):
+    """
+    Expands a new subtree from an existing node that just had its recipe changed.
+    Checks for existing dormant nodes before creating new ones.
+    """
+    if not parent_node.recipe:
+        return
+
+    # Queue of (Demand, ParentNodePath, ParentNode)
+    # We start with the sub-demands of the parent_node
+    queue = []
+    # Use effective scale for initial sub-demands
+    sub_demands = parent_node.recipe.generate_demands(parent_node.building_scale)
+    for sd in sub_demands:
+        queue.append((sd, parent_node.id, parent_node))
+
+    processed_count = 0
+    max_nodes = 1000 # Smaller brake for subtree
+
+    while queue and processed_count < max_nodes:
+        current_demand, parent_path, p_node = queue.pop(0)
+        
+        if current_demand.type == DemandType.SINK:
+            continue
+
+        item = items_map.get(current_demand.item.name)
+        if not item or not item.recipes:
+            continue
+            
+        # Select Default Recipe
+        non_alt_recipes = [r for r in item.recipes if r.type == RecipeType.BASIC]
+        if not non_alt_recipes:
+            continue
+        recipe = non_alt_recipes[0]
+
+        # Determine Node ID using the isolated scheme
+        node_id = f"{parent_path}__[r]{p_node.recipe.name}__{recipe.name}"
+        
+        # Check if node already exists
+        existing_node = graph.get_node(node_id)
+        if existing_node:
+            # Re-activate it and its subtree
+            graph.set_subtree_dormancy(node_id, False)
+            # Update demand from parent
+            existing_node.parent_demands[p_node.id] = current_demand.rate
+            # Ensure link exists (though it should if it was a child before)
+            p_node.add_child(existing_node)
+            existing_node.add_parent(p_node)
+            continue
+
+        # Create New Node
+        target_rate = current_demand.rate
+        base_scaler = target_rate / recipe.output_rate
+        scaler = math.ceil(base_scaler - 0.00001) if round_up else base_scaler
+        if round_up and scaler == 0 and base_scaler > 0: scaler = 1
+
+        node = recipe.generate_production_node(node_id, scaler)
+        node.recipe = recipe
+        node.ideal_building_scale = base_scaler
+        node.parent_demands[p_node.id] = target_rate
+        
+        graph.add_node(node)
+        p_node.add_child(node)
+        node.add_parent(p_node)
+
+        # Recurse
+        for sd in recipe.generate_demands(scaler):
+            queue.append((sd, node_id, node))
+            
+        processed_count += 1
+
+
 def recalculate_graph(graph: FactoryGraph, overrides: Optional[Dict[str, float]] = None, round_up: bool = False):
     """
     Recalculates the scales of nodes based on user overrides and parent requirements.
@@ -312,6 +389,30 @@ def recalculate_graph(graph: FactoryGraph, overrides: Optional[Dict[str, float]]
     """
     graph.recalculate(overrides, round_up)
     return graph
+
+def switch_recipe_in_graph(graph: FactoryGraph, node_id: str, new_recipe: Recipe, items_map: Dict, round_up: bool = True):
+    """
+    Switches the recipe for a node, proactively deactivating its current subtree 
+    and activating/expanding the new one.
+    """
+    node = graph.get_node(node_id)
+    if not node:
+        return
+
+    # 1. Deactivate old subtree
+    # Important: only deactivate children, not the node itself
+    for child in list(node.children):
+        graph.set_subtree_dormancy(child.id, True)
+
+    # 2. Swap Recipe
+    node.update_from_recipe(new_recipe)
+    node.is_dormant = False # Ensure it's active
+
+    # 3. Activate/Expand New Subtree
+    expand_new_subtree(graph, node, items_map, round_up)
+
+    # 4. Recalculate everything
+    graph.recalculate(round_up=round_up)
 
 # Keep main for simple testing if needed
 def main():

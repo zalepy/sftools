@@ -19,7 +19,8 @@ class ProductionNode:
         output_item_name: str,
         base_output_rate: float,
         base_power: float,
-        base_inputs: List[Dict] = None
+        base_inputs: List[Dict] = None,
+        recipe = None
     ):
         self._id = node_id
         self._node_name = node_name
@@ -41,6 +42,8 @@ class ProductionNode:
 
         # Stateful attributes
         self._absorbed_by = None # ID of the node this node is merged into
+        self._recipe = recipe
+        self._is_dormant = False
 
     @property
     def id(self):
@@ -101,6 +104,22 @@ class ProductionNode:
     @property
     def output_item_name(self):
         return self._output_item_name
+
+    @property
+    def recipe(self):
+        return self._recipe
+
+    @recipe.setter
+    def recipe(self, value):
+        self._recipe = value
+
+    @property
+    def is_dormant(self):
+        return self._is_dormant
+
+    @is_dormant.setter
+    def is_dormant(self, value: bool):
+        self._is_dormant = value
 
     # --- Computed Scaled Properties ---
     
@@ -163,6 +182,29 @@ class ProductionNode:
 
     def clear_user_scale(self):
         self._user_scale = None
+
+    def update_from_recipe(self, recipe):
+        """
+        Updates the node's base properties from a new recipe.
+        Does NOT toggle dormancy, but prepares rates for the new state.
+        """
+        self._recipe = recipe
+        self._node_name = recipe.name
+        self._building = recipe.building
+        self._base_output_rate = recipe.output_rate
+        self._base_power = recipe.building.power_generated
+        
+        # Rebuild base_inputs
+        base_inputs = []
+        if recipe.ingredient1_item:
+            base_inputs.append({"item": recipe.ingredient1_item.name, "rate": recipe.ingredient1_rate})
+        if recipe.ingredient2_item:
+            base_inputs.append({"item": recipe.ingredient2_item.name, "rate": recipe.ingredient2_rate})
+        if recipe.ingredient3_item:
+            base_inputs.append({"item": recipe.ingredient3_item.name, "rate": recipe.ingredient3_rate})
+        if recipe.ingredient4_item:
+            base_inputs.append({"item": recipe.ingredient4_item.name, "rate": recipe.ingredient4_rate})
+        self._base_inputs = base_inputs
 
     # --- Operators ---
 

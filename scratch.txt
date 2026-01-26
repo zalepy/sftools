@@ -18,3 +18,6 @@ todo fixes:
   Needs a way to start from blank when desired.
 - nodes requested as "for External Demand" get folded into "normal" nodes if they are part of a chain. 
   Might be better to have them as distinct nodes.
+- applying overrides to a node does not refresh the performance stats panel. Only after 
+  deselecting and reselecting the node does it refresh.
+- 

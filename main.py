@@ -9,7 +9,7 @@ import os
 
 from sftools_service.domain.models.demand import Demand
 from sftools_service.domain.enums.demand_type import DemandType
-from sftools_service.logic.demand_calculator import load_models, calculate_demands, recalculate_graph, DATA_PATH
+from sftools_service.logic.demand_calculator import load_models, calculate_demands, recalculate_graph, switch_recipe_in_graph, DATA_PATH
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -38,6 +38,10 @@ class MergeRequest(BaseModel):
 class UnmergeRequest(BaseModel):
     node_id: str
     overrides: Dict[str, float] = {}
+
+class SwitchRecipeRequest(BaseModel):
+    node_id: str
+    recipe_name: str
 
 # In-memory store for the last calculated graph
 # Keys: 'graph', 'items', 'rates', 'round_up'
@@ -155,6 +159,43 @@ def api_unmerge_node(payload: UnmergeRequest):
     
     # Recalculate with provided overrides
     graph.recalculate(overrides=payload.overrides, round_up=GLOBAL_STATE["round_up"])
+    
+    return {"nodes": graph.get_ui_data()}
+
+@app.get("/api/available_recipes")
+def api_available_recipes(item_name: str):
+    item = items_map.get(item_name)
+    if not item:
+        return []
+    
+    # Return basic info about recipes
+    return [
+        {
+            "name": r.name,
+            "type": r.type.name,
+            "building": r.building.name,
+            "output_rate": r.output_rate
+        }
+        for r in item.recipes
+    ]
+
+@app.post("/api/switch_recipe")
+def api_switch_recipe(payload: SwitchRecipeRequest):
+    if GLOBAL_STATE["graph"] is None:
+        return JSONResponse(status_code=400, content={"error": "No graph has been calculated yet."})
+    
+    graph = GLOBAL_STATE["graph"]
+    new_recipe = recipes_map.get(payload.recipe_name)
+    if not new_recipe:
+        return JSONResponse(status_code=404, content={"error": f"Recipe {payload.recipe_name} not found."})
+    
+    switch_recipe_in_graph(
+        graph, 
+        payload.node_id, 
+        new_recipe, 
+        items_map, 
+        round_up=GLOBAL_STATE["round_up"]
+    )
     
     return {"nodes": graph.get_ui_data()}
 
