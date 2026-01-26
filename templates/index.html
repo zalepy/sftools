@@ -21,6 +21,7 @@
             --border: #334155;
             --node-bg: #334155;
             --node-border: #94a3b8;
+            --external-border: #993399;
         }
 
         body {
@@ -425,10 +426,11 @@
                                 <span class="stat-label">Active Recipe:</span>
                                 <span class="stat-value" id="detail-recipe">-</span>
                             </div>
-                            
+
                             <div class="form-group" style="margin-top: 0.5rem;">
                                 <label for="recipe-select">Switch Recipe</label>
-                                <select id="recipe-select" style="width: 100%; background: var(--bg-color); color: var(--text-primary); border: 1px solid var(--border); padding: 0.4rem; border-radius: 4px;">
+                                <select id="recipe-select"
+                                    style="width: 100%; background: var(--bg-color); color: var(--text-primary); border: 1px solid var(--border); padding: 0.4rem; border-radius: 4px;">
                                     <option value="">Select Recipe...</option>
                                 </select>
                                 <div class="hint">Switching recipes preserves overrides on each path.</div>
@@ -656,7 +658,12 @@
                         'width': 150,
                         'height': 80,
                         'shape': 'round-rectangle',
-                        'font-size': '12px',
+                        'font-size': '12px'
+                    }
+                },
+                {
+                    selector: 'node[backgroundImage]',
+                    style: {
                         'background-image': 'data(backgroundImage)',
                         'background-clip': 'node',
                         'background-position-x': '0px',
@@ -692,6 +699,13 @@
                     style: {
                         'border-color': '#22d3ee',
                         'border-style': 'dashed'
+                    }
+                },
+                {
+                    selector: '.external-node',
+                    style: {
+                        'border-color': '#993399',
+                        'border-width': 4
                     }
                 }
             ],
@@ -1002,7 +1016,7 @@
                         backgroundColor: currentColorMapping[node.output_item] || '#334155',
                         backgroundImage: backgroundImage
                     },
-                    classes: currentOverrides[node.id] ? 'overridden' : ''
+                    classes: (currentOverrides[node.id] ? 'overridden ' : '') + (node.is_external ? 'external-node' : '')
                 });
 
                 processedNodes.add(node.id);
@@ -1248,7 +1262,7 @@
                     const data = await response.json();
                     renderGraph(data.nodes);
                     saveState();
-                    
+
                     // Refresh node details after switch
                     const node = cy.getElementById(selectedNodeId);
                     if (node && node.length > 0) {

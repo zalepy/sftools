@@ -299,5 +299,6 @@ class FactoryGraph:
             "base_output_rate": node.base_output_rate,
             "base_inputs": node.base_inputs,
             "base_power": node.base_power,
-            "is_dormant": node.is_dormant
+            "is_dormant": node.is_dormant,
+            "is_external": "External Demand" in node.parent_demands
         }

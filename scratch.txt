@@ -8,16 +8,21 @@ ideas/plans
   a custom clock speed to compensate for any fractional in the scaled number of buildings. This will be a new property
   of the ProductionNode.
 - splitting any node (plan added in SPLIT_PLAN.md)
-- switch recipes on a per-node basis
-- add distinct border color for "for External Demand" nodes
+- switch recipes on a per-node basis (done)
+
+>> - add option for "external input" nodes
+
+>>>> - add distinct border color for "for External Demand" nodes
 
 todo fixes:
+>>>> - nodes requested as "for External Demand" get folded into chain nodes if they are present as a child
+  for some other demand. It will be better to keep them distinct and allow user to merge them if desired.
+
 - couple of node colors are too bright so they can use dark text
 - fix big demands e.g. AI Expansion Server
 - way to reset data - clicking "Calculate" does not reset data - keeps merges and overrides. 
   Needs a way to start from blank when desired.
-- nodes requested as "for External Demand" get folded into "normal" nodes if they are part of a chain. 
-  Might be better to have them as distinct nodes.
+
 - applying overrides to a node does not refresh the performance stats panel. Only after 
   deselecting and reselecting the node does it refresh.
 - 

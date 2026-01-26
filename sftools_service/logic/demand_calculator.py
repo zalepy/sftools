@@ -227,8 +227,8 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
     # ParentNode can be None for root
     queue: List[Tuple[Demand, str, Optional[ProductionNode]]] = []
     
-    for d in root_demands_list:
-        queue.append((d, "root", None))
+    for i, d in enumerate(root_demands_list):
+        queue.append((d, f"root_{i}", None))
 
     processed_count = 0
     max_nodes = 5000 # Safety brake
