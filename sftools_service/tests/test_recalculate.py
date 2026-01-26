@@ -19,8 +19,8 @@ def test_basic_recalculation(project_data):
     nodes = calculate_demands(items_map, [root_demand], round_up=False)
     
     # Find root node ID
-    root_node_id = next(nid for nid, n in nodes.items() if n.output_item_name == 'Smart Plating')
-    root_node = nodes[root_node_id]
+    root_node_id = next(nid for nid, n in nodes.all_nodes.items() if n.output_item_name == 'Smart Plating')
+    root_node = nodes.get_node(root_node_id)
     
     # Smart Plating recipe produces 2/min at 1.0 scale.
     # So 2/min demand = 1.0 scale.
@@ -58,8 +58,8 @@ def test_complex_propagation(project_data):
     
     nodes = calculate_demands(items_map, [root_demand], round_up=False)
     
-    root_node_id = next(nid for nid, n in nodes.items() if n.output_item_name == 'Modular Frame')
-    root_node = nodes[root_node_id]
+    root_node_id = next(nid for nid, n in nodes.all_nodes.items() if n.output_item_name == 'Modular Frame')
+    root_node = nodes.get_node(root_node_id)
     
     # Override a deep child
     # Find a Reinforced Iron Plate node (consumed by Modular Frame)
@@ -84,13 +84,13 @@ def test_clearing_overrides(project_data):
     root_demand = Demand('Smart Plating', root_item, 2.0, DemandType.PRODUCE)
     
     nodes = calculate_demands(items_map, [root_demand], round_up=False)
-    root_node_id = next(nid for nid, n in nodes.items() if n.output_item_name == 'Smart Plating')
+    root_node_id = next(nid for nid, n in nodes.all_nodes.items() if n.output_item_name == 'Smart Plating')
     
     # Apply override
     recalculate_graph(nodes, {root_node_id: 10.0})
-    assert nodes[root_node_id].building_scale == 10.0
+    assert nodes.get_node(root_node_id).building_scale == 10.0
     
     # Clear override
     recalculate_graph(nodes, {})
-    assert nodes[root_node_id].user_scale is None
-    assert nodes[root_node_id].building_scale == pytest.approx(1.0)
+    assert nodes.get_node(root_node_id).user_scale is None
+    assert nodes.get_node(root_node_id).building_scale == pytest.approx(1.0)

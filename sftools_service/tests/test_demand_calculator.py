@@ -33,7 +33,7 @@ def test_calculate_demands_basic(data):
     # For a root, parent_path is "root"
     
     # Let's find the smart plating node
-    smart_plating_nodes = [node for node in final_production_nodes.values() if node.name == 'Smart Plating']
+    smart_plating_nodes = [node for node in final_production_nodes.all_nodes.values() if node.name == 'Smart Plating']
     assert len(smart_plating_nodes) > 0
     node = smart_plating_nodes[0]
     
@@ -53,11 +53,11 @@ def test_calculate_demands_with_overrides(data):
     
     # First get the node ID
     initial_nodes = calculate_demands(items, root_demands, round_up=True)
-    smart_plating_node_id = next(nid for nid, node in initial_nodes.items() if node.name == 'Smart Plating')
+    smart_plating_node_id = next(nid for nid, node in initial_nodes.all_nodes.items() if node.name == 'Smart Plating')
     
     # Apply override via recalculate_graph
     from sftools_service.logic.demand_calculator import recalculate_graph
     final_nodes = recalculate_graph(initial_nodes, {smart_plating_node_id: 5.0})
     
-    assert final_nodes[smart_plating_node_id].user_scale == 5.0
-    assert final_nodes[smart_plating_node_id].building_scale == 5.0
+    assert final_nodes.get_node(smart_plating_node_id).user_scale == 5.0
+    assert final_nodes.get_node(smart_plating_node_id).building_scale == 5.0

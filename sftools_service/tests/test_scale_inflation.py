@@ -24,7 +24,7 @@ def test_scaling_does_not_inflate_sub_demands(data):
     # 20 required, recipe produces 15 per min.
     # 20 / 15 = 1.33... -> ceiling(1.33) = 2 buildings.
     
-    concrete_nodes = [n for n in final_nodes.values() if n.name == 'Concrete']
+    concrete_nodes = [n for n in final_nodes.all_nodes.values() if n.name == 'Concrete']
     assert len(concrete_nodes) == 1
     concrete_node = concrete_nodes[0]
     
@@ -35,7 +35,7 @@ def test_scaling_does_not_inflate_sub_demands(data):
     # But wait, in the new logic it ONLY selects BASIC recipes.
     # Limestone might have a Miner recipe which is BASIC.
     
-    limestone_nodes = [n for n in final_nodes.values() if n.name == 'Limestone']
+    limestone_nodes = [n for n in final_nodes.all_nodes.values() if n.name == 'Limestone']
     if limestone_nodes:
         # If Limestone has a node (e.g. Miner), verify its output matches 2 * 45 = 90
         # However, many items like Limestone might not have a 'Basic' recipe in the data if they are considered raw

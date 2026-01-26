@@ -40,41 +40,14 @@ class UnmergeRequest(BaseModel):
     overrides: Dict[str, float] = {}
 
 # In-memory store for the last calculated graph
-# Keys: 'nodes', 'items', 'rates', 'round_up'
+# Keys: 'graph', 'items', 'rates', 'round_up'
 GLOBAL_STATE = {
-    "nodes": None,
+    "graph": None,
     "items": None,
     "rates": None,
     "round_up": True,
     "merges": {}
 }
-
-def _serialize_node(node):
-    # Build scaled input rates from the node's recipe data
-    scaled_inputs = []
-    if hasattr(node, 'scaled_inputs') and node.scaled_inputs:
-        scaled_inputs = node.scaled_inputs
-    
-    return {
-        "id": node.id,
-        "name": node.name,
-        "recipe_name": node.name.split('__')[-1] if '__' in node.name else node.name,
-        "building": node.building.name,
-        "building_scale": node.building_scale,
-        "original_building_scale": node.original_building_scale,
-        "user_scale": node.user_scale,
-        "ideal_building_scale": node.ideal_building_scale,
-        "throughput": node.scaled_output,
-        "power": node.scaled_power,
-        "output_item": node.output_item_name,
-        "parents": [p.id for p in node.parents],
-        "children": [c.id for c in node.children],
-        "scaled_inputs": scaled_inputs,
-        "parent_demands": node.parent_demands,
-        "base_output_rate": node.base_output_rate,
-        "base_inputs": node.base_inputs,
-        "base_power": node.base_power
-    }
 
 @app.get("/")
 def read_root(request: Request):
@@ -94,7 +67,7 @@ def api_calculate(payload: CalculateRequest):
             root_demands.append(Demand(item_name, item, rate, DemandType.PRODUCE))
     
     # Fresh build of graph structure
-    final_nodes = calculate_demands(
+    graph = calculate_demands(
         items_map, 
         root_demands, 
         scale_overrides={}, 
@@ -104,52 +77,46 @@ def api_calculate(payload: CalculateRequest):
     # Apply merges from persistence
     if payload.merges:
         for source_id, target_id in payload.merges.items():
-            if source_id in final_nodes and target_id in final_nodes:
-                source_node = final_nodes[source_id]
-                target_node = final_nodes[target_id]
-                target_node.absorb_node(source_node)
-                del final_nodes[source_id]
+            graph.apply_merge(source_id, target_id)
         
         # Recalculate to update following the structural changes
         # Use provided overrides to preserve manual adjustments
-        recalculate_graph(final_nodes, overrides=payload.overrides, round_up=payload.round_up)
+        graph.recalculate(overrides=payload.overrides, round_up=payload.round_up)
     elif payload.overrides:
         # Even if no merges, apply overrides to the fresh graph
-        recalculate_graph(final_nodes, overrides=payload.overrides, round_up=payload.round_up)
+        graph.recalculate(overrides=payload.overrides, round_up=payload.round_up)
 
     # Update GLOBAL_STATE
-    GLOBAL_STATE["nodes"] = final_nodes
+    GLOBAL_STATE["graph"] = graph
     GLOBAL_STATE["items"] = payload.items
     GLOBAL_STATE["rates"] = payload.rates
     GLOBAL_STATE["round_up"] = payload.round_up
     GLOBAL_STATE["merges"] = payload.merges
     
-    nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
-    return {"nodes": nodes_data}
+    return {"nodes": graph.get_ui_data()}
 
 @app.post("/api/recalculate")
 def api_recalculate(payload: RecalculateRequest):
-    if GLOBAL_STATE["nodes"] is None:
+    if GLOBAL_STATE["graph"] is None:
         return JSONResponse(status_code=400, content={"error": "No graph has been calculated yet. Click Calculate first."})
     
     # Recalculate values using the existing graph structure and stored round_up setting
-    final_nodes = recalculate_graph(
-        GLOBAL_STATE["nodes"], 
+    graph = GLOBAL_STATE["graph"]
+    graph.recalculate(
         payload.scale_overrides, 
         round_up=GLOBAL_STATE["round_up"]
     )
     
-    nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
-    return {"nodes": nodes_data}
+    return {"nodes": graph.get_ui_data()}
 
 @app.post("/api/merge_nodes")
 def api_merge_nodes(payload: MergeRequest):
-    if GLOBAL_STATE["nodes"] is None:
+    if GLOBAL_STATE["graph"] is None:
         return JSONResponse(status_code=400, content={"error": "No graph has been calculated yet."})
     
-    nodes_map = GLOBAL_STATE["nodes"]
-    source_node = nodes_map.get(payload.source_id)
-    target_node = nodes_map.get(payload.target_id)
+    graph = GLOBAL_STATE["graph"]
+    source_node = graph.get_node(payload.source_id)
+    target_node = graph.get_node(payload.target_id)
     
     if not source_node or not target_node:
         return {"error": "Source or target node not found."}, 404
@@ -158,70 +125,38 @@ def api_merge_nodes(payload: MergeRequest):
         return JSONResponse(status_code=400, content={"error": "Cannot merge nodes with different output items."})
 
     # Execute merge
-    target_node.absorb_node(source_node)
+    graph.apply_merge(payload.source_id, payload.target_id)
     
-    # Remove source from global state
-    del nodes_map[payload.source_id]
-
     # Record merge in GLOBAL_STATE for persistence
     if "merges" not in GLOBAL_STATE: GLOBAL_STATE["merges"] = {}
     GLOBAL_STATE["merges"][payload.source_id] = payload.target_id
 
     # Recalculate graph to propagate changes
-    final_nodes = recalculate_graph(
-        nodes_map, 
+    graph.recalculate(
         None, # Preserve existing overrides
         round_up=GLOBAL_STATE["round_up"]
     )
     
-    nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
-    return {"nodes": nodes_data}
+    return {"nodes": graph.get_ui_data()}
 
 @app.post("/api/unmerge_node")
 def api_unmerge_node(payload: UnmergeRequest):
-    if GLOBAL_STATE["nodes"] is None:
+    if GLOBAL_STATE["graph"] is None:
         return JSONResponse(status_code=400, content={"error": "No graph has been calculated yet."})
     
-    # Remove all merges targeting this node
+    # Remove all merges targeting this node from persistence
     if "merges" in GLOBAL_STATE:
         keys_to_remove = [s_id for s_id, t_id in GLOBAL_STATE["merges"].items() if t_id == payload.node_id]
         for k in keys_to_remove:
             del GLOBAL_STATE["merges"][k]
 
-    # Return to original demands to rebuild the graph structure
-    root_demands = []
-    for i in range(len(GLOBAL_STATE["items"])):
-        item_name = GLOBAL_STATE["items"][i]
-        rate = GLOBAL_STATE["rates"][i]
-        item = items_map.get(item_name)
-        if item:
-            root_demands.append(Demand(item_name, item, rate, DemandType.PRODUCE))
-            
-    # Fresh build
-    final_nodes = calculate_demands(
-        items_map, 
-        root_demands, 
-        scale_overrides={}, 
-        round_up=GLOBAL_STATE["round_up"]
-    )
-    
-    # Re-apply remaining merges
-    if GLOBAL_STATE["merges"]:
-        for source_id, target_id in GLOBAL_STATE["merges"].items():
-            if source_id in final_nodes and target_id in final_nodes:
-                source_node = final_nodes[source_id]
-                target_node = final_nodes[target_id]
-                target_node.absorb_node(source_node)
-                del final_nodes[source_id]
+    graph = GLOBAL_STATE["graph"]
+    graph.remove_merge(payload.node_id)
     
     # Recalculate with provided overrides
-    recalculate_graph(final_nodes, overrides=payload.overrides, round_up=GLOBAL_STATE["round_up"])
+    graph.recalculate(overrides=payload.overrides, round_up=GLOBAL_STATE["round_up"])
     
-    # Update GLOBAL_STATE
-    GLOBAL_STATE["nodes"] = final_nodes
-    
-    nodes_data = [ _serialize_node(n) for n in final_nodes.values() ]
-    return {"nodes": nodes_data}
+    return {"nodes": graph.get_ui_data()}
 
 COLORS_FILE = os.path.join(DATA_PATH, 'node_colors.json')
 

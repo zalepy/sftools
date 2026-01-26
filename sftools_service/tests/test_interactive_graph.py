@@ -14,10 +14,10 @@ def test_graph_structure_and_ids(data_models):
     nodes = calculate_demands(items, [root_demand], round_up=True)
     
     # Check we have nodes
-    assert len(nodes) > 0
+    assert len(nodes.all_nodes) > 0
     
     # Find Smart Plating Node
-    sp_nodes = [n for n in nodes.values() if n.output_item_name == 'Smart Plating']
+    sp_nodes = [n for n in nodes.all_nodes.values() if n.output_item_name == 'Smart Plating']
     assert len(sp_nodes) == 1
     sp_node = sp_nodes[0]
     
@@ -45,7 +45,7 @@ def test_overrides(data_models):
     # 1. Initial Calculation to get IDs
     nodes = calculate_demands(items, [root_demand], round_up=False)
     
-    rotor_node = next(n for n in nodes.values() if n.output_item_name == 'Rotor')
+    rotor_node = next(n for n in nodes.all_nodes.values() if n.output_item_name == 'Rotor')
     original_rate = rotor_node.scaled_output
     # Standard: 2 Smart Plating needs 2 Rotors.
     assert abs(original_rate - 2.0) < 0.001
@@ -56,7 +56,7 @@ def test_overrides(data_models):
     # Recalculate based on overrides, propagating changes
     new_nodes = recalculate_graph(nodes, {rotor_node.id: 10.0})
     
-    new_rotor_node = new_nodes[rotor_node.id]
+    new_rotor_node = new_nodes.get_node(rotor_node.id)
     # user_scale should be 10.0
     assert new_rotor_node.user_scale == 10.0
     assert abs(new_rotor_node.building_scale - 10.0) < 0.001
@@ -77,7 +77,7 @@ def test_overrides(data_models):
     # Reinforced Iron Plate also uses Screws. check that they are NOT scaled up if they are separate nodes.
     # In tree mode, they should be separate nodes.
     
-    rip_node = next(n for n in new_nodes.values() if n.output_item_name == 'Reinforced Iron Plate')
+    rip_node = next(n for n in new_nodes.all_nodes.values() if n.output_item_name == 'Reinforced Iron Plate')
     rip_screw_node = next(c for c in rip_node.children if c.output_item_name == 'Screws')
     
     # RIP needs 12 Screws for 2 Plates (Standard: 5 Reinf. Plates = 60 Screws -> 1 = 12).
@@ -92,10 +92,10 @@ def test_rounding_toggle(data_models):
     
     # With Rounding
     nodes_up = calculate_demands(items, [root], round_up=True)
-    sp_node_up = next(n for n in nodes_up.values() if n.output_item_name == 'Smart Plating')
+    sp_node_up = next(n for n in nodes_up.all_nodes.values() if n.output_item_name == 'Smart Plating')
     assert sp_node_up.building_scale == 1.0 # Ceil(0.1 / 2.5) -> Ceil(0.04) -> 1
     
     # Without Rounding
     nodes_float = calculate_demands(items, [root], round_up=False)
-    sp_node_float = next(n for n in nodes_float.values() if n.output_item_name == 'Smart Plating')
+    sp_node_float = next(n for n in nodes_float.all_nodes.values() if n.output_item_name == 'Smart Plating')
     assert sp_node_float.building_scale < 1.0

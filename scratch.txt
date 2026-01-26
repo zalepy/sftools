@@ -2,23 +2,19 @@
 ideas/plans
 
 - add short codes/ handles for the items as some names are long and will make the UI cluttered (wontdo)
-- add text on the edges to show the transport rate (done)
 - option for folding the side panel to allow more space for the graph
-- represent miners in the graph (done)
-- building with Category: Extraction. (done)
-- un-merge specific ProductionNode based on chain demands. eg. I had Wire merged with Cable and Stator:
-  add a new button that would specifically split the Wire node into two separate nodes 
-  one with edge to Cable and the other to Stator. (done)
-- make "scaled inputs" expandable to show scaled inputs per "chain" 
-  e.g. demand for wire 600/min is formed by demand for Cable of 300/min and 280/min for Stator
 - instead of clock speed for the full scale number of buildings, let's designate a "last building" clock speed. 
   The idea is to have all but one of the building work at 100% clock speed, and only the final one would use 
   a custom clock speed to compensate for any fractional in the scaled number of buildings. This will be a new property
   of the ProductionNode.
+- splitting any node (plan added in SPLIT_PLAN.md)
+- switch recipes on a per-node basis
+- add distinct border color for "for External Demand" nodes
 
 todo fixes:
- - couple of node colors are too bright so they can use dark text
- - fix big demands e.g. AI Expansion Server
- - reopening of a browser restores graph but looses the color coding of the nodes
- - way to reset browser data - atm seems to persist data that lacks some of the latest changes
- - 
+- couple of node colors are too bright so they can use dark text
+- fix big demands e.g. AI Expansion Server
+- way to reset data - clicking "Calculate" does not reset data - keeps merges and overrides. 
+  Needs a way to start from blank when desired.
+- nodes requested as "for External Demand" get folded into "normal" nodes if they are part of a chain. 
+  Might be better to have them as distinct nodes.

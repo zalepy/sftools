@@ -30,8 +30,9 @@ To start web server execute:
 Plans and Features:
 * **Graph Visualization**: High-performance SVG/Cytoscape chart representation of the production chain. (Done)
 * **Interactive Adjustments**: Users can override the scale (number of buildings) for any node in the graph. These changes automatically propagate through the dependency chain. (Done)
-* **Recalculation Mode**: Unlike the initial construction which uses a BFS expansion, the "recalculate" mode operates on the preexisting graph, preserving topological links while adjusting throughput. (Done)
-* **Lines and Logistics**: Future plans include representing physical lines and considering splitting/merging limitations.
+* **Stateful Backend Graph**: Maintains a high-fidelity "Master Graph" on the server. This enables non-destructive merges, instant unmerging, and ensures manual overrides are preserved even during structural changes. (Done)
+* **Recalculation Mode**: Operates on the persistent `FactoryGraph` structure, allowing for complex propagation (Kahn's Algorithm) while aggregating values for merged groups. (Done)
+* **Recipe Switching**: (Planned) Swap recipes for individual nodes without losing graph state.
 
 
 ## Web Interface
