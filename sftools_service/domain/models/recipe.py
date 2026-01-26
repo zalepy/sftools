@@ -150,7 +150,8 @@ class Recipe:
             output_item_name=self.output_item.name,
             base_output_rate=self.output1_rate,
             base_power=self.building.power_generated,
-            base_inputs=base_inputs
+            base_inputs=base_inputs,
+            recipe=self
         )
 
     # ----------------------------------------------------------------------------------------------------------------
