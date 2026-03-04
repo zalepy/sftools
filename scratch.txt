@@ -18,6 +18,15 @@ todo fixes:
 >>>> - nodes requested as "for External Demand" get folded into chain nodes if they are present as a child
   for some other demand. It will be better to keep them distinct and allow user to merge them if desired.
 
+???? - Currently merges of external and non-external nodes marks the resulting node as an external, while 
+  the alternative is better - keep it non-external. Also, there is an issue after some cases of unmerging
+  node when external node is involved. Worked with single external node and single non-external node. But 
+  with two non-external nodes that are merged initially, then an external node is merged into them. After 
+  unmerging the external node shows with scale 0, while one of the non-external nodes gets marked as 
+  external (border color) and has picked extra scaled demand. The issue does not occur if the external node 
+  is merged into the pre-merged non-external node. Unmerging from such operation recovers the external node 
+  correctly, while the other node is recovered in a merged state of the two non-external nodes. 
+
 - couple of node colors are too bright so they can use dark text
 - fix big demands e.g. AI Expansion Server
 - way to reset data - clicking "Calculate" does not reset data - keeps merges and overrides. 
