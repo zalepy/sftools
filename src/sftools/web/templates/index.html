@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satisfactory Demand Planner</title>
+    <!-- Cytoscape.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+    <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #f59e0b;
+            --accent-hover: #d97706;
+            --border: #334155;
+            --node-bg: #334155;
+            --node-border: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            background: linear-gradient(135deg, #f59e0b 0%, #f43f5e 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 350px;
+            background-color: var(--card-bg);
+            border-right: 1px solid var(--border);
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .graph-container {
+            flex: 1;
+            background-color: var(--bg-color);
+            position: relative;
+        }
+
+        #cy {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Forms & Inputs */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        input {
+            width: 100%;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        button.secondary {
+            background-color: var(--border);
+            color: var(--text-primary);
+        }
+
+        .demand-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        /* Node Details Panel */
+        #node-details {
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+            display: none;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            font-weight: 500;
+        }
+
+        .hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            margin-top: 0.25rem;
+        }
+
+        /* Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            bottom: 2rem;
+            right: 2rem;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            width: 200px;
+        }
+
+        .zoom-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        #zoom-slider {
+            flex: 1;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .zoom-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            min-width: 35px;
+            text-align: right;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1rem;
+            flex-shrink: 0;
+        }
+
+        .tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-content {
+            display: none;
+            flex-direction: column;
+            gap: 1.5rem;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        .color-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem;
+            background-color: var(--bg-color);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            margin-bottom: 0.5rem;
+        }
+
+        .color-label {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .color-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .color-input {
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            background: none;
+            overflow: hidden;
+        }
+
+        .color-input::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-input::-webkit-color-swatch {
+            border: none;
+        }
+
+        /* Status Colors */
+        :root {
+            --status-surplus: #22c55e;
+            --status-excessive: #3b82f6;
+            --status-shortage: #ef4444;
+        }
+
+        /* Collapsible Sections */
+        details {
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        summary {
+            padding: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: "▼";
+            font-size: 0.7rem;
+            transition: transform 0.2s;
+        }
+
+        details[open] summary::after {
+            transform: rotate(180deg);
+        }
+
+        .details-content {
+            padding: 0.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .breakdown-list {
+            padding-left: 1rem;
+            margin-bottom: 0.5rem;
+            border-left: 1px dashed var(--border);
+            margin-left: 0.5rem;
+        }
+
+        .breakdown-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <h1>Satisfactory Planner</h1>
+        </div>
+        <div class="toggle-switch">
+            <input type="checkbox" id="round-up-toggle" checked>
+            <label for="round-up-toggle" style="margin:0; cursor:pointer;">Round Up Buildings</label>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Left Sidebar: Inputs -->
+        <div class="sidebar">
+            <div class="tabs">
+                <div class="tab active" data-tab="planner">Planner</div>
+                <div class="tab" data-tab="colors">Colors</div>
+            </div>
+
+            <!-- Planner Tab -->
+            <div id="planner-tab" class="tab-content active">
+                <section>
+                    <h3>Demand Targets</h3>
+                    <form id="demand-form" onsubmit="event.preventDefault(); triggerRecalculate();">
+                        <div id="demand-rows">
+                            <div class="demand-row">
+                                <input type="text" name="items" list="items_list" placeholder="Item">
+                                <input type="number" step="any" name="rates" placeholder="Rate">
+                                <button type="button" class="secondary" style="width: auto;"
+                                    onclick="removeRow(this)">✕</button>
+                            </div>
+                        </div>
+                        <button type="button" class="secondary" onclick="addRow()" style="margin-bottom: 0.5rem;">+ Add
+                            Item</button>
+                        <button type="submit" style="margin-bottom: 0.5rem;">Calculate</button>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button type="button" class="secondary" onclick="exportToJSON()">Export JSON</button>
+                            <button type="button" class="secondary"
+                                onclick="document.getElementById('import-input').click()">Import JSON</button>
+                            <input type="file" id="import-input" style="display: none;" accept=".json"
+                                onchange="importFromJSON(this)">
+                        </div>
+                        <div
+                            style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                            <button type="button" class="secondary" onclick="clearOverrides()">Clear Overrides</button>
+                            <button type="button" class="secondary" onclick="clearMerges()">Clear Merges</button>
+                        </div>
+                    </form>
+
+                    <datalist id="items_list">
+                        {% for item in all_items %}
+                        <option value="{{ item }}">
+                            {% endfor %}
+                    </datalist>
+                </section>
+
+                <!-- Node Details Panel (Appears on Selection) -->
+                <section id="node-details">
+                    <h3>Selected Node</h3>
+
+                    <div class="stat-row">
+                        <span class="stat-label">Item:</span>
+                        <span class="stat-value" id="detail-item">-</span>
+                    </div>
+
+                    <div class="stat-row">
+                        <span class="stat-label">Building:</span>
+                        <span class="stat-value" id="detail-building">-</span>
+                    </div>
+
+                    <details id="details-recipe-collapsible">
+                        <summary>Recipe Details</summary>
+                        <div class="details-content">
+                            <div class="stat-row">
+                                <span class="stat-label">Active Recipe:</span>
+                                <span class="stat-value" id="detail-recipe">-</span>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 0.5rem;">
+                                <label for="recipe-select">Switch Recipe</label>
+                                <select id="recipe-select" style="width: 100%; background: var(--bg-color); color: var(--text-primary); border: 1px solid var(--border); padding: 0.4rem; border-radius: 4px;">
+                                    <option value="">Select Recipe...</option>
+                                </select>
+                                <div class="hint">Switching recipes preserves overrides on each path.</div>
+                            </div>
+
+                            <div id="base-recipe-details"
+                                style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                                <!-- Base rates at 100% -->
+                            </div>
+                        </div>
+                    </details>
+
+                    <div id="performance-stats"
+                        style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.5rem;">
+                        <h4 style="margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">Performance
+                            & Stats</h4>
+                        <div class="stat-row">
+                            <span class="stat-label">Current Scale:</span>
+                            <span class="stat-value" id="detail-scale">-</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Output Rate:</span>
+                            <span class="stat-value" id="detail-output-rate">-</span>
+                        </div>
+                        <div id="detail-surplus-row" class="stat-row">
+                            <span class="stat-label" id="detail-surplus-label">Surplus/Shortage:</span>
+                            <span class="stat-value" id="detail-surplus-value">-</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Equilibrium Clock Speed:</span>
+                            <span class="stat-value" id="detail-clock">-</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Power:</span>
+                            <span class="stat-value" id="detail-power">-</span>
+                        </div>
+                    </div>
+
+                    <h4
+                        style="margin-top: 1rem; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                        Scaled Inputs</h4>
+                    <div id="detail-inputs-container" style="display: none; margin-bottom: 1rem;">
+                        <!-- Input rates will be dynamically populated -->
+                    </div>
+
+                    <details id="details-tech-collapsible">
+                        <summary>Technical Info</summary>
+                        <div class="details-content">
+                            <div class="stat-row">
+                                <span class="stat-label">Node ID:</span>
+                                <span class="stat-value" style="font-family: monospace; font-size: 0.75rem;"
+                                    id="detail-id">-</span>
+                            </div>
+                            <div class="stat-row" style="flex-direction: column; align-items: flex-start;">
+                                <span class="stat-label">Parents:</span>
+                                <span class="stat-value"
+                                    style="font-family: monospace; font-size: 0.7rem; word-break: break-all;"
+                                    id="detail-parents">-</span>
+                            </div>
+                            <div class="stat-row" style="flex-direction: column; align-items: flex-start;">
+                                <span class="stat-label">Children:</span>
+                                <span class="stat-value"
+                                    style="font-family: monospace; font-size: 0.7rem; word-break: break-all;"
+                                    id="detail-children">-</span>
+                            </div>
+                        </div>
+                    </details>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label>Override Scale Factor</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="number" id="override-scale" step="any" placeholder="Default">
+                            <button class="secondary" style="width: auto;" onclick="clearOverride()">Clear</button>
+                        </div>
+                        <div class="hint">Number of buildings (can be fractional). Changes cascade to child nodes.</div>
+                    </div>
+
+                    <button onclick="applyOverride()">Apply Override</button>
+                    <button id="unmerge-btn" class="secondary" style="margin-top: 0.5rem; display: none;"
+                        onclick="unmergeSelectedNode()">Unmerge Node</button>
+                </section>
+            </div>
+
+            <!-- Colors Tab -->
+            <div id="colors-tab" class="tab-content">
+                <section>
+                    <h3>Node Color Mapping</h3>
+                    <p class="hint" style="margin-bottom: 1rem;">Colors are based on the output item of the node.</p>
+                    <div id="color-list">
+                        <!-- Polulated by JS -->
+                    </div>
+                    <button onclick="saveColors()" style="margin-top: 1rem;">Save Colors</button>
+                </section>
+            </div>
+        </div>
+
+        <!-- Graph Viewer -->
+        <div class="graph-container">
+            <div id="cy"></div>
+
+            <!-- Zoom Controls Overlay -->
+            <div class="zoom-controls">
+                <div class="zoom-slider-container">
+                    <span class="zoom-label">Zoom</span>
+                    <input type="range" id="zoom-slider" min="0.1" max="5" step="0.01" value="1">
+                    <span id="zoom-percent" class="zoom-label">100%</span>
+                </div>
+                <button class="secondary" onclick="cy.fit(); updateZoomSlider();">Fit View</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Cytoscape
+        try {
+            if (typeof cytoscapeDagre !== 'undefined') {
+                cytoscape.use(cytoscapeDagre);
+            }
+        } catch (e) {
+            console.warn("Could not register cytoscape-dagre", e);
+        }
+
+        let currentOverrides = {};
+        let currentColorMapping = {};
+        let currentMerges = {}; // absorbed_id -> target_id
+        let currentRecipes = {}; // node_id -> recipe_name
+        const COLORS_KEY = 'sf_planner_colors';
+
+        // --- Tabs ---
+        document.querySelectorAll('.tab').forEach(t => {
+            t.addEventListener('click', () => {
+                const tabId = t.getAttribute('data-tab');
+
+                // Update UI
+                document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+                t.classList.add('active');
+
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+
+                // If switching to planner, refresh graph colors
+                if (tabId === 'planner' && cy.nodes().length > 0) {
+                    refreshNodeColors();
+                }
+            });
+        });
+
+        // --- Color Management ---
+        async function loadColors() {
+            try {
+                const response = await fetch('/api/colors');
+                const defaults = response.ok ? await response.json() : {};
+                let saved = {};
+                try {
+                    saved = JSON.parse(localStorage.getItem(COLORS_KEY)) || {};
+                } catch (e) {
+                    console.warn("Could not read saved colors", e);
+                }
+                currentColorMapping = { ...defaults, ...saved };
+                renderColorList();
+            } catch (e) {
+                console.error("Failed to load colors", e);
+            }
+        }
+
+        function renderColorList() {
+            const container = document.getElementById('color-list');
+            container.innerHTML = '';
+
+            // Sort items by name
+            const items = Object.keys(currentColorMapping).sort();
+
+            items.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'color-item';
+                row.innerHTML = `
+                    <span class="color-label">${item}</span>
+                    <div class="color-input-wrapper">
+                        <input type="color" class="color-input" value="${currentColorMapping[item]}" data-item="${item}">
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        async function saveColors() {
+            const inputs = document.querySelectorAll('.color-input');
+            const newMapping = {};
+            inputs.forEach(input => {
+                newMapping[input.getAttribute('data-item')] = input.value;
+            });
+
+            try {
+                localStorage.setItem(COLORS_KEY, JSON.stringify(newMapping));
+                currentColorMapping = newMapping;
+                alert('Colors saved in this browser.');
+            } catch (e) {
+                console.error("Failed to save colors", e);
+            }
+        }
+
+        function refreshNodeColors() {
+            cy.nodes().forEach(node => {
+                const data = node.data('raw');
+                const color = currentColorMapping[data.output_item] || '#334155';
+                node.style('background-color', color);
+            });
+        }
+
+        let cy = cytoscape({
+            container: document.getElementById('cy'),
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'background-color': 'data(backgroundColor)',
+                        'border-width': 2,
+                        'border-color': '#f59e0b',
+                        'label': 'data(label)',
+                        'color': '#f8fafc',
+                        'text-valign': 'center',
+                        'text-halign': 'center',
+                        'text-wrap': 'wrap',
+                        'width': 150,
+                        'height': 80,
+                        'shape': 'round-rectangle',
+                        'font-size': '12px',
+                        'background-image': 'data(backgroundImage)',
+                        'background-clip': 'node',
+                        'background-position-x': '0px',
+                        'background-position-y': '0px'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 2,
+                        'line-color': '#475569',
+                        'target-arrow-color': '#475569',
+                        'target-arrow-shape': 'triangle',
+                        'curve-style': 'bezier',
+                        'label': 'data(label)',
+                        'color': '#94a3b8',
+                        'font-size': '10px',
+                        'text-background-opacity': 1,
+                        'text-background-color': '#0f172a',
+                        'text-background-padding': '2px'
+                    }
+                },
+                {
+                    selector: ':selected',
+                    style: {
+                        'border-width': 4,
+                        'border-color': '#f43f5e',
+                        'background-color': '#475569'
+                    }
+                },
+                {
+                    selector: '.overridden',
+                    style: {
+                        'border-color': '#22d3ee',
+                        'border-style': 'dashed'
+                    }
+                }
+            ],
+            layout: {
+                name: 'dagre',
+                rankDir: 'LR',
+                nodeSep: 60,
+                rankSep: 120
+            },
+            minZoom: 0.05,
+            maxZoom: 10
+        });
+
+        // --- Zoom Control Sync ---
+        const zoomSlider = document.getElementById('zoom-slider');
+        const zoomPercent = document.getElementById('zoom-percent');
+
+        function updateZoomSlider() {
+            const z = cy.zoom();
+            zoomSlider.value = z;
+            zoomPercent.innerText = Math.round(z * 100) + '%';
+        }
+
+        zoomSlider.addEventListener('input', (e) => {
+            const z = parseFloat(e.target.value);
+            cy.zoom({
+                level: z,
+                renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 }
+            });
+            zoomPercent.innerText = Math.round(z * 100) + '%';
+        });
+
+        cy.on('zoom', updateZoomSlider);
+
+        // --- Load state on start ---
+        window.addEventListener('DOMContentLoaded', () => {
+            loadColors();
+            loadState();
+        });
+
+
+        // --- Functions ---
+
+        function addRow() {
+            const container = document.getElementById('demand-rows');
+            const newRow = document.createElement('div');
+            newRow.className = 'demand-row';
+            newRow.innerHTML = `
+                <input type="text" name="items" list="items_list" placeholder="Item">
+                <input type="number" step="any" name="rates" placeholder="Rate">
+                <button type="button" class="secondary" style="width: auto;" onclick="removeRow(this)">✕</button>
+            `;
+            container.appendChild(newRow);
+        }
+
+        function removeRow(btn) {
+            const rows = document.getElementById('demand-rows').children;
+            if (rows.length > 1) {
+                btn.parentElement.remove();
+            } else {
+                btn.parentElement.querySelectorAll('input').forEach(i => i.value = '');
+            }
+        }
+
+        function getDemands() {
+            const items = [];
+            const rates = [];
+            document.querySelectorAll('#demand-rows .demand-row').forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                if (inputs[0].value && inputs[1].value) {
+                    items.push(inputs[0].value.trim());
+                    rates.push(parseFloat(inputs[1].value));
+                }
+            });
+            return { items, rates };
+        }
+
+        // The server is stateless: every change sends the full plan and gets the whole graph back.
+        async function requestPlan({ merges = currentMerges, overrides = currentOverrides, recipes = currentRecipes } = {}) {
+            const { items, rates } = getDemands();
+            const payload = {
+                demands: items.map((item, i) => ({ item, rate: rates[i] })),
+                round_up: document.getElementById('round-up-toggle').checked,
+                recipes,
+                merges,
+                overrides
+            };
+
+            const response = await fetch('/api/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                const detail = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
+                throw new Error(detail || `HTTP ${response.status}`);
+            }
+            return (await response.json()).nodes;
+        }
+
+        async function triggerRecalculate() {
+            if (getDemands().items.length === 0) return;
+
+            try {
+                renderGraph(await requestPlan());
+                saveState();
+            } catch (e) {
+                console.error("Calculation failed", e);
+                alert(`Calculation failed: ${e.message}`);
+            }
+        }
+
+
+        // --- Persistence ---
+
+        function saveState() {
+            const { items, rates } = getDemands();
+            const roundUp = document.getElementById('round-up-toggle').checked;
+            const state = {
+                items,
+                rates,
+                overrides: currentOverrides,
+                merges: currentMerges,
+                recipes: currentRecipes,
+                roundUp
+            };
+            localStorage.setItem('sf_planner_state', JSON.stringify(state));
+        }
+
+        function loadState(importedData = null) {
+            const saved = importedData || JSON.parse(localStorage.getItem('sf_planner_state'));
+            if (!saved) return;
+
+            // Clear existing rows
+            const container = document.getElementById('demand-rows');
+            container.innerHTML = '';
+
+            // Populate rows
+            if (saved.items && saved.items.length > 0) {
+                saved.items.forEach((item, i) => {
+                    const newRow = document.createElement('div');
+                    newRow.className = 'demand-row';
+                    newRow.innerHTML = `
+                        <input type="text" name="items" list="items_list" value="${item}" placeholder="Item">
+                        <input type="number" step="any" name="rates" value="${saved.rates[i]}" placeholder="Rate">
+                        <button type="button" class="secondary" style="width: auto;" onclick="removeRow(this)">✕</button>
+                    `;
+                    container.appendChild(newRow);
+                });
+            } else {
+                addRow(); // Default row
+            }
+
+            // Populate settings
+            document.getElementById('round-up-toggle').checked = saved.roundUp ?? true;
+            currentOverrides = saved.overrides || {};
+            currentMerges = saved.merges || {};
+            currentRecipes = saved.recipes || {};
+
+            // Trigger calc
+            triggerRecalculate();
+        }
+
+        function exportToJSON() {
+            const { items, rates } = getDemands();
+            const roundUp = document.getElementById('round-up-toggle').checked;
+            const state = {
+                items,
+                rates,
+                overrides: currentOverrides,
+                merges: currentMerges,
+                recipes: currentRecipes,
+                roundUp,
+                exportedAt: new Date().toISOString()
+            };
+
+            // Using octet-stream to force the browser to treat it as a download
+            const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+
+            a.href = url;
+            a.setAttribute('download', 'sf_planner_save.json');
+            a.style.display = 'none';
+
+            document.body.appendChild(a);
+            a.click();
+
+            // Cleanup
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 100);
+        }
+
+        function clearOverrides() {
+            if (confirm("Clear all manual scale adjustments?")) {
+                currentOverrides = {};
+                saveState();
+                triggerRecalculate();
+            }
+        }
+
+        function clearMerges() {
+            if (confirm("Clear all node merges? This will restore the default tree structure.")) {
+                currentMerges = {};
+                saveState();
+                triggerRecalculate();
+            }
+        }
+
+        function importFromJSON(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    loadState(data);
+                    saveState();
+                } catch (err) {
+                    alert("Failed to parse JSON file.");
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; // Reset for next time
+        }
+
+        // Save state on toggle change
+        document.getElementById('round-up-toggle').addEventListener('change', () => {
+            triggerRecalculate();
+        });
+
+        function renderGraph(nodesData) {
+            if (!nodesData || !Array.isArray(nodesData)) {
+                console.warn("renderGraph called with invalid nodesData", nodesData);
+                return;
+            }
+            const elements = [];
+            const processedNodes = new Set();
+
+            nodesData.forEach(node => {
+                // Add Node
+                const label = `${node.output_item}\n${parseFloat(node.throughput).toFixed(2)}/m\n(${parseFloat(node.building_scale).toFixed(2)}x ${node.building})`;
+
+                // Indicators calculation
+                // Surplus: building_scale > ideal_building_scale
+                // Excessive: building_scale - ideal_building_scale >= 1.0
+                // Shortage: building_scale < ideal_building_scale - epsilon
+                const epsilon = 0.0001;
+                const buildingScale = parseFloat(node.building_scale);
+                const idealScale = parseFloat(node.ideal_building_scale);
+                const surplus = buildingScale - idealScale;
+
+                let indicatorColor = null;
+                if (surplus > 0.9999) {
+                    indicatorColor = '#3b82f6'; // blue (excessive)
+                } else if (surplus > epsilon) {
+                    indicatorColor = '#22c55e'; // green (surplus)
+                } else if (surplus < -epsilon) {
+                    indicatorColor = '#ef4444'; // red (shortage)
+                }
+
+                let backgroundImage = null;
+                if (indicatorColor) {
+                    // Create a data URI for a small circle in the top right
+                    const svg = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="150" height="80">
+                            <circle cx="140" cy="10" r="6" fill="${indicatorColor}" />
+                        </svg>
+                    `;
+                    backgroundImage = `data:image/svg+xml;base64,${btoa(svg)}`;
+                }
+
+                elements.push({
+                    group: 'nodes',
+                    data: {
+                        id: node.id,
+                        label: label,
+                        raw: node,
+                        backgroundColor: currentColorMapping[node.output_item] || '#334155',
+                        backgroundImage: backgroundImage
+                    },
+                    classes: currentOverrides[node.id] ? 'overridden' : ''
+                });
+
+                processedNodes.add(node.id);
+            });
+
+            const nodeMap = {};
+            nodesData.forEach(node => {
+                nodeMap[node.id] = node;
+            });
+
+            // Add Edges
+            nodesData.forEach(node => {
+                if (node.parents && Array.isArray(node.parents)) {
+                    node.parents.forEach(parentId => {
+                        const parentNode = nodeMap[parentId];
+                        if (parentNode) {
+                            // Find flow rate: how much of node.output_item does parentNode need?
+                            let rate = 0;
+                            if (parentNode.scaled_inputs && Array.isArray(parentNode.scaled_inputs)) {
+                                const input = parentNode.scaled_inputs.find(inp => inp.item === node.output_item);
+                                if (input) {
+                                    rate = input.rate;
+                                }
+                            }
+
+                            elements.push({
+                                group: 'edges',
+                                data: {
+                                    source: node.id,
+                                    target: parentId,
+                                    label: rate > 0 ? `${rate.toFixed(2)}/m` : ''
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+
+            cy.elements().remove();
+            cy.add(elements);
+
+            const layout = cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 50, rankSep: 100 });
+
+            layout.one('layoutstop', () => {
+                cy.fit();
+                updateZoomSlider();
+            });
+
+            layout.run();
+        }
+
+        // --- Interaction ---
+
+        let selectedNodeId = null;
+
+        function getParentLabel(parentId) {
+            if (parentId === 'External Demand') return 'External Demand';
+            const node = cy.getElementById(parentId);
+            if (node && node.length > 0) {
+                const raw = node.data('raw');
+                return `${raw.output_item} (id: ${parentId.split('__').pop()})`;
+            }
+            return parentId;
+        }
+
+        cy.on('tap', 'node', function (evt) {
+            const node = evt.target;
+            const data = node.data('raw');
+            selectedNodeId = node.id();
+
+            // Populate Basic Details
+            document.getElementById('detail-item').innerText = data.output_item;
+            document.getElementById('detail-recipe').innerText = data.recipe_name || data.name;
+            document.getElementById('detail-building').innerText = data.building;
+
+            // Populate Technical Info (Collapsible)
+            document.getElementById('detail-id').innerText = data.id;
+            document.getElementById('detail-parents').innerText = data.parents.length > 0 ? data.parents.join(', ') : 'None';
+            document.getElementById('detail-children').innerText = data.children.length > 0 ? data.children.join(', ') : 'None';
+
+            // Base Recipe Details
+            const baseRecipeDiv = document.getElementById('base-recipe-details');
+            let baseRecipeHtml = `<strong>100% Rate:</strong><br>${parseFloat(data.base_output_rate).toFixed(2)}/min ${data.output_item}<br>`;
+            if (data.base_inputs && data.base_inputs.length > 0) {
+                baseRecipeHtml += '<div style="margin-top:0.4rem;"><strong>Inputs (100%):</strong></div>';
+                baseRecipeHtml += data.base_inputs.map(inp => `${parseFloat(inp.rate).toFixed(2)}/min ${inp.item}`).join('<br>');
+            }
+            baseRecipeDiv.innerHTML = baseRecipeHtml;
+
+            // Performance & Stats
+            const buildingScale = parseFloat(data.building_scale);
+            const idealScale = parseFloat(data.ideal_building_scale);
+            const surplus = buildingScale - idealScale;
+            const epsilon = 0.0001;
+
+            document.getElementById('detail-scale').innerText = buildingScale.toFixed(2) + 'x';
+            document.getElementById('detail-output-rate').innerText = parseFloat(data.throughput).toFixed(2) + '/min';
+            document.getElementById('detail-power').innerText = parseFloat(data.power).toFixed(2) + ' MW';
+
+            // Surplus/Shortage Display
+            const surplusValEl = document.getElementById('detail-surplus-value');
+            const surplusRowEl = document.getElementById('detail-surplus-row');
+            if (Math.abs(surplus) < epsilon) {
+                surplusValEl.innerText = 'Perfect Match';
+                surplusValEl.style.color = 'var(--text-secondary)';
+            } else {
+                const itemSurplus = surplus * parseFloat(data.base_output_rate);
+                const sign = surplus > 0 ? '+' : '';
+                surplusValEl.innerText = `${sign}${surplus.toFixed(2)} bldgs (${sign}${itemSurplus.toFixed(2)}/min)`;
+                surplusValEl.style.color = surplus > epsilon ? 'var(--status-surplus)' : 'var(--status-shortage)';
+                if (surplus > 0.9999) surplusValEl.style.color = 'var(--status-excessive)';
+            }
+
+            // Clock Speed (Per Building)
+            const clockSpeed = (idealScale / buildingScale) * 100;
+            document.getElementById('detail-clock').innerText = clockSpeed.toFixed(1) + '%';
+
+
+            // Populate scaled inputs
+            const inputsContainer = document.getElementById('detail-inputs-container');
+            inputsContainer.innerHTML = '';
+            if (data.scaled_inputs && data.scaled_inputs.length > 0) {
+                inputsContainer.style.display = 'block';
+
+                const totalOutput = parseFloat(data.throughput);
+                const parentDemands = data.parent_demands || {};
+
+                data.scaled_inputs.forEach(input => {
+                    const totalInputRate = parseFloat(input.rate);
+
+                    const details = document.createElement('details');
+                    details.style.marginBottom = '0.5rem';
+
+                    const summary = document.createElement('summary');
+                    summary.style.listStyle = 'none';
+                    summary.style.padding = '0';
+                    summary.style.display = 'block';
+
+                    summary.innerHTML = `
+                        <div class="stat-row" style="margin-bottom:0; cursor:pointer;">
+                            <span class="stat-label">${input.item}:</span>
+                            <span class="stat-value">${totalInputRate.toFixed(2)}/min</span>
+                        </div>
+                    `;
+                    details.appendChild(summary);
+
+                    const breakdownList = document.createElement('div');
+                    breakdownList.className = 'breakdown-list';
+
+                    // Ratio of total output
+                    let sumDemand = 0;
+                    for (const [pid, rate] of Object.entries(parentDemands)) {
+                        const label = getParentLabel(pid);
+                        const inputPart = totalOutput > 0 ? totalInputRate * (rate / totalOutput) : 0;
+
+                        const row = document.createElement('div');
+                        row.className = 'breakdown-row';
+                        row.innerHTML = `
+                            <span>for ${label}:</span>
+                            <span>${inputPart.toFixed(2)}/min</span>
+                        `;
+                        breakdownList.appendChild(row);
+                        sumDemand += rate;
+                    }
+
+                    // Override/Surplus
+                    const surplusDemand = totalOutput - sumDemand;
+                    if (surplusDemand > 0.0001) {
+                        const surplusPart = totalOutput > 0 ? totalInputRate * (surplusDemand / totalOutput) : totalInputRate;
+                        const row = document.createElement('div');
+                        row.className = 'breakdown-row';
+                        row.innerHTML = `
+                            <span>Override/Surplus:</span>
+                            <span>${surplusPart.toFixed(2)}/min</span>
+                         `;
+                        breakdownList.appendChild(row);
+                    }
+
+                    details.appendChild(breakdownList);
+                    inputsContainer.appendChild(details);
+                });
+            } else {
+                inputsContainer.style.display = 'none';
+            }
+
+            // Override Input - show current scale or override value
+            const currentVal = currentOverrides[selectedNodeId];
+            document.getElementById('override-scale').value = currentVal ? currentVal : parseFloat(data.building_scale).toFixed(4);
+
+            // Show/Hide Unmerge Button
+            // A node is "merged" if it is a target of some merge in currentMerges
+            const hasMerges = Object.values(currentMerges).includes(selectedNodeId);
+            document.getElementById('unmerge-btn').style.display = hasMerges ? 'block' : 'none';
+
+            // Populate Recipe Dropdown
+            populateRecipeSelector(data.output_item, data.recipe_name || data.name);
+
+            document.getElementById('node-details').style.display = 'block';
+        });
+
+        async function populateRecipeSelector(itemName, currentRecipeName) {
+            const selector = document.getElementById('recipe-select');
+            selector.innerHTML = '<option value="">Loading...</option>';
+            selector.disabled = true;
+
+            try {
+                const response = await fetch(`/api/available_recipes?item_name=${encodeURIComponent(itemName)}`);
+                if (response.ok) {
+                    const recipes = await response.json();
+                    selector.innerHTML = '';
+                    recipes.forEach(r => {
+                        const option = document.createElement('option');
+                        option.value = r.name;
+                        option.text = `${r.name} (${r.type})`;
+                        if (r.name === currentRecipeName) {
+                            option.selected = true;
+                        }
+                        selector.appendChild(option);
+                    });
+                    selector.disabled = false;
+                }
+            } catch (e) {
+                console.error("Failed to fetch recipes", e);
+                selector.innerHTML = '<option value="">Error loading</option>';
+            }
+        }
+
+        document.getElementById('recipe-select').addEventListener('change', async (e) => {
+            const newRecipeName = e.target.value;
+            if (!newRecipeName || !selectedNodeId) return;
+
+            const recipes = { ...currentRecipes, [selectedNodeId]: newRecipeName };
+            try {
+                renderGraph(await requestPlan({ recipes }));
+                currentRecipes = recipes;
+                saveState();
+
+                // Refresh node details after switch
+                const node = cy.getElementById(selectedNodeId);
+                if (node && node.length > 0) {
+                    node.emit('tap');
+                }
+            } catch (e) {
+                console.error("Recipe switch failed", e);
+                alert(`Recipe switch failed: ${e.message}`);
+            }
+        });
+
+        // --- Drag and Drop Merging ---
+        cy.on('dragfree', 'node', function (evt) {
+            const dragNode = evt.target;
+            const dragPos = dragNode.position();
+            const dragData = dragNode.data('raw');
+
+            // Find overlapping nodes
+            const overlapping = cy.nodes().filter(n => {
+                if (n.id() === dragNode.id()) return false;
+                const pos = n.position();
+                const dist = Math.sqrt(Math.pow(pos.x - dragPos.x, 2) + Math.pow(pos.y - dragPos.y, 2));
+                return dist < 60; // Merging distance
+            });
+
+            if (overlapping.length > 0) {
+                const targetNode = overlapping[0];
+                const targetData = targetNode.data('raw');
+
+                if (dragData.output_item === targetData.output_item) {
+                    // Delay block to allow Cytoscape to finish drag processing (unsticking)
+                    setTimeout(async () => {
+                        const sourceId = dragNode.id();
+                        const targetId = targetNode.id();
+
+                        // Flattening: anything merged into the source now points at the target
+                        const merges = { ...currentMerges };
+                        for (let id in merges) {
+                            if (merges[id] === sourceId) {
+                                merges[id] = targetId;
+                            }
+                        }
+                        merges[sourceId] = targetId;
+
+                        const overrides = { ...currentOverrides };
+                        delete overrides[sourceId];
+
+                        try {
+                            renderGraph(await requestPlan({ merges, overrides }));
+                            currentMerges = merges;
+                            currentOverrides = overrides;
+                            saveState();
+                        } catch (e) {
+                            console.error("Merge failed", e);
+                            alert(`Merge failed: ${e.message}`);
+                        }
+                    }, 50);
+                }
+            }
+        });
+
+        // Enter key in override input triggers apply
+        document.getElementById('override-scale').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                applyOverride();
+            }
+        });
+
+        function applyOverride() {
+            if (!selectedNodeId) return;
+            const val = parseFloat(document.getElementById('override-scale').value);
+
+            if (!isNaN(val) && val > 0) {
+                currentOverrides[selectedNodeId] = val;
+            } else {
+                delete currentOverrides[selectedNodeId];
+            }
+
+            triggerRecalculate();
+        }
+
+        function clearOverride() {
+            document.getElementById('override-scale').value = '';
+            if (selectedNodeId) delete currentOverrides[selectedNodeId];
+            triggerRecalculate();
+        }
+
+        async function unmergeSelectedNode() {
+            if (!selectedNodeId) return;
+
+            const merges = { ...currentMerges };
+            for (let s_id in merges) {
+                if (merges[s_id] === selectedNodeId) {
+                    delete merges[s_id];
+                }
+            }
+
+            try {
+                renderGraph(await requestPlan({ merges }));
+                currentMerges = merges;
+                saveState();
+                document.getElementById('node-details').style.display = 'none';
+                selectedNodeId = null;
+            } catch (e) {
+                console.error("Unmerge failed", e);
+                alert(`Unmerge failed: ${e.message}`);
+            }
+        }
+    </script>
+</body>
+
+</html>

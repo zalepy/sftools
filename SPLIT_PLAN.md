@@ -13,7 +13,7 @@ Currently, `node_id` is derived from the "parent path" (`parent_path__RecipeName
 ### 2. Instruction Persistence
 Splits should be stored in the persistent state (similar to `merges` and `overrides`).
 - **Data Structure**: `splits: { "original_node_id": { "count": 2, "ratios": [0.5, 0.5] } }`
-- **Location**: Add to `GLOBAL_STATE` in `main.py` and `localStorage` in `index.html`.
+- **Location**: Add to the plan state: `PlanRequest` in `src/sftools/api/schemas.py`, replayed in `build_plan`, and `localStorage` in `index.html`.
 
 ### 3. Calculator Logic (demand_calculator.py)
 In `calculate_demands`, when processing a demand:
