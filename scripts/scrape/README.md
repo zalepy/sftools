@@ -26,4 +26,4 @@ The scrapers are designed to handle the distinction between "Products" (which ha
 - **Liquid Resources**: Parsed from Water Extractor, Oil Extractor, etc.
 - **Recipe Naming**: To avoid name collisions across different miner tiers, extraction recipes are named using the pattern: `[Item] ([Purity]) at [Building]`. 
   - Example: `Iron Ore (pure) at Miner Mk.1`.
-- **Unit Handling**: Superscript characters like `³` are normalized to `3` (e.g., `120m3`). The loader currently misreads these values (see `tickets/003`).
+- **Unit Handling**: Superscript characters like `³` are normalized to `3` (e.g., `120m3`). The app loader reads only the leading number, so `120m3` is 120.

@@ -75,3 +75,23 @@ def test_requests_do_not_share_state(client):
     expected = calculate(client).json()["nodes"]
     calculate(client, demands=[{"item": "Rotor", "rate": 4}], overrides={"anything": 9})
     assert calculate(client).json()["nodes"] == expected
+
+
+def test_merge_into_node_made_dormant_by_recipe_switch(client):
+    """tickets/done/008: the merged-in demand must not disappear with the dormant target."""
+    nodes = calculate(client).json()["nodes"]
+    rip_a, rip_b = sorted(n["id"] for n in nodes_by_item(nodes, "Reinforced Iron Plate"))
+    screws_a = next(n["id"] for n in nodes_by_item(nodes, "Screws") if n["parents"] == [rip_a])
+    screws_b = next(n["id"] for n in nodes_by_item(nodes, "Screws") if n["parents"] == [rip_b])
+
+    # Merge B's screws into A's, then switch A's plate to a recipe without screws
+    merged = calculate(
+        client,
+        merges={screws_b: screws_a},
+        recipes={rip_a: "Alternate: Adhered Iron Plate"},
+    ).json()["nodes"]
+
+    produced = sum(n["throughput"] for n in nodes_by_item(merged, "Screws"))
+    needed = sum(i["rate"] for n in merged for i in n["scaled_inputs"] if i["item"] == "Screws")
+    assert produced == pytest.approx(needed)
+    assert any(n["id"] == screws_b for n in nodes_by_item(merged, "Screws"))

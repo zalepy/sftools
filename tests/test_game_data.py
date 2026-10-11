@@ -1,4 +1,4 @@
-"""Checks against the real scraped game data (tickets/013)."""
+"""Checks against the real scraped game data (tickets/done/013)."""
 import json
 
 import pytest
@@ -59,7 +59,7 @@ def test_rates_are_sane(game):
 
 
 def test_fluid_rates_are_not_corrupted(game):
-    """'120m3' used to parse as 1203 (tickets/003)."""
+    """'120m3' used to parse as 1203 (tickets/done/003)."""
     _, recipes = game
     alumina = recipes["Alumina Solution"]
     assert [(i.name, r) for i, r in alumina.outputs()] == [("Alumina Solution", 120), ("Silica", 50)]
@@ -77,7 +77,7 @@ def test_every_ingredient_is_a_known_item(game, raw_items):
 
 
 def test_main_product_comes_from_data_not_recipe_name(game):
-    """Name guessing failed for recipes like 'Alternate: Bolted Iron Plate' (tickets/004)."""
+    """Name guessing failed for recipes like 'Alternate: Bolted Iron Plate' (tickets/done/004)."""
     _, recipes = game
     bolted = recipes["Alternate: Bolted Iron Plate"]
     assert bolted.output_item.name == "Reinforced Iron Plate"
@@ -97,7 +97,7 @@ def test_item_recipes_all_produce_the_item(game):
 
 
 def test_default_recipe_produces_the_item(game):
-    """The first basic recipe used to be picked even when it made something else (tickets/005)."""
+    """The first basic recipe used to be picked even when it made something else (tickets/done/005)."""
     items, _ = game
     for item in items.values():
         recipe = default_recipe_for(item)

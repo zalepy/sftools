@@ -59,6 +59,11 @@ class FactoryGraph:
         if source.output_item_name != target.output_item_name:
             raise ValueError(f"Cannot merge {source_id} and {target_id}: different output items")
 
+        # A recipe switch upstream can make either node dormant; merging into a dormant
+        # target would silently drop the source's demand, so the merge no longer applies.
+        if source.is_dormant or target.is_dormant:
+            return
+
         # Record merge
         self.merges[source_id] = target_id
         source.absorbed_by = target_id
