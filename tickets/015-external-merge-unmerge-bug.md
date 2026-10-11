@@ -1,6 +1,8 @@
 # 015 — Wrong state after merging and unmerging external-demand nodes
 
-**Type:** bug · **Priority:** P1 · **Branch:** `distinct_extrenal_demand` (commit "added but fails after unmerge") · **Status:** Re-check
+**Type:** bug · **Priority:** P1 · **Branch:** `distinct_extrenal_demand` (commit "added but fails after unmerge") · **Status:** Watch
+
+> **Update (2026-10-11):** Not forcing a repro. Re-open with steps if it shows up during normal use of the stateless version.
 
 > **Update (2026-10-11):** With the stateless API, unmerge replays the plan without that merge, so the unmerge half of this bug may be gone. Merging still moves external demand onto the target. Re-test on master.
 
