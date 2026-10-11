@@ -1,0 +1,14 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: sftools
+    runtime: python
+    plan: free
+    buildCommand: pip install uv && uv sync --frozen --no-dev
+    # Run the venv's interpreter directly so the runtime does not depend on uv being on PATH.
+    startCommand: .venv/bin/python -m uvicorn sftools.api.app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      # Keep a uv-downloaded interpreter inside the project dir, which Render carries from build to runtime.
+      - key: UV_PYTHON_INSTALL_DIR
+        value: /opt/render/project/src/.uv-python

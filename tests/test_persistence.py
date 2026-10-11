@@ -1,12 +1,12 @@
 import pytest
-import os
-from sftools_service.logic.demand_calculator import calculate_demands, load_models, DATA_PATH, recalculate_graph
-from sftools_service.domain.models.demand import Demand
-from sftools_service.domain.enums.demand_type import DemandType
+from sftools.engine.calculator import calculate_demands, recalculate_graph
+from sftools.engine.loader import load_models
+from sftools.domain.models.demand import Demand
+from sftools.domain.enums.demand_type import DemandType
 
 @pytest.fixture(scope="module")
 def data():
-    return load_models(DATA_PATH)
+    return load_models()
 
 def test_persistence_logic(data):
     items_map, recipes_map, buildings_map = data
