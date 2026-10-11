@@ -66,7 +66,8 @@ Why stateless: on a shared deployment, a single server-side graph would be share
 - **`FactoryGraph`** keeps *every* node created for the plan:
   - **Merged** nodes have `absorbed_by` set. Their links move to the target, and `get_ui_data` hides them and lists them in the target's `constituent_ids`.
   - **Dormant** nodes belong to a recipe that was switched away from. They stay in the graph but are excluded from calculation and the UI.
-  - `capture_initial_structure` / `_rebuild_structure` support unmerging. In stateless mode an unmerge is just a plan without that merge.
+  - `link(parent, child)` records each link in the unmerged structure as it is made, and `_rebuild_structure` restores that structure and then replays the merges (unmerge). In stateless mode an unmerge is simply a plan without that merge.
+  - `recalculate(overrides)` replaces all overrides when given a dict (`{}` clears them) and keeps the current ones when given `None`.
 
 ### Node identity
 Node IDs are paths: `root__<Recipe>` for roots and `<parent_id>__[r]<parent recipe>__<Recipe>` below them. Merges, overrides and recipe switches refer to nodes by these IDs, so they only stay valid while everything upstream is unchanged. See `tickets/016`.

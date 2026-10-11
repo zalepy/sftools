@@ -11,7 +11,7 @@ Live (UAT): https://sftools.onrender.com/
 * **Recipe switching**: pick an alternate recipe for an individual node.
 * **Save/load**: the plan is stored in your browser and can be exported to or imported from JSON.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for how it works, [ALGO.md](ALGO.md) for the calculation, and [tickets/](tickets/README.md) for known issues and planned work.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for how it works, [ALGO.md](ALGO.md) for the calculation, [tickets/](tickets/README.md) for known issues and planned work, and [TODO.md](TODO.md) for smaller ideas.
 
 ## Local development
 

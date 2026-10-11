@@ -109,8 +109,7 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
 
         # Link Graph
         if parent_node:
-            node.add_parent(parent_node)
-            parent_node.add_child(node)
+            graph.link(parent_node, node)
         
         # Generate Sub-Demands for the recipe
         sub_demands = recipe.generate_demands(scaler, item.name)
@@ -121,7 +120,6 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
             
         processed_count += 1
 
-    graph.capture_initial_structure()
     return graph
 
 
@@ -182,8 +180,7 @@ def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_m
             # Update demand from parent
             existing_node.parent_demands[p_node.id] = current_demand.rate
             # Ensure link exists (though it should if it was a child before)
-            p_node.add_child(existing_node)
-            existing_node.add_parent(p_node)
+            graph.link(p_node, existing_node)
             continue
 
         # Create New Node
@@ -198,8 +195,7 @@ def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_m
         node.parent_demands[p_node.id] = target_rate
         
         graph.add_node(node)
-        p_node.add_child(node)
-        node.add_parent(p_node)
+        graph.link(p_node, node)
 
         # Recurse
         for sd in recipe.generate_demands(scaler, item.name):

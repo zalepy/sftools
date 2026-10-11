@@ -4,8 +4,6 @@
 
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
-| [006](006-recalculate-wipes-overrides.md) | Merge/switch clears overrides | bug | P1 | Mitigated |
-| [007](007-unmerge-drops-switched-subtree.md) | Unmerge disconnects switched subtree | bug | P1 | Mitigated |
 | [009](009-api-error-handling.md) | API validation and error responses | bug | P2 | Mostly done |
 | [014](014-recipe-model-refactor.md) | Recipe model lists refactor | refactor | P3 | Open |
 | [015](015-external-merge-unmerge-bug.md) | External-demand merge/unmerge bug | bug | P1 | Watch |
@@ -13,7 +11,7 @@
 | [017](017-frontend-split.md) | Split index.html | refactor | P3 | Open |
 | [018](018-ui-feature-backlog.md) | UI/feature backlog | feature | P3 | Open |
 
-Suggested next: 006/007 cleanup in `FactoryGraph` → 009 leftover → the rest. 015 is waiting to show up in normal use.
+Suggested next: 009 leftover → the rest. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
 
 ## Done
 
@@ -26,6 +24,8 @@ Moved to [done/](done/).
 | [003](done/003-fluid-rate-parsing.md) | Fluid rates parsed 10× too high | bug | P0 | Done |
 | [004](done/004-recipe-explicit-primary-output.md) | Recipe product guessed from name | bug | P0 | Done |
 | [005](done/005-default-recipe-selection.md) | Default recipe can belong to another item | bug | P0 | Done |
+| [006](done/006-recalculate-wipes-overrides.md) | Merge/switch clears overrides | bug | P1 | Done |
+| [007](done/007-unmerge-drops-switched-subtree.md) | Unmerge disconnects switched subtree | bug | P1 | Done |
 | [008](done/008-dormancy-through-merged-links.md) | Dormancy spreads through merged links | bug | P1 | Done |
 | [010](done/010-server-global-state.md) | Shared GLOBAL_STATE across users | bug | P1 | Done |
 | [011](done/011-colors-endpoint-writes-repo.md) | POST /api/colors writes repo file | bug | P2 | Done |
