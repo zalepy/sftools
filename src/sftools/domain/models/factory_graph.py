@@ -12,6 +12,7 @@ class FactoryGraph:
         self.merges: Dict[str, str] = {} # source_id -> target_id
         self.recipe_overrides: Dict[str, str] = {} # node_path -> recipe_name
         self._initial_structure: Dict[str, Dict[str, List[str]]] = {}
+        self.ignored: List[Dict] = []  # plan entries build_plan could not apply
 
     def add_node(self, node: ProductionNode):
         self.all_nodes[node.id] = node

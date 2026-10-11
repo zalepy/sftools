@@ -285,6 +285,46 @@
             border: none;
         }
 
+        /* Notice for plan entries the server ignored */
+        .plan-notice {
+            position: absolute;
+            left: 1rem;
+            bottom: 1rem;
+            max-width: 28rem;
+            padding: 0.75rem 2.25rem 0.75rem 1rem;
+            background-color: var(--card-bg);
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            z-index: 10;
+        }
+
+        .plan-notice[hidden] {
+            display: none;
+        }
+
+        .plan-notice ul {
+            margin: 0.5rem 0 0;
+            padding-left: 1.25rem;
+            color: var(--text-secondary);
+            max-height: 8rem;
+            overflow-y: auto;
+            overflow-wrap: anywhere;
+        }
+
+        .plan-notice .close {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.5rem;
+            width: auto;
+            padding: 0 0.25rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
         /* Status Colors */
         :root {
             --status-surplus: #22c55e;
@@ -528,6 +568,12 @@
         <!-- Graph Viewer -->
         <div class="graph-container">
             <div id="cy"></div>
+
+            <div id="plan-notice" class="plan-notice" role="status" hidden>
+                <button type="button" class="close" aria-label="Dismiss" onclick="hidePlanNotice()">✕</button>
+                <div class="plan-notice-text"></div>
+                <ul></ul>
+            </div>
 
             <!-- Zoom Controls Overlay -->
             <div class="zoom-controls">
@@ -791,7 +837,46 @@
                 const detail = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
                 throw new Error(detail || `HTTP ${response.status}`);
             }
-            return (await response.json()).nodes;
+            const data = await response.json();
+            if (data.ignored && data.ignored.length) {
+                dropIgnoredEntries(data.ignored, { merges, overrides, recipes });
+                showPlanNotice(data.ignored);
+            }
+            return data.nodes;
+        }
+
+        // Entries the server could not apply (usually from an older saved plan) are removed from the
+        // plan being sent; callers save it after a successful request.
+        function dropIgnoredEntries(ignored, { merges, overrides, recipes }) {
+            const byKind = { recipe: recipes, merge: merges, override: overrides };
+            ignored.forEach(entry => {
+                const target = byKind[entry.kind];
+                if (target) delete target[entry.node_id];
+            });
+        }
+
+        let planNoticeTimer = null;
+
+        function showPlanNotice(ignored) {
+            const notice = document.getElementById('plan-notice');
+            const count = ignored.length;
+            notice.querySelector('.plan-notice-text').textContent =
+                `${count} saved adjustment${count === 1 ? '' : 's'} no longer match${count === 1 ? 'es' : ''} this plan and ${count === 1 ? 'was' : 'were'} removed.`;
+            const list = notice.querySelector('ul');
+            list.replaceChildren(...ignored.map(entry => {
+                const li = document.createElement('li');
+                const label = entry.node_id.split('__').pop();
+                li.textContent = `${entry.kind} on ${label}: ${entry.reason}`;
+                li.title = entry.node_id;
+                return li;
+            }));
+            notice.hidden = false;
+            clearTimeout(planNoticeTimer);
+            planNoticeTimer = setTimeout(hidePlanNotice, 15000);
+        }
+
+        function hidePlanNotice() {
+            document.getElementById('plan-notice').hidden = true;
         }
 
         async function triggerRecalculate() {

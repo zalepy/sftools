@@ -237,6 +237,22 @@ def switch_recipe_in_graph(graph: FactoryGraph, node_id: str, new_recipe: Recipe
     graph.recalculate(round_up=round_up)
 
 
+def _on_inactive_branch(graph: FactoryGraph, node_id: str) -> bool:
+    """
+    Node IDs are '<parent_id>__[r]<parent recipe>__<recipe>'. A missing node whose closest existing
+    ancestor now runs a different recipe was created under that ancestor's other recipe: the entry
+    is not stale, it applies again if the user switches the ancestor back.
+    """
+    marker = '__[r]'
+    end = len(node_id)
+    while (end := node_id.rfind(marker, 0, end)) != -1:
+        ancestor = graph.get_node(node_id[:end])
+        if ancestor is not None:
+            ancestor_recipe = node_id[end + len(marker):].split('__', 1)[0]
+            return ancestor.recipe is not None and ancestor.recipe.name != ancestor_recipe
+    return False
+
+
 def build_plan(
     items_map: Dict,
     recipes_map: Dict[str, Recipe],
@@ -249,22 +265,48 @@ def build_plan(
     """
     Builds a FactoryGraph from the full plan description.
     The API is stateless: every request replays demands -> recipe switches -> merges -> overrides.
+
+    Entries that can't apply are skipped and listed in `graph.ignored` as
+    {"kind": "recipe" | "merge" | "override", "node_id", "reason"}. Entries for dormant nodes or
+    inactive branches are skipped silently, since they apply again if an upstream recipe is switched back.
     """
     root_demands = [Demand(name, items_map[name], rate, DemandType.PRODUCE) for name, rate in demands]
     graph = calculate_demands(items_map, root_demands, round_up=round_up)
+    ignored = []
+
+    def missing(node_id: str) -> bool:
+        return graph.get_node(node_id) is None and not _on_inactive_branch(graph, node_id)
 
     # Parents first: a child's ID extends its parent's ID, so shorter IDs are switched first.
     for node_id, recipe_name in sorted((recipes or {}).items(), key=lambda kv: len(kv[0])):
         node = graph.get_node(node_id)
         recipe = recipes_map.get(recipe_name)
-        if node is None or recipe is None or node.is_dormant or node.recipe is recipe:
+        if node is None:
+            if missing(node_id):
+                ignored.append({"kind": "recipe", "node_id": node_id, "reason": "node not in plan"})
+            continue
+        if recipe is None:
+            ignored.append({"kind": "recipe", "node_id": node_id, "reason": f"unknown recipe {recipe_name!r}"})
             continue
         if not recipe.produces(node.output_item_name):
+            ignored.append({"kind": "recipe", "node_id": node_id,
+                            "reason": f"{recipe_name!r} does not produce {node.output_item_name}"})
+            continue
+        if node.is_dormant or node.recipe is recipe:
             continue
         switch_recipe_in_graph(graph, node_id, recipe, items_map, round_up=round_up)
 
     for source_id, target_id in (merges or {}).items():
+        stale = [n for n in (source_id, target_id) if missing(n)]
+        if stale:
+            ignored.append({"kind": "merge", "node_id": source_id, "reason": f"node not in plan: {', '.join(stale)}"})
+            continue
         graph.apply_merge(source_id, target_id)
 
+    for node_id in overrides or {}:
+        if missing(node_id):
+            ignored.append({"kind": "override", "node_id": node_id, "reason": "node not in plan"})
+
     graph.recalculate(overrides or {}, round_up=round_up)
+    graph.ignored = ignored
     return graph
