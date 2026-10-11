@@ -1,8 +1,10 @@
+from typing import Dict
+
 from sftools.domain.enums.building_category import BuildingCategory
 
 
 class Building:
-    def __init__(self, name: str, category: BuildingCategory, power_generated: int, width: int, length: int, height: int, input: int = None, output: int = None):
+    def __init__(self, name: str, category: BuildingCategory, power_generated: int, width: int, length: int, height: int, input: int = None, output: int = None, recipe_power: Dict[str, float] = None):
         self._name = name
         self._category = category
         self._power_generated = power_generated
@@ -11,6 +13,8 @@ class Building:
         self._height = height
         self._input = input
         self._output = output
+        # recipe name -> power, for buildings whose draw depends on the recipe (Particle Accelerator, ...)
+        self._recipe_power = recipe_power or {}
 
     @property
     def name(self):
@@ -23,6 +27,10 @@ class Building:
     @property
     def power_generated(self):
         return self._power_generated
+
+    def power_for(self, recipe_name: str) -> float:
+        """Power for running `recipe_name`; negative = consumed."""
+        return self._recipe_power.get(recipe_name, self._power_generated)
 
     @property
     def width(self):

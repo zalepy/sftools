@@ -8,9 +8,12 @@ from sftools.domain.enums.recipe_type import RecipeType
 from sftools.engine.calculator import build_plan, default_recipe_for
 from sftools.engine.loader import load_models, parse_number
 
-# Known gaps in the scraped data, tracked in tickets/019.
-RECIPES_WITHOUT_OUTPUT = {"Excited Photonic Matter"}
-UNKNOWN_INGREDIENTS = {"Hatcher Remains", "Hog Remains", "Spitter Remains", "Stinger Remains"}
+# Gathered or found in the world; everything else must have a recipe (tickets/done/019)
+ITEMS_WITHOUT_RECIPES = {
+    "Beacon", "Blue Power Slug", "Color Cartridge", "FICSIT Coupon", "Flower Petals", "Hatcher Remains",
+    "Hog Remains", "Leaves", "Mycelia", "Purple Power Slug", "Spitter Remains", "Stinger Remains", "Wood",
+    "Yellow Power Slug",
+}
 
 MAX_RATE = 1500  # per building per minute; the highest real value is Biomass from Alien Protein
 
@@ -45,8 +48,6 @@ def test_every_recipe_has_building_and_outputs(game):
     _, recipes = game
     for recipe in recipes.values():
         assert recipe.building is not None, recipe.name
-        if recipe.name in RECIPES_WITHOUT_OUTPUT:
-            continue
         assert recipe.outputs(), recipe.name
         assert recipe.output_item is not None and recipe.output_rate > 0, recipe.name
 
@@ -72,8 +73,38 @@ def test_every_ingredient_is_a_known_item(game, raw_items):
     for entry in raw_items:
         for recipe_name, details in (entry.get("recipes") or {}).items():
             for key, name in details.items():
-                if key.endswith("_name") and name not in UNKNOWN_INGREDIENTS:
+                if key.endswith("_name"):
                     assert name in items, (recipe_name, key, name)
+
+
+def test_only_world_items_have_no_recipe(game):
+    items, _ = game
+    assert {i.name for i in items.values() if not i.recipes} == ITEMS_WITHOUT_RECIPES
+
+
+def test_recipes_from_multi_word_buildings(game):
+    """The scraper used to drop every recipe made in e.g. a Particle Accelerator (tickets/done/019)."""
+    items, recipes = game
+    assert recipes["Diamonds"].building.name == "Particle Accelerator"
+    assert [(i.name, r) for i, r in recipes["Diamonds"].ingredients()] == [("Coal", 600)]
+    assert default_recipe_for(items["Diamonds"]).name == "Diamonds"
+    assert recipes["Alien Power Matrix"].building.name == "Quantum Encoder"
+
+
+def test_converter_recipe_without_ingredients(game):
+    _, recipes = game
+    epm = recipes["Excited Photonic Matter"]
+    assert epm.ingredients() == []
+    assert epm.rate_of("Excited Photonic Matter") == 200
+
+
+def test_recipe_power_for_variable_power_buildings(game):
+    """Average of the range listed per recipe, e.g. Diamonds '250 - 750' MW."""
+    _, recipes = game
+    assert recipes["Diamonds"].building.power_for("Diamonds") == -500
+    assert recipes["Nuclear Pasta"].building.power_for("Nuclear Pasta") == -1000
+    assert recipes["Time Crystal"].building.power_for("Time Crystal") == -250
+    assert recipes["Iron Plate"].building.power_for("Iron Plate") == -4
 
 
 def test_main_product_comes_from_data_not_recipe_name(game):

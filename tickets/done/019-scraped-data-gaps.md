@@ -1,6 +1,20 @@
 # 019 — Gaps in the scraped game data
 
-**Type:** data · **Priority:** P2 · **Related:** 013 · **Status:** Open
+**Type:** data · **Priority:** P2 · **Related:** 013 · **Status:** Done
+
+> **Update (2026-10-11):** Fixed in the scraper (`scripts/scrape/pull_items_data.py`) and re-scraped:
+> - Recipe headers matched only single-word building names (`alt="(\w+?)"`), so Particle Accelerator, Quantum Encoder and Nuclear Power Plant recipes were dropped. That's 27 recipes, including base Diamonds.
+> - The ingredient/output columns are now taken by position, so Excited Photonic Matter (no ingredients) gets its output.
+> - Items that recipes use but the items list doesn't include (creature `* Remains`, under `/tools/`) are now fetched too.
+> - Zero-rate placeholder recipes are skipped (a 0 m³/min "Nitrogen Gas" at the Resource Well Extractor that lists itself as input).
+> - Same-name recipes are kept apart: *Turbo Rifle Ammo (Manufacturer)* next to the Blender one.
+> - Stack counts were cut to one digit (`20x` → 2); fixed.
+> - The buildings scraper reuses the item recipe parser instead of keeping its own copy.
+> - Per-recipe power: `Building.power_for(recipe)` uses the midpoint of the listed range (Diamonds 250–750 → 500 MW). This replaces the hard-coded −1500 MW for the whole Particle Accelerator.
+> - **Uranium Ore (Bauxite)** at 480 Bauxite/min is correct (48 per 6 s on the site).
+> - The tests no longer allow exceptions; the only items without a recipe are world items (`ITEMS_WITHOUT_RECIPES`).
+>
+> Left over: the buildings scraper still fails on non-production buildings (Radar Tower, generators, The HUB, …) because their pages have no recipe sections. That isn't needed by the planner, so it's not tracked.
 
 Found while writing the data validation tests (013). The tests list the known exceptions in `RECIPES_WITHOUT_OUTPUT` and `UNKNOWN_INGREDIENTS` (`tests/test_game_data.py`); remove them once each one is fixed.
 

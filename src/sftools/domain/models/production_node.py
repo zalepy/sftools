@@ -193,7 +193,7 @@ class ProductionNode:
         self._node_name = recipe.name
         self._building = recipe.building
         self._base_output_rate = recipe.rate_of(self._output_item_name)
-        self._base_power = recipe.building.power_generated
+        self._base_power = recipe.building.power_for(recipe.name)
         self._base_inputs = recipe.base_inputs()
 
     # --- Operators ---

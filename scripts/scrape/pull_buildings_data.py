@@ -5,18 +5,9 @@ from typing import Dict
 
 import requests
 
+from pull_items_data import clean_str, grep_recipes
+
 DATA_DIR = Path(__file__).resolve().parents[2] / 'src' / 'sftools' / 'data'
-
-
-def clean_str(val):
-    val = re.sub(r'<[^>]+>', '', val)
-    val = " ".join(val.split())
-    val = val.replace(" MW", "").replace(" MJ", "")
-    val = val.replace("\u00b3", "3")
-    val = val.replace(" / min", "").replace("/ min", "").replace("/min", "")
-    val = val.replace(" m3", "m3")
-    val = val.replace(" m", "")
-    return val.strip()
 
 
 def grep_extraction_recipes(building_name: str, rest_data: str, items_list: list):
@@ -61,58 +52,6 @@ def grep_extraction_recipes(building_name: str, rest_data: str, items_list: list
             if 'recipes' not in target_item:
                 target_item['recipes'] = {}
             target_item['recipes'][recipe_name] = recipe
-
-
-def grep_recipe(item_dict: dict, data: str) -> dict:
-    name_n_building = re.findall(r'<h5 class="card-title">\s*?(\w.+?)\s*?</h5>[^~]+?<em><small>\([^\)]+?alt="([^"]+?)"[^\)]+?>.+?</a>\)</small></em>', data)
-    if not name_n_building:
-        return item_dict
-
-    recipe_name = name_n_building[0][0]
-    recipe = {'building': name_n_building[0][1]}
-    sub_datas = data.split('<div class="col-6">')
-    ingredient_counter = 1
-    column_flag = 'ingredient'
-    for sub in sub_datas:
-        ingredient_matches = re.findall(r'<div><span.+?><em><small>\(([^\)]+? / min)\)</small></em></span>([\d\.]+?).{1,3}<img src="[^"]+?" alt="([^"]+?)".+?>.+?</a></div>', sub)
-        if not len(ingredient_matches):
-            continue
-        for match_item in ingredient_matches:
-            match_rate = match_item[0]
-            match_stack = match_item[1]
-            match_name = match_item[2]
-
-            # Clean data
-            match_rate = clean_str(match_rate)
-            match_stack = clean_str(match_stack)
-            match_name = clean_str(match_name)
-
-            recipe[column_flag + str(ingredient_counter) + '_rate'] = match_rate
-            recipe[column_flag + str(ingredient_counter) + '_stack'] = match_stack
-            recipe[column_flag + str(ingredient_counter) + '_name'] = match_name
-            ingredient_counter += 1
-
-        if column_flag == 'output':
-            column_flag = 'error'
-            ingredient_counter = 1
-        if column_flag == 'ingredient':
-            column_flag = 'output'
-            ingredient_counter = 1
-
-    existing_recipes = item_dict.get('recipes', {})
-    existing_recipes[recipe_name] = recipe
-    item_dict['recipes'] = existing_recipes
-
-    return item_dict
-
-
-def grep_recipes(item_dict: dict, data: str) -> dict:
-    separator = '<h5 class="card-title">'
-    recipe_sections = data.split(separator)
-    for section in recipe_sections:
-        item_dict = grep_recipe(item_dict, separator + section)
-
-    return item_dict
 
 
 def parse_item_details(item_dict: dict, data: str) -> Dict:
