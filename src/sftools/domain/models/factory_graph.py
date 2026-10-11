@@ -15,12 +15,30 @@ class FactoryGraph:
 
     def add_node(self, node: ProductionNode):
         self.all_nodes[node.id] = node
+        self._initial_structure.setdefault(node.id, {"parents": [], "children": []})
+
+    def link(self, parent: ProductionNode, child: ProductionNode):
+        """
+        Connects parent -> child and records the link in the unmerged structure, so it survives
+        `_reset_structure` (unmerge). Use this rather than add_child/add_parent when building the graph.
+        """
+        parent.add_child(child)
+        child.add_parent(parent)
+        parent_links = self._initial_structure.setdefault(parent.id, {"parents": [], "children": []})
+        child_links = self._initial_structure.setdefault(child.id, {"parents": [], "children": []})
+        if child.id not in parent_links["children"]:
+            parent_links["children"].append(child.id)
+        if parent.id not in child_links["parents"]:
+            child_links["parents"].append(parent.id)
 
     def get_node(self, node_id: str) -> Optional[ProductionNode]:
         return self.all_nodes.get(node_id)
 
     def capture_initial_structure(self):
-        """Records the parent/child relationships as they are right now."""
+        """
+        Records the parent/child relationships as they are right now. Only needed for graphs
+        wired by hand with add_child/add_parent; `link` records links as they are made.
+        """
         self._initial_structure = {}
         for node_id, node in self.all_nodes.items():
             self._initial_structure[node_id] = {
@@ -134,12 +152,10 @@ class FactoryGraph:
         Propagates scales through the graph.
         Handles merges by treating the absorption target as the primary node.
         """
-        # 1. Apply overrides
-        for node_id, node in self.all_nodes.items():
-            if overrides and node_id in overrides:
-                node.user_scale = overrides[node_id]
-            else:
-                node.user_scale = None
+        # 1. Apply overrides: None keeps the current ones, a dict replaces them all ({} clears them)
+        if overrides is not None:
+            for node_id, node in self.all_nodes.items():
+                node.user_scale = overrides.get(node_id)
 
         # 2. Topological Sort
         nodes_map = self.all_nodes
