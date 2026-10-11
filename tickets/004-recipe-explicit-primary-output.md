@@ -1,6 +1,8 @@
 # 004 — Recipe product guessed from the recipe name
 
-**Type:** bug · **Priority:** P0 · **Status:** Open
+**Type:** bug · **Priority:** P0 · **Status:** Done
+
+> **Update (2026-10-11):** The main product is `output1` from the data; recipes get `outputs()`, `produces()`, `is_main_product()` and `rate_of(item)`. A node can run a recipe for its by-product (e.g. Polymer Resin from *Fuel*). Each recipe is built once and only attached to the items it outputs.
 
 ## Problem
 `Recipe.output_item`, `output_rate`, `sink_item` and `sink_rate` decide which output is the product by checking whether the recipe name contains the item name.

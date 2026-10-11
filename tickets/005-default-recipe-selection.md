@@ -1,6 +1,8 @@
 # 005 — Default recipe can belong to a different item
 
-**Type:** bug · **Priority:** P0 · **Related:** 004 · **Status:** Open
+**Type:** bug · **Priority:** P0 · **Related:** 004 · **Status:** Done
+
+> **Update (2026-10-11):** `default_recipe_for(item)` in `engine/calculator.py`. Preference order: no unpackaging → main product → basic, converter, alternate → recipe named after the item → data order. Alternates are used when no basic recipe makes the item as main product, because by-product defaults loop (Compacted Coal ← Ionized Fuel ← Rocket Fuel ← Turbofuel ← Compacted Coal). Expansion also stops if an item reappears in its own chain.
 
 ## Problem
 `calculate_demands` and `expand_new_subtree` pick "the first BASIC recipe in `item.recipes`". For some items, that is a recipe where the item is only a by-product or ingredient:

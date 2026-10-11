@@ -1193,7 +1193,7 @@
                     recipes.forEach(r => {
                         const option = document.createElement('option');
                         option.value = r.name;
-                        option.text = `${r.name} (${r.type})`;
+                        option.text = `${r.name} (${r.type}${r.byproduct ? ", by-product" : ""})`;
                         if (r.name === currentRecipeName) {
                             option.selected = true;
                         }

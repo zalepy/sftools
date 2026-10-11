@@ -188,23 +188,13 @@ class ProductionNode:
         Updates the node's base properties from a new recipe.
         Does NOT toggle dormancy, but prepares rates for the new state.
         """
+        # The node keeps producing the same item; the new recipe may make it as main product or by-product.
         self._recipe = recipe
         self._node_name = recipe.name
         self._building = recipe.building
-        self._base_output_rate = recipe.output_rate
+        self._base_output_rate = recipe.rate_of(self._output_item_name)
         self._base_power = recipe.building.power_generated
-        
-        # Rebuild base_inputs
-        base_inputs = []
-        if recipe.ingredient1_item:
-            base_inputs.append({"item": recipe.ingredient1_item.name, "rate": recipe.ingredient1_rate})
-        if recipe.ingredient2_item:
-            base_inputs.append({"item": recipe.ingredient2_item.name, "rate": recipe.ingredient2_rate})
-        if recipe.ingredient3_item:
-            base_inputs.append({"item": recipe.ingredient3_item.name, "rate": recipe.ingredient3_rate})
-        if recipe.ingredient4_item:
-            base_inputs.append({"item": recipe.ingredient4_item.name, "rate": recipe.ingredient4_rate})
-        self._base_inputs = base_inputs
+        self._base_inputs = recipe.base_inputs()
 
     # --- Operators ---
 

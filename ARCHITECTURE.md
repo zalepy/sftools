@@ -51,7 +51,7 @@ The browser owns the **plan** and sends all of it on every change:
 ```
 
 `build_plan` replays the plan in a fixed order:
-1. **Expand demands** (`calculate_demands`): breadth-first expansion into a tree of `ProductionNode`s, using the default recipe for each item.
+1. **Expand demands** (`calculate_demands`): breadth-first expansion into a tree of `ProductionNode`s, using `default_recipe_for(item)` for each item (see [ALGO.md](ALGO.md)). A node produces one item, which can be either the recipe's main product (`output1` in the data) or its by-product.
 2. **Recipe switches**, parents first. A child's ID extends its parent's ID, so sorting by ID length is enough. A switch is skipped if its node doesn't exist, is dormant (cut off by an upstream switch), or the recipe can't be resolved.
 3. **Merges**: `FactoryGraph.apply_merge` moves the source's links and external demand to the target.
 4. **Overrides + propagation**: `FactoryGraph.recalculate` runs Kahn's algorithm (see [ALGO.md](ALGO.md)).
@@ -98,4 +98,5 @@ The UI and API come from one process at the same origin, so CORS isn't needed an
 - **src layout + uv** (2026-10): an installable package, so imports and data paths don't depend on the working directory; dependencies are locked in `uv.lock`.
 - **One FastAPI app serving the UI at `/` and the API at `/api`**: simplest local setup and a single Render service. If the UI ever needs a build step, its output can still be served from `/`.
 - **Stateless API** (2026-10): replaced the process-global graph (`GLOBAL_STATE`), which was fine for single-user local use but not for a shared deployment. Merge, unmerge, switch-recipe and recalculate endpoints were folded into `POST /api/calculate`; `POST /api/colors` was removed.
+- **Recipe product from the data** (2026-10): `output1` is the main product, and the node decides which output it produces. This replaced guessing the product from the recipe name, which failed for 38 alternates.
 - **Removed the Falcon service**: a leftover from before FastAPI that was never wired up.

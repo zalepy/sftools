@@ -41,7 +41,13 @@ def available_recipes(item_name: str, data: GameData = Depends(get_game_data)):
         raise HTTPException(status_code=404, detail=f"Unknown item: {item_name}")
 
     return [
-        RecipeInfo(name=r.name, type=r.type.name, building=r.building.name, output_rate=r.output_rate)
+        RecipeInfo(
+            name=r.name,
+            type=r.type.name,
+            building=r.building.name,
+            output_rate=r.rate_of(item_name),
+            byproduct=not r.is_main_product(item_name),
+        )
         for r in item.recipes
     ]
 
