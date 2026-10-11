@@ -95,3 +95,53 @@ def test_merge_into_node_made_dormant_by_recipe_switch(client):
     needed = sum(i["rate"] for n in merged for i in n["scaled_inputs"] if i["item"] == "Screws")
     assert produced == pytest.approx(needed)
     assert any(n["id"] == screws_b for n in nodes_by_item(merged, "Screws"))
+
+
+def test_stale_entries_are_reported_not_rejected(client):
+    """tickets/done/009: entries from an older saved plan are skipped and listed, the plan still builds."""
+    nodes = calculate(client).json()["nodes"]
+    rip = nodes_by_item(nodes, "Reinforced Iron Plate")[0]["id"]
+    response = calculate(
+        client,
+        recipes={"root__Gone": "Iron Plate", rip: "No Such Recipe", nodes[0]["id"]: "Iron Plate"},
+        merges={"root__Gone": rip},
+        overrides={"root__Gone": 3, rip: 2},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    reported = sorted((e["kind"], e["node_id"], e["reason"]) for e in body["ignored"])
+    assert reported == sorted([
+        ("recipe", "root__Gone", "node not in plan"),
+        ("recipe", rip, "unknown recipe 'No Such Recipe'"),
+        ("recipe", nodes[0]["id"], f"'Iron Plate' does not produce {nodes[0]['output_item']}"),
+        ("merge", "root__Gone", "node not in plan: root__Gone"),
+        ("override", "root__Gone", "node not in plan"),
+    ])
+    # The valid override still applies
+    assert next(n for n in body["nodes"] if n["id"] == rip)["building_scale"] == 2
+
+
+def test_entries_on_inactive_branches_are_kept_silently(client):
+    """A switch below a recipe that was switched away from must survive, to apply again on switching back."""
+    demands = [{"item": "Reinforced Iron Plate", "rate": 5}]
+    root = calculate(client, demands=demands).json()["nodes"][0]
+    default_screws = next(c for c in root["children"] if "Screws" in c)
+
+    # Under the Bolted recipe: switch its Screws node to Cast Screws
+    bolted = calculate(client, demands=demands, recipes={root["id"]: "Alternate: Bolted Iron Plate"}).json()["nodes"]
+    bolted_root = next(n for n in bolted if n["id"] == root["id"])
+    bolted_screws = next(c for c in bolted_root["children"] if "Screws" in c)
+    assert bolted_screws != default_screws
+
+    # Back on the default recipe, the Bolted-branch switch is not stale
+    body = calculate(client, demands=demands, recipes={bolted_screws: "Alternate: Cast Screws"}).json()
+    assert body["ignored"] == []
+
+    # Under Bolted, a switch for the default branch's (now dormant) Screws node is not stale either
+    body = calculate(client, demands=demands, recipes={
+        root["id"]: "Alternate: Bolted Iron Plate",
+        default_screws: "Alternate: Cast Screws",
+        bolted_screws: "Alternate: Cast Screws",
+    }).json()
+    assert body["ignored"] == []
+    assert next(n for n in body["nodes"] if n["id"] == bolted_screws)["recipe_name"] == "Alternate: Cast Screws"

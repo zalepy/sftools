@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Literal
 
 from pydantic import BaseModel, Field
 
@@ -17,8 +17,16 @@ class PlanRequest(BaseModel):
     overrides: Dict[str, float] = {}  # node_id -> building scale
 
 
+class IgnoredEntry(BaseModel):
+    """A plan entry that no longer matches the graph (usually a stale saved plan)."""
+    kind: Literal["recipe", "merge", "override"]
+    node_id: str
+    reason: str
+
+
 class PlanResponse(BaseModel):
     nodes: List[Dict[str, Any]]
+    ignored: List[IgnoredEntry] = []
 
 
 class RecipeInfo(BaseModel):

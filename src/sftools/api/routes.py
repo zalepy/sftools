@@ -31,7 +31,7 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
         # e.g. merging nodes with different output items
         raise HTTPException(status_code=400, detail=str(ex))
 
-    return {"nodes": graph.get_ui_data()}
+    return {"nodes": graph.get_ui_data(), "ignored": graph.ignored}
 
 
 @router.get("/available_recipes", response_model=List[RecipeInfo])
