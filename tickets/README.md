@@ -7,7 +7,6 @@
 | [014](014-recipe-model-refactor.md) | Recipe model lists refactor | refactor | P3 | Open |
 | [015](015-external-merge-unmerge-bug.md) | External-demand merge/unmerge bug | bug | P1 | Watch |
 | [016](016-node-id-stability.md) | Node ID stability | debt | P3 | Open |
-| [017](017-frontend-split.md) | Split index.html | refactor | P3 | Open |
 | [018](018-ui-feature-backlog.md) | UI/feature backlog | feature | P3 | Open |
 
 Suggested next: the P3 items, as needed. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
@@ -31,4 +30,5 @@ Moved to [done/](done/).
 | [011](done/011-colors-endpoint-writes-repo.md) | POST /api/colors writes repo file | bug | P2 | Done |
 | [012](done/012-persist-recipe-switches.md) | Recipe switches not saved | bug | P1 | Done |
 | [013](done/013-data-validation-tests.md) | Validation tests on real data | test | P1 | Done |
+| [017](done/017-frontend-split.md) | Split index.html | refactor | P3 | Done |
 | [019](done/019-scraped-data-gaps.md) | Gaps in the scraped game data | data | P2 | Done |
