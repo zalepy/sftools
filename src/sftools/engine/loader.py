@@ -33,6 +33,26 @@ def get_float_or_none(data_dict, key) -> Optional[float]:
     return parse_number(data_dict.get(key))
 
 
+RECIPE_POWER_KEY = re.compile(r'^Power used \((.+)\)$')
+
+
+def parse_recipe_power(entry: Dict) -> Dict[str, float]:
+    """
+    Buildings like the Particle Accelerator list power per recipe as a range, e.g.
+    'Power used (Diamonds)': '250 - 750'. The game's average draw is the midpoint.
+    """
+    recipe_power = {}
+    for key, value in entry.items():
+        match = RECIPE_POWER_KEY.match(key)
+        if not match:
+            continue
+        bounds = [parse_number(part) for part in str(value).split(' - ')]
+        bounds = [b for b in bounds if b is not None]
+        if bounds:
+            recipe_power[match.group(1)] = -sum(bounds) / len(bounds)
+    return recipe_power
+
+
 def load_buildings(path: str) -> Dict[str, Building]:
     with open(os.path.join(path, 'buildings.json'), 'rt', encoding='utf-8') as f:
         buildings_json = json.load(f)
@@ -43,14 +63,11 @@ def load_buildings(path: str) -> Dict[str, Building]:
         name = entry.get('name')
         category = NAME_TO_BUILDING_CATEGORY_MAP.get(entry.get('Category'))
 
-        # Negative = consumed, positive = generated. Buildings with recipe-dependent power
-        # (Particle Accelerator, Quantum Encoder, Converter) have no single value (see tickets/019).
+        # Negative = consumed, positive = generated
         power = 0
         power_used = parse_number(entry.get('Power used'))
         if power_used is not None:
             power = -int(power_used)
-        if entry.get('Power used (Nuclear Pasta)'):
-            power = -1500
         power_generated = parse_number(entry.get('Power generated'))
         if power_generated is not None:
             power = int(power_generated)
@@ -64,6 +81,7 @@ def load_buildings(path: str) -> Dict[str, Building]:
             get_int_or_none(entry, 'Height'),
             get_int_or_none(entry, 'Input'),
             get_int_or_none(entry, 'Output'),
+            recipe_power=parse_recipe_power(entry),
         )
         buildings_by_name[name] = building
 
@@ -81,7 +99,7 @@ def recipe_type_for(recipe_name: str, building_name: str) -> RecipeType:
 def build_recipe(recipe_name: str, details: Dict, items: Dict[str, Item], buildings: Dict[str, Building]) -> Recipe:
     """
     output1 is the recipe's main product and output2 its by-product, as in the game data.
-    Ingredients or outputs that refer to unknown items are dropped (see tickets/019).
+    Ingredients or outputs that refer to unknown items are dropped; tests/test_game_data.py checks there are none.
     """
     def item_and_rate(prefix):
         return items.get(details.get(f'{prefix}_name')), get_float_or_none(details, f'{prefix}_rate')

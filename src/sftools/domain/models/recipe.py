@@ -135,7 +135,7 @@ class Recipe:
             building_scale=scaler,
             output_item_name=product_name,
             base_output_rate=self.rate_of(product_name),
-            base_power=self.building.power_generated,
+            base_power=self.building.power_for(self._name),
             base_inputs=self.base_inputs(),
             recipe=self
         )

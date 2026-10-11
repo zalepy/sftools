@@ -62,7 +62,7 @@ Why stateless: on a shared deployment, a single server-side graph would be share
 
 ## Graph model
 
-- **`ProductionNode`**: one recipe run in some number of buildings. It stores base (1×) rates; scaled output, inputs and power are derived from `building_scale`, which is `user_scale` if set and otherwise `original_building_scale`. `parent_demands` records how much each parent (or `"External Demand"` for a root) asks for.
+- **`ProductionNode`**: one recipe run in some number of buildings. It stores base (1×) rates; scaled output, inputs and power are derived from `building_scale`, which is `user_scale` if set and otherwise `original_building_scale`. Base power comes from `Building.power_for(recipe)`; for buildings whose draw depends on the recipe (Particle Accelerator, Quantum Encoder, Converter) it is the midpoint of the listed range. `parent_demands` records how much each parent (or `"External Demand"` for a root) asks for.
 - **`FactoryGraph`** keeps *every* node created for the plan:
   - **Merged** nodes have `absorbed_by` set. Their links move to the target, and `get_ui_data` hides them and lists them in the target's `constituent_ids`.
   - **Dormant** nodes belong to a recipe that was switched away from. They stay in the graph but are excluded from calculation and the UI.

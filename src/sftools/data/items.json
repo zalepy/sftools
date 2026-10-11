@@ -14,7 +14,7 @@
         "ingredient2_stack": "2",
         "ingredient2_name": "Sulfur",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Limestone"
       },
       "Limestone (impure) at Miner Mk.1": {
@@ -85,10 +85,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "240",
-        "ingredient2_stack": "2",
+        "ingredient2_stack": "24",
         "ingredient2_name": "Limestone",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Iron Ore"
       },
       "Iron Ore (impure) at Miner Mk.1": {
@@ -159,10 +159,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "100",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Raw Quartz",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Copper Ore"
       },
       "Copper Ore (Sulfur)": {
@@ -171,10 +171,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "120",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "12",
         "ingredient2_name": "Sulfur",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Copper Ore"
       },
       "Copper Ore (impure) at Miner Mk.1": {
@@ -245,10 +245,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "150",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "15",
         "ingredient2_name": "Copper Ore",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Caterium Ore"
       },
       "Caterium Ore (Quartz)": {
@@ -257,10 +257,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "120",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "12",
         "ingredient2_name": "Raw Quartz",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Caterium Ore"
       },
       "Caterium Ore (impure) at Miner Mk.1": {
@@ -341,7 +341,7 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Wood",
         "output1_rate": "150",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Coal"
       },
       "Coal (Iron)": {
@@ -350,10 +350,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "180",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "18",
         "ingredient2_name": "Iron Ore",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Coal"
       },
       "Coal (Limestone)": {
@@ -362,10 +362,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "360",
-        "ingredient2_stack": "3",
+        "ingredient2_stack": "36",
         "ingredient2_name": "Limestone",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Coal"
       },
       "Coal (impure) at Miner Mk.1": {
@@ -436,10 +436,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "100",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Bauxite",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Raw Quartz"
       },
       "Raw Quartz (Coal)": {
@@ -448,10 +448,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "240",
-        "ingredient2_stack": "2",
+        "ingredient2_stack": "24",
         "ingredient2_name": "Coal",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Raw Quartz"
       },
       "Raw Quartz (impure) at Miner Mk.1": {
@@ -522,10 +522,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "200",
-        "ingredient2_stack": "2",
+        "ingredient2_stack": "20",
         "ingredient2_name": "Coal",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Sulfur"
       },
       "Sulfur (Iron)": {
@@ -534,10 +534,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "300",
-        "ingredient2_stack": "3",
+        "ingredient2_stack": "30",
         "ingredient2_name": "Iron Ore",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Sulfur"
       },
       "Sulfur (impure) at Miner Mk.1": {
@@ -608,10 +608,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "150",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "15",
         "ingredient2_name": "Caterium Ore",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Bauxite"
       },
       "Bauxite (Copper)": {
@@ -620,10 +620,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "180",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "18",
         "ingredient2_name": "Copper Ore",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Bauxite"
       },
       "Bauxite (impure) at Miner Mk.1": {
@@ -756,10 +756,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "480",
-        "ingredient2_stack": "4",
+        "ingredient2_stack": "48",
         "ingredient2_name": "Bauxite",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Uranium"
       },
       "Uranium (impure) at Miner Mk.1": {
@@ -842,7 +842,7 @@
         "ingredient2_stack": "8",
         "ingredient2_name": "Limestone",
         "output1_rate": "50",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Iron Ingot"
       },
       "Alternate: Iron Alloy Ingot": {
@@ -854,7 +854,7 @@
         "ingredient2_stack": "2",
         "ingredient2_name": "Copper Ore",
         "output1_rate": "75",
-        "output1_stack": "1",
+        "output1_stack": "15",
         "output1_name": "Iron Ingot"
       },
       "Alternate: Leached Iron Ingot": {
@@ -866,7 +866,7 @@
         "ingredient2_stack": "1",
         "ingredient2_name": "Sulfuric Acid",
         "output1_rate": "100",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Iron Ingot"
       },
       "Alternate: Pure Iron Ingot": {
@@ -878,7 +878,7 @@
         "ingredient2_stack": "4",
         "ingredient2_name": "Water",
         "output1_rate": "65",
-        "output1_stack": "1",
+        "output1_stack": "13",
         "output1_name": "Iron Ingot"
       }
     }
@@ -907,7 +907,7 @@
         "ingredient2_stack": "5",
         "ingredient2_name": "Iron Ore",
         "output1_rate": "100",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Copper Ingot"
       },
       "Alternate: Leached Copper Ingot": {
@@ -919,7 +919,7 @@
         "ingredient2_stack": "5",
         "ingredient2_name": "Sulfuric Acid",
         "output1_rate": "110",
-        "output1_stack": "2",
+        "output1_stack": "22",
         "output1_name": "Copper Ingot"
       },
       "Alternate: Pure Copper Ingot": {
@@ -931,7 +931,7 @@
         "ingredient2_stack": "4",
         "ingredient2_name": "Water",
         "output1_rate": "37.5",
-        "output1_stack": "1",
+        "output1_stack": "15",
         "output1_name": "Copper Ingot"
       },
       "Alternate: Tempered Copper Ingot": {
@@ -943,7 +943,7 @@
         "ingredient2_stack": "8",
         "ingredient2_name": "Petroleum Coke",
         "output1_rate": "60",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Copper Ingot"
       }
     }
@@ -1022,13 +1022,13 @@
       "Alternate: Coke Steel Ingot": {
         "building": "Foundry",
         "ingredient1_rate": "75",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "15",
         "ingredient1_name": "Iron Ore",
         "ingredient2_rate": "75",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "15",
         "ingredient2_name": "Petroleum Coke",
         "output1_rate": "100",
-        "output1_stack": "2",
+        "output1_stack": "20",
         "output1_name": "Steel Ingot"
       },
       "Alternate: Compacted Steel Ingot": {
@@ -1122,7 +1122,7 @@
         "ingredient1_stack": "4",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "240",
-        "ingredient2_stack": "2",
+        "ingredient2_stack": "24",
         "ingredient2_name": "Iron Ingot",
         "output1_rate": "10",
         "output1_stack": "1",
@@ -1151,16 +1151,16 @@
         "ingredient1_stack": "3",
         "ingredient1_name": "Silica",
         "ingredient2_rate": "60",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "12",
         "ingredient2_name": "Limestone",
         "output1_rate": "50",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Concrete"
       },
       "Alternate: Rubber Concrete": {
         "building": "Assembler",
         "ingredient1_rate": "100",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "10",
         "ingredient1_name": "Limestone",
         "ingredient2_rate": "20",
         "ingredient2_stack": "2",
@@ -1201,13 +1201,13 @@
       "Alternate: Fused Quartz Crystal": {
         "building": "Foundry",
         "ingredient1_rate": "75",
-        "ingredient1_stack": "2",
+        "ingredient1_stack": "25",
         "ingredient1_name": "Raw Quartz",
         "ingredient2_rate": "36",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "12",
         "ingredient2_name": "Coal",
         "output1_rate": "54",
-        "output1_stack": "1",
+        "output1_stack": "18",
         "output1_name": "Quartz Crystal"
       },
       "Alternate: Pure Quartz Crystal": {
@@ -1225,16 +1225,16 @@
       "Alternate: Quartz Purification": {
         "building": "Refinery",
         "ingredient1_rate": "120",
-        "ingredient1_stack": "2",
+        "ingredient1_stack": "24",
         "ingredient1_name": "Raw Quartz",
         "ingredient2_rate": "10m3",
         "ingredient2_stack": "2",
         "ingredient2_name": "Nitric Acid",
         "output1_rate": "75",
-        "output1_stack": "1",
+        "output1_stack": "15",
         "output1_name": "Quartz Crystal",
         "output2_rate": "60m3",
-        "output2_stack": "1",
+        "output2_stack": "12",
         "output2_name": "Dissolved Silica"
       }
     }
@@ -1248,13 +1248,13 @@
       "Alumina Solution": {
         "building": "Refinery",
         "ingredient1_rate": "120",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "12",
         "ingredient1_name": "Bauxite",
         "ingredient2_rate": "180m3",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "18",
         "ingredient2_name": "Water",
         "output1_rate": "120m3",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Alumina Solution",
         "output2_rate": "50",
         "output2_stack": "5",
@@ -1284,16 +1284,16 @@
       "Alternate: Distilled Silica": {
         "building": "Blender",
         "ingredient1_rate": "120m3",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "12",
         "ingredient1_name": "Dissolved Silica",
         "ingredient2_rate": "50",
         "ingredient2_stack": "5",
         "ingredient2_name": "Limestone",
         "ingredient3_rate": "100m3",
-        "ingredient3_stack": "1",
+        "ingredient3_stack": "10",
         "ingredient3_name": "Water",
         "output1_rate": "270",
-        "output1_stack": "2",
+        "output1_stack": "27",
         "output1_name": "Silica",
         "output2_rate": "80m3",
         "output2_stack": "8",
@@ -1310,7 +1310,7 @@
       "Copper Powder": {
         "building": "Constructor",
         "ingredient1_rate": "300",
-        "ingredient1_stack": "3",
+        "ingredient1_stack": "30",
         "ingredient1_name": "Copper Ingot",
         "output1_rate": "50",
         "output1_stack": "5",
@@ -1354,7 +1354,7 @@
         "ingredient1_stack": "6",
         "ingredient1_name": "Crude Oil",
         "output1_rate": "130",
-        "output1_stack": "1",
+        "output1_stack": "13",
         "output1_name": "Polymer Resin",
         "output2_rate": "20m3",
         "output2_stack": "2",
@@ -1375,7 +1375,7 @@
         "ingredient1_stack": "4",
         "ingredient1_name": "Heavy Oil Residue",
         "output1_rate": "120",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Petroleum Coke"
       }
     }
@@ -1404,13 +1404,13 @@
       "Alternate: Electrode Aluminum Scrap": {
         "building": "Refinery",
         "ingredient1_rate": "180m3",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "12",
         "ingredient1_name": "Alumina Solution",
         "ingredient2_rate": "60",
         "ingredient2_stack": "4",
         "ingredient2_name": "Petroleum Coke",
         "output1_rate": "300",
-        "output1_stack": "2",
+        "output1_stack": "20",
         "output1_name": "Aluminum Scrap",
         "output2_rate": "105m3",
         "output2_stack": "7",
@@ -1419,10 +1419,10 @@
       "Alternate: Instant Scrap": {
         "building": "Blender",
         "ingredient1_rate": "150",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "15",
         "ingredient1_name": "Bauxite",
         "ingredient2_rate": "100",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Coal",
         "ingredient3_rate": "50m3",
         "ingredient3_stack": "5",
@@ -1431,7 +1431,7 @@
         "ingredient4_stack": "6",
         "ingredient4_name": "Water",
         "output1_rate": "300",
-        "output1_stack": "3",
+        "output1_stack": "30",
         "output1_name": "Aluminum Scrap",
         "output2_rate": "50m3",
         "output2_stack": "5",
@@ -1523,7 +1523,7 @@
       "Battery": {
         "building": "Blender",
         "ingredient1_rate": "50m3",
-        "ingredient1_stack": "2.",
+        "ingredient1_stack": "2.5",
         "ingredient1_name": "Sulfuric Acid",
         "ingredient2_rate": "40m3",
         "ingredient2_stack": "2",
@@ -1535,16 +1535,16 @@
         "output1_stack": "1",
         "output1_name": "Battery",
         "output2_rate": "30m3",
-        "output2_stack": "1.",
+        "output2_stack": "1.5",
         "output2_name": "Water"
       },
       "Non-Fissile Uranium": {
         "building": "Blender",
         "ingredient1_rate": "37.5",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "15",
         "ingredient1_name": "Uranium Waste",
         "ingredient2_rate": "25",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Silica",
         "ingredient3_rate": "15m3",
         "ingredient3_stack": "6",
@@ -1553,7 +1553,7 @@
         "ingredient4_stack": "6",
         "ingredient4_name": "Sulfuric Acid",
         "output1_rate": "50",
-        "output1_stack": "2",
+        "output1_stack": "20",
         "output1_name": "Non-Fissile Uranium",
         "output2_rate": "15m3",
         "output2_stack": "6",
@@ -1574,16 +1574,16 @@
       "Alternate: Distilled Silica": {
         "building": "Blender",
         "ingredient1_rate": "120m3",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "12",
         "ingredient1_name": "Dissolved Silica",
         "ingredient2_rate": "50",
         "ingredient2_stack": "5",
         "ingredient2_name": "Limestone",
         "ingredient3_rate": "100m3",
-        "ingredient3_stack": "1",
+        "ingredient3_stack": "10",
         "ingredient3_name": "Water",
         "output1_rate": "270",
-        "output1_stack": "2",
+        "output1_stack": "27",
         "output1_name": "Silica",
         "output2_rate": "80m3",
         "output2_stack": "8",
@@ -1592,13 +1592,13 @@
       "Alternate: Electrode Aluminum Scrap": {
         "building": "Refinery",
         "ingredient1_rate": "180m3",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "12",
         "ingredient1_name": "Alumina Solution",
         "ingredient2_rate": "60",
         "ingredient2_stack": "4",
         "ingredient2_name": "Petroleum Coke",
         "output1_rate": "300",
-        "output1_stack": "2",
+        "output1_stack": "20",
         "output1_name": "Aluminum Scrap",
         "output2_rate": "105m3",
         "output2_stack": "7",
@@ -1619,7 +1619,7 @@
         "ingredient4_stack": "5",
         "ingredient4_name": "Sulfuric Acid",
         "output1_rate": "100",
-        "output1_stack": "2",
+        "output1_stack": "20",
         "output1_name": "Non-Fissile Uranium",
         "output2_rate": "40m3",
         "output2_stack": "8",
@@ -1628,10 +1628,10 @@
       "Alternate: Instant Scrap": {
         "building": "Blender",
         "ingredient1_rate": "150",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "15",
         "ingredient1_name": "Bauxite",
         "ingredient2_rate": "100",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Coal",
         "ingredient3_rate": "50m3",
         "ingredient3_stack": "5",
@@ -1640,7 +1640,7 @@
         "ingredient4_stack": "6",
         "ingredient4_name": "Water",
         "output1_rate": "300",
-        "output1_stack": "3",
+        "output1_stack": "30",
         "output1_name": "Aluminum Scrap",
         "output2_rate": "50m3",
         "output2_stack": "5",
@@ -1788,7 +1788,7 @@
         "ingredient1_stack": "6",
         "ingredient1_name": "Crude Oil",
         "output1_rate": "130",
-        "output1_stack": "1",
+        "output1_stack": "13",
         "output1_name": "Polymer Resin",
         "output2_rate": "20m3",
         "output2_stack": "2",
@@ -1832,10 +1832,10 @@
         "ingredient1_stack": "5",
         "ingredient1_name": "Heavy Oil Residue",
         "ingredient2_rate": "100m3",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Water",
         "output1_rate": "100m3",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Fuel"
       },
       "Residual Fuel": {
@@ -1951,13 +1951,13 @@
       "Alumina Solution": {
         "building": "Refinery",
         "ingredient1_rate": "120",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "12",
         "ingredient1_name": "Bauxite",
         "ingredient2_rate": "180m3",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "18",
         "ingredient2_name": "Water",
         "output1_rate": "120m3",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Alumina Solution",
         "output2_rate": "50",
         "output2_stack": "5",
@@ -1978,13 +1978,13 @@
       "Alternate: Sloppy Alumina": {
         "building": "Refinery",
         "ingredient1_rate": "200",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "10",
         "ingredient1_name": "Bauxite",
         "ingredient2_rate": "200m3",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Water",
         "output1_rate": "240m3",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Alumina Solution"
       }
     }
@@ -1997,7 +1997,7 @@
       "Encased Uranium Cell": {
         "building": "Blender",
         "ingredient1_rate": "50",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "10",
         "ingredient1_name": "Uranium",
         "ingredient2_rate": "15",
         "ingredient2_stack": "3",
@@ -2046,7 +2046,7 @@
       "Nitric Acid": {
         "building": "Blender",
         "ingredient1_rate": "120m3",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "12",
         "ingredient1_name": "Nitrogen Gas",
         "ingredient2_rate": "30m3",
         "ingredient2_stack": "3",
@@ -2080,16 +2080,16 @@
       "Alternate: Quartz Purification": {
         "building": "Refinery",
         "ingredient1_rate": "120",
-        "ingredient1_stack": "2",
+        "ingredient1_stack": "24",
         "ingredient1_name": "Raw Quartz",
         "ingredient2_rate": "10m3",
         "ingredient2_stack": "2",
         "ingredient2_name": "Nitric Acid",
         "output1_rate": "75",
-        "output1_stack": "1",
+        "output1_stack": "15",
         "output1_name": "Quartz Crystal",
         "output2_rate": "60m3",
-        "output2_stack": "1",
+        "output2_stack": "12",
         "output2_name": "Dissolved Silica"
       }
     }
@@ -2117,10 +2117,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "100",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Bauxite",
         "output1_rate": "120m3",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Nitrogen Gas"
       },
       "Nitrogen Gas (Caterium)": {
@@ -2129,10 +2129,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Reanimated SAM",
         "ingredient2_rate": "120",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "12",
         "ingredient2_name": "Caterium Ore",
         "output1_rate": "120m3",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Nitrogen Gas"
       },
       "Nitrogen Gas (impure) at Resource Well Extractor": {
@@ -2171,7 +2171,7 @@
         "ingredient2_stack": "1",
         "ingredient2_name": "Nitric Acid",
         "output1_rate": "100m3",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Rocket Fuel",
         "output2_rate": "10",
         "output2_stack": "1",
@@ -2222,13 +2222,13 @@
       "Ionized Fuel": {
         "building": "Refinery",
         "ingredient1_rate": "40m3",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "16",
         "ingredient1_name": "Rocket Fuel",
         "ingredient2_rate": "2.5",
         "ingredient2_stack": "1",
         "ingredient2_name": "Power Shard",
         "output1_rate": "40m3",
-        "output1_stack": "1",
+        "output1_stack": "16",
         "output1_name": "Ionized Fuel",
         "output2_rate": "5",
         "output2_stack": "2",
@@ -2249,13 +2249,13 @@
       "Alternate: Dark-Ion Fuel": {
         "building": "Converter",
         "ingredient1_rate": "240",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "12",
         "ingredient1_name": "Packaged Rocket Fuel",
         "ingredient2_rate": "80",
         "ingredient2_stack": "4",
         "ingredient2_name": "Dark Matter Crystal",
         "output1_rate": "200m3",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Ionized Fuel",
         "output2_rate": "40",
         "output2_stack": "2",
@@ -2269,14 +2269,140 @@
     "Stack size": "200",
     "Resource Sink Points": "130",
     "recipes": {
+      "AI Expansion Server": {
+        "building": "Quantum Encoder",
+        "ingredient1_rate": "4",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Magnetic Field Generator",
+        "ingredient2_rate": "4",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Neural-Quantum Processor",
+        "ingredient3_rate": "4",
+        "ingredient3_stack": "1",
+        "ingredient3_name": "Superposition Oscillator",
+        "ingredient4_rate": "100m3",
+        "ingredient4_stack": "25",
+        "ingredient4_name": "Excited Photonic Matter",
+        "output1_rate": "4",
+        "output1_stack": "1",
+        "output1_name": "AI Expansion Server",
+        "output2_rate": "100m3",
+        "output2_stack": "25",
+        "output2_name": "Dark Matter Residue"
+      },
+      "Alien Power Matrix": {
+        "building": "Quantum Encoder",
+        "ingredient1_rate": "12.5",
+        "ingredient1_stack": "5",
+        "ingredient1_name": "SAM Fluctuator",
+        "ingredient2_rate": "7.5",
+        "ingredient2_stack": "3",
+        "ingredient2_name": "Power Shard",
+        "ingredient3_rate": "7.5",
+        "ingredient3_stack": "3",
+        "ingredient3_name": "Superposition Oscillator",
+        "ingredient4_rate": "60m3",
+        "ingredient4_stack": "24",
+        "ingredient4_name": "Excited Photonic Matter",
+        "output1_rate": "2.5",
+        "output1_stack": "1",
+        "output1_name": "Alien Power Matrix",
+        "output2_rate": "60m3",
+        "output2_stack": "24",
+        "output2_name": "Dark Matter Residue"
+      },
       "Dark Matter Residue": {
         "building": "Converter",
         "ingredient1_rate": "50",
         "ingredient1_stack": "5",
         "ingredient1_name": "Reanimated SAM",
         "output1_rate": "100m3",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Dark Matter Residue"
+      },
+      "Ficsonium Fuel Rod": {
+        "building": "Quantum Encoder",
+        "ingredient1_rate": "5",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Ficsonium",
+        "ingredient2_rate": "5",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Electromagnetic Control Rod",
+        "ingredient3_rate": "100",
+        "ingredient3_stack": "40",
+        "ingredient3_name": "Ficsite Trigon",
+        "ingredient4_rate": "50m3",
+        "ingredient4_stack": "20",
+        "ingredient4_name": "Excited Photonic Matter",
+        "output1_rate": "2.5",
+        "output1_stack": "1",
+        "output1_name": "Ficsonium Fuel Rod",
+        "output2_rate": "50m3",
+        "output2_stack": "20",
+        "output2_name": "Dark Matter Residue"
+      },
+      "Neural-Quantum Processor": {
+        "building": "Quantum Encoder",
+        "ingredient1_rate": "15",
+        "ingredient1_stack": "5",
+        "ingredient1_name": "Time Crystal",
+        "ingredient2_rate": "3",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Supercomputer",
+        "ingredient3_rate": "45",
+        "ingredient3_stack": "15",
+        "ingredient3_name": "Ficsite Trigon",
+        "ingredient4_rate": "75m3",
+        "ingredient4_stack": "25",
+        "ingredient4_name": "Excited Photonic Matter",
+        "output1_rate": "3",
+        "output1_stack": "1",
+        "output1_name": "Neural-Quantum Processor",
+        "output2_rate": "75m3",
+        "output2_stack": "25",
+        "output2_name": "Dark Matter Residue"
+      },
+      "Superposition Oscillator": {
+        "building": "Quantum Encoder",
+        "ingredient1_rate": "30",
+        "ingredient1_stack": "6",
+        "ingredient1_name": "Dark Matter Crystal",
+        "ingredient2_rate": "5",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Crystal Oscillator",
+        "ingredient3_rate": "45",
+        "ingredient3_stack": "9",
+        "ingredient3_name": "Alclad Aluminum Sheet",
+        "ingredient4_rate": "125m3",
+        "ingredient4_stack": "25",
+        "ingredient4_name": "Excited Photonic Matter",
+        "output1_rate": "5",
+        "output1_stack": "1",
+        "output1_name": "Superposition Oscillator",
+        "output2_rate": "125m3",
+        "output2_stack": "25",
+        "output2_name": "Dark Matter Residue"
+      },
+      "Synthetic Power Shard": {
+        "building": "Quantum Encoder",
+        "ingredient1_rate": "10",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Time Crystal",
+        "ingredient2_rate": "10",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Dark Matter Crystal",
+        "ingredient3_rate": "60",
+        "ingredient3_stack": "12",
+        "ingredient3_name": "Quartz Crystal",
+        "ingredient4_rate": "60m3",
+        "ingredient4_stack": "12",
+        "ingredient4_name": "Excited Photonic Matter",
+        "output1_rate": "5",
+        "output1_stack": "1",
+        "output1_name": "Power Shard",
+        "output2_rate": "60m3",
+        "output2_stack": "12",
+        "output2_name": "Dark Matter Residue"
       }
     }
   },
@@ -2288,9 +2414,9 @@
     "recipes": {
       "Excited Photonic Matter": {
         "building": "Converter",
-        "ingredient1_rate": "200m3",
-        "ingredient1_stack": "1",
-        "ingredient1_name": "Excited Photonic Matter"
+        "output1_rate": "200m3",
+        "output1_stack": "10",
+        "output1_name": "Excited Photonic Matter"
       }
     }
   },
@@ -2350,7 +2476,7 @@
         "ingredient1_stack": "5",
         "ingredient1_name": "Iron Ingot",
         "output1_rate": "50",
-        "output1_stack": "2",
+        "output1_stack": "20",
         "output1_name": "Screws"
       },
       "Alternate: Steel Screws": {
@@ -2359,7 +2485,7 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Steel Beam",
         "output1_rate": "260",
-        "output1_stack": "5",
+        "output1_stack": "52",
         "output1_name": "Screws"
       }
     }
@@ -2388,7 +2514,7 @@
         "ingredient2_stack": "1",
         "ingredient2_name": "Plastic",
         "output1_rate": "75",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Iron Plate"
       },
       "Alternate: Steel Cast Plate": {
@@ -2417,7 +2543,7 @@
         "ingredient1_stack": "6",
         "ingredient1_name": "Iron Plate",
         "ingredient2_rate": "60",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "12",
         "ingredient2_name": "Screws",
         "output1_rate": "5",
         "output1_stack": "1",
@@ -2438,10 +2564,10 @@
       "Alternate: Bolted Iron Plate": {
         "building": "Assembler",
         "ingredient1_rate": "90",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "18",
         "ingredient1_name": "Iron Plate",
         "ingredient2_rate": "250",
-        "ingredient2_stack": "5",
+        "ingredient2_stack": "50",
         "ingredient2_name": "Screws",
         "output1_rate": "15",
         "output1_stack": "3",
@@ -2450,10 +2576,10 @@
       "Alternate: Stitched Iron Plate": {
         "building": "Assembler",
         "ingredient1_rate": "18.75",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "10",
         "ingredient1_name": "Iron Plate",
         "ingredient2_rate": "37.5",
-        "ingredient2_stack": "2",
+        "ingredient2_stack": "20",
         "ingredient2_name": "Wire",
         "output1_rate": "5.63",
         "output1_stack": "3",
@@ -2528,13 +2654,13 @@
       "Alternate: Alclad Casing": {
         "building": "Assembler",
         "ingredient1_rate": "150",
-        "ingredient1_stack": "2",
+        "ingredient1_stack": "20",
         "ingredient1_name": "Aluminum Ingot",
         "ingredient2_rate": "75",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Copper Ingot",
         "output1_rate": "112.5",
-        "output1_stack": "1",
+        "output1_stack": "15",
         "output1_name": "Aluminum Casing"
       }
     }
@@ -2557,7 +2683,7 @@
       "Alternate: Iron Pipe": {
         "building": "Constructor",
         "ingredient1_rate": "100",
-        "ingredient1_stack": "2",
+        "ingredient1_stack": "20",
         "ingredient1_name": "Iron Ingot",
         "output1_rate": "25",
         "output1_stack": "5",
@@ -2604,10 +2730,10 @@
       "Alternate: Molded Beam": {
         "building": "Foundry",
         "ingredient1_rate": "120",
-        "ingredient1_stack": "2",
+        "ingredient1_stack": "24",
         "ingredient1_name": "Steel Ingot",
         "ingredient2_rate": "80",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "16",
         "ingredient2_name": "Concrete",
         "output1_rate": "45",
         "output1_stack": "9",
@@ -2659,7 +2785,7 @@
         "ingredient1_stack": "3",
         "ingredient1_name": "Reinforced Iron Plate",
         "ingredient2_rate": "12",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "12",
         "ingredient2_name": "Iron Rod",
         "output1_rate": "2",
         "output1_stack": "2",
@@ -2671,7 +2797,7 @@
         "ingredient1_stack": "3",
         "ingredient1_name": "Reinforced Iron Plate",
         "ingredient2_rate": "140",
-        "ingredient2_stack": "5",
+        "ingredient2_stack": "56",
         "ingredient2_name": "Screws",
         "output1_rate": "5",
         "output1_stack": "2",
@@ -2683,7 +2809,7 @@
         "ingredient1_stack": "2",
         "ingredient1_name": "Reinforced Iron Plate",
         "ingredient2_rate": "10",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Steel Pipe",
         "output1_rate": "3",
         "output1_stack": "3",
@@ -2703,13 +2829,13 @@
         "ingredient1_stack": "5",
         "ingredient1_name": "Modular Frame",
         "ingredient2_rate": "40",
-        "ingredient2_stack": "2",
+        "ingredient2_stack": "20",
         "ingredient2_name": "Steel Pipe",
         "ingredient3_rate": "10",
         "ingredient3_stack": "5",
         "ingredient3_name": "Encased Industrial Beam",
         "ingredient4_rate": "240",
-        "ingredient4_stack": "1",
+        "ingredient4_stack": "120",
         "ingredient4_name": "Screws",
         "output1_rate": "2",
         "output1_stack": "1",
@@ -2721,13 +2847,13 @@
         "ingredient1_stack": "8",
         "ingredient1_name": "Modular Frame",
         "ingredient2_rate": "9.38",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Encased Industrial Beam",
         "ingredient3_rate": "33.75",
-        "ingredient3_stack": "3",
+        "ingredient3_stack": "36",
         "ingredient3_name": "Steel Pipe",
         "ingredient4_rate": "20.63",
-        "ingredient4_stack": "2",
+        "ingredient4_stack": "22",
         "ingredient4_name": "Concrete",
         "output1_rate": "2.81",
         "output1_stack": "3",
@@ -2742,10 +2868,10 @@
         "ingredient2_stack": "3",
         "ingredient2_name": "Encased Industrial Beam",
         "ingredient3_rate": "75",
-        "ingredient3_stack": "2",
+        "ingredient3_stack": "20",
         "ingredient3_name": "Rubber",
         "ingredient4_rate": "390",
-        "ingredient4_stack": "1",
+        "ingredient4_stack": "104",
         "ingredient4_name": "Screws",
         "output1_rate": "3.75",
         "output1_stack": "1",
@@ -2765,10 +2891,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Heavy Modular Frame",
         "ingredient2_rate": "75",
-        "ingredient2_stack": "5",
+        "ingredient2_stack": "50",
         "ingredient2_name": "Aluminum Casing",
         "ingredient3_rate": "37.5m3",
-        "ingredient3_stack": "2",
+        "ingredient3_stack": "25",
         "ingredient3_name": "Nitrogen Gas",
         "output1_rate": "1.5",
         "output1_stack": "1",
@@ -2780,13 +2906,13 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Heavy Modular Frame",
         "ingredient2_rate": "150",
-        "ingredient2_stack": "5",
+        "ingredient2_stack": "50",
         "ingredient2_name": "Aluminum Ingot",
         "ingredient3_rate": "24m3",
         "ingredient3_stack": "8",
         "ingredient3_name": "Nitric Acid",
         "ingredient4_rate": "30m3",
-        "ingredient4_stack": "1",
+        "ingredient4_stack": "10",
         "ingredient4_name": "Fuel",
         "output1_rate": "3",
         "output1_stack": "1",
@@ -2871,7 +2997,7 @@
         "ingredient2_stack": "6",
         "ingredient2_name": "Fuel",
         "output1_rate": "60",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Plastic"
       },
       "Residual Plastic": {
@@ -2915,7 +3041,7 @@
         "ingredient2_stack": "6",
         "ingredient2_name": "Fuel",
         "output1_rate": "60",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Rubber"
       },
       "Residual Rubber": {
@@ -2944,7 +3070,7 @@
         "ingredient1_stack": "5",
         "ingredient1_name": "Iron Rod",
         "ingredient2_rate": "100",
-        "ingredient2_stack": "2",
+        "ingredient2_stack": "25",
         "ingredient2_name": "Screws",
         "output1_rate": "4",
         "output1_stack": "1",
@@ -2956,7 +3082,7 @@
         "ingredient1_stack": "6",
         "ingredient1_name": "Copper Sheet",
         "ingredient2_rate": "195",
-        "ingredient2_stack": "5",
+        "ingredient2_stack": "52",
         "ingredient2_name": "Screws",
         "output1_rate": "11.25",
         "output1_stack": "3",
@@ -3000,7 +3126,7 @@
         "ingredient1_stack": "4",
         "ingredient1_name": "Steel Pipe",
         "ingredient2_rate": "60",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "15",
         "ingredient2_name": "Quickwire",
         "output1_rate": "8",
         "output1_stack": "2",
@@ -3018,7 +3144,7 @@
       "Battery": {
         "building": "Blender",
         "ingredient1_rate": "50m3",
-        "ingredient1_stack": "2.",
+        "ingredient1_stack": "2.5",
         "ingredient1_name": "Sulfuric Acid",
         "ingredient2_rate": "40m3",
         "ingredient2_stack": "2",
@@ -3030,7 +3156,7 @@
         "output1_stack": "1",
         "output1_name": "Battery",
         "output2_rate": "30m3",
-        "output2_stack": "1.",
+        "output2_stack": "1.5",
         "output2_name": "Water"
       },
       "Alternate: Classic Battery": {
@@ -3045,7 +3171,7 @@
         "ingredient3_stack": "8",
         "ingredient3_name": "Plastic",
         "ingredient4_rate": "90",
-        "ingredient4_stack": "1",
+        "ingredient4_stack": "12",
         "ingredient4_name": "Wire",
         "output1_rate": "30",
         "output1_stack": "4",
@@ -3150,7 +3276,7 @@
         "ingredient3_stack": "5",
         "ingredient3_name": "Water",
         "ingredient4_rate": "150m3",
-        "ingredient4_stack": "2",
+        "ingredient4_stack": "25",
         "ingredient4_name": "Nitrogen Gas",
         "output1_rate": "6",
         "output1_stack": "1",
@@ -3165,7 +3291,7 @@
         "ingredient2_stack": "1",
         "ingredient2_name": "Motor",
         "ingredient3_rate": "60m3",
-        "ingredient3_stack": "2",
+        "ingredient3_stack": "24",
         "ingredient3_name": "Nitrogen Gas",
         "output1_rate": "5",
         "output1_stack": "2",
@@ -3191,7 +3317,7 @@
         "ingredient3_stack": "4",
         "ingredient3_name": "Motor",
         "ingredient4_rate": "45",
-        "ingredient4_stack": "2",
+        "ingredient4_stack": "24",
         "ingredient4_name": "Rubber",
         "output1_rate": "1.88",
         "output1_stack": "1",
@@ -3224,7 +3350,7 @@
         "ingredient2_stack": "1",
         "ingredient2_name": "Pressure Conversion Cube",
         "ingredient3_rate": "45",
-        "ingredient3_stack": "2",
+        "ingredient3_stack": "24",
         "ingredient3_name": "Packaged Nitrogen Gas",
         "ingredient4_rate": "15",
         "ingredient4_stack": "8",
@@ -3268,7 +3394,7 @@
         "ingredient2_stack": "1",
         "ingredient2_name": "Caterium Ingot",
         "output1_rate": "90",
-        "output1_stack": "3",
+        "output1_stack": "30",
         "output1_name": "Wire"
       },
       "Alternate: Iron Wire": {
@@ -3318,7 +3444,7 @@
         "ingredient2_stack": "6",
         "ingredient2_name": "Rubber",
         "output1_rate": "100",
-        "output1_stack": "2",
+        "output1_stack": "20",
         "output1_name": "Cable"
       },
       "Alternate: Quickwire Cable": {
@@ -3330,7 +3456,7 @@
         "ingredient2_stack": "2",
         "ingredient2_name": "Rubber",
         "output1_rate": "27.5",
-        "output1_stack": "1",
+        "output1_stack": "11",
         "output1_name": "Cable"
       }
     }
@@ -3359,7 +3485,7 @@
         "ingredient2_stack": "5",
         "ingredient2_name": "Copper Ingot",
         "output1_rate": "90",
-        "output1_stack": "1",
+        "output1_stack": "12",
         "output1_name": "Quickwire"
       }
     }
@@ -3385,10 +3511,10 @@
       "Alternate: Caterium Circuit Board": {
         "building": "Assembler",
         "ingredient1_rate": "12.5",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "10",
         "ingredient1_name": "Plastic",
         "ingredient2_rate": "37.5",
-        "ingredient2_stack": "3",
+        "ingredient2_stack": "30",
         "ingredient2_name": "Quickwire",
         "output1_rate": "8.75",
         "output1_stack": "7",
@@ -3409,10 +3535,10 @@
       "Alternate: Silicon Circuit Board": {
         "building": "Assembler",
         "ingredient1_rate": "27.5",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "11",
         "ingredient1_name": "Copper Sheet",
         "ingredient2_rate": "27.5",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "11",
         "ingredient2_name": "Silica",
         "output1_rate": "12.5",
         "output1_stack": "5",
@@ -3432,7 +3558,7 @@
         "ingredient1_stack": "5",
         "ingredient1_name": "Copper Sheet",
         "ingredient2_rate": "100",
-        "ingredient2_stack": "2",
+        "ingredient2_stack": "20",
         "ingredient2_name": "Quickwire",
         "output1_rate": "5",
         "output1_stack": "1",
@@ -3441,7 +3567,7 @@
       "Alternate: Plastic AI Limiter": {
         "building": "Assembler",
         "ingredient1_rate": "120",
-        "ingredient1_stack": "3",
+        "ingredient1_stack": "30",
         "ingredient1_name": "Quickwire",
         "ingredient2_rate": "28",
         "ingredient2_stack": "7",
@@ -3461,10 +3587,10 @@
       "High-Speed Connector": {
         "building": "Manufacturer",
         "ingredient1_rate": "210",
-        "ingredient1_stack": "5",
+        "ingredient1_stack": "56",
         "ingredient1_name": "Quickwire",
         "ingredient2_rate": "37.5",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Cable",
         "ingredient3_rate": "3.75",
         "ingredient3_stack": "1",
@@ -3476,10 +3602,10 @@
       "Alternate: Silicon High-Speed Connector": {
         "building": "Manufacturer",
         "ingredient1_rate": "90",
-        "ingredient1_stack": "6",
+        "ingredient1_stack": "60",
         "ingredient1_name": "Quickwire",
         "ingredient2_rate": "37.5",
-        "ingredient2_stack": "2",
+        "ingredient2_stack": "25",
         "ingredient2_name": "Silica",
         "ingredient3_rate": "3",
         "ingredient3_stack": "2",
@@ -3545,7 +3671,7 @@
         "ingredient2_stack": "8",
         "ingredient2_name": "Cable",
         "ingredient3_rate": "40",
-        "ingredient3_stack": "1",
+        "ingredient3_stack": "16",
         "ingredient3_name": "Plastic",
         "output1_rate": "2.5",
         "output1_stack": "1",
@@ -3557,7 +3683,7 @@
         "ingredient1_stack": "4",
         "ingredient1_name": "Circuit Board",
         "ingredient2_rate": "52.5",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "14",
         "ingredient2_name": "Quickwire",
         "ingredient3_rate": "22.5",
         "ingredient3_stack": "6",
@@ -3598,7 +3724,7 @@
         "ingredient3_stack": "3",
         "ingredient3_name": "High-Speed Connector",
         "ingredient4_rate": "52.5",
-        "ingredient4_stack": "2",
+        "ingredient4_stack": "28",
         "ingredient4_name": "Plastic",
         "output1_rate": "1.88",
         "output1_stack": "1",
@@ -3625,10 +3751,10 @@
         "ingredient2_stack": "1",
         "ingredient2_name": "Electromagnetic Control Rod",
         "ingredient3_rate": "24",
-        "ingredient3_stack": "1",
+        "ingredient3_stack": "10",
         "ingredient3_name": "Battery",
         "ingredient4_rate": "60",
-        "ingredient4_stack": "2",
+        "ingredient4_stack": "25",
         "ingredient4_name": "Wire",
         "output1_rate": "2.4",
         "output1_stack": "1",
@@ -3645,7 +3771,7 @@
       "Radio Control Unit": {
         "building": "Manufacturer",
         "ingredient1_rate": "40",
-        "ingredient1_stack": "3",
+        "ingredient1_stack": "32",
         "ingredient1_name": "Aluminum Casing",
         "ingredient2_rate": "1.25",
         "ingredient2_stack": "1",
@@ -3666,7 +3792,7 @@
         "ingredient2_stack": "2",
         "ingredient2_name": "High-Speed Connector",
         "ingredient3_rate": "45",
-        "ingredient3_stack": "1",
+        "ingredient3_stack": "12",
         "ingredient3_name": "Quartz Crystal",
         "output1_rate": "3.75",
         "output1_stack": "1",
@@ -3678,13 +3804,13 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Crystal Oscillator",
         "ingredient2_rate": "15",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Circuit Board",
         "ingredient3_rate": "90",
-        "ingredient3_stack": "6",
+        "ingredient3_stack": "60",
         "ingredient3_name": "Aluminum Casing",
         "ingredient4_rate": "45",
-        "ingredient4_stack": "3",
+        "ingredient4_stack": "30",
         "ingredient4_name": "Rubber",
         "output1_rate": "4.5",
         "output1_stack": "3",
@@ -3701,10 +3827,10 @@
       "Crystal Oscillator": {
         "building": "Manufacturer",
         "ingredient1_rate": "18",
-        "ingredient1_stack": "3",
+        "ingredient1_stack": "36",
         "ingredient1_name": "Quartz Crystal",
         "ingredient2_rate": "14",
-        "ingredient2_stack": "2",
+        "ingredient2_stack": "28",
         "ingredient2_name": "Cable",
         "ingredient3_rate": "2.5",
         "ingredient3_stack": "5",
@@ -3716,7 +3842,7 @@
       "Alternate: Insulated Crystal Oscillator": {
         "building": "Manufacturer",
         "ingredient1_rate": "18.75",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "10",
         "ingredient1_name": "Quartz Crystal",
         "ingredient2_rate": "13.13",
         "ingredient2_stack": "7",
@@ -3734,7 +3860,30 @@
     "name": "Superposition Oscillator",
     "Category": "Communications",
     "Stack size": "100",
-    "Resource Sink Points": "37,292"
+    "Resource Sink Points": "37,292",
+    "recipes": {
+      "Superposition Oscillator": {
+        "building": "Quantum Encoder",
+        "ingredient1_rate": "30",
+        "ingredient1_stack": "6",
+        "ingredient1_name": "Dark Matter Crystal",
+        "ingredient2_rate": "5",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Crystal Oscillator",
+        "ingredient3_rate": "45",
+        "ingredient3_stack": "9",
+        "ingredient3_name": "Alclad Aluminum Sheet",
+        "ingredient4_rate": "125m3",
+        "ingredient4_stack": "25",
+        "ingredient4_name": "Excited Photonic Matter",
+        "output1_rate": "5",
+        "output1_stack": "1",
+        "output1_name": "Superposition Oscillator",
+        "output2_rate": "125m3",
+        "output2_stack": "25",
+        "output2_name": "Dark Matter Residue"
+      }
+    }
   },
   {
     "name": "Diamonds",
@@ -3742,6 +3891,45 @@
     "Stack size": "200",
     "Resource Sink Points": "240",
     "recipes": {
+      "Diamonds": {
+        "building": "Particle Accelerator",
+        "ingredient1_rate": "600",
+        "ingredient1_stack": "20",
+        "ingredient1_name": "Coal",
+        "output1_rate": "30",
+        "output1_stack": "1",
+        "output1_name": "Diamonds"
+      },
+      "Alternate: Cloudy Diamonds": {
+        "building": "Particle Accelerator",
+        "ingredient1_rate": "240",
+        "ingredient1_stack": "12",
+        "ingredient1_name": "Coal",
+        "ingredient2_rate": "480",
+        "ingredient2_stack": "24",
+        "ingredient2_name": "Limestone",
+        "output1_rate": "20",
+        "output1_stack": "1",
+        "output1_name": "Diamonds"
+      },
+      "Alternate: Oil-Based Diamonds": {
+        "building": "Particle Accelerator",
+        "ingredient1_rate": "200m3",
+        "ingredient1_stack": "10",
+        "ingredient1_name": "Crude Oil",
+        "output1_rate": "40",
+        "output1_stack": "2",
+        "output1_name": "Diamonds"
+      },
+      "Alternate: Petroleum Diamonds": {
+        "building": "Particle Accelerator",
+        "ingredient1_rate": "720",
+        "ingredient1_stack": "24",
+        "ingredient1_name": "Petroleum Coke",
+        "output1_rate": "30",
+        "output1_stack": "1",
+        "output1_name": "Diamonds"
+      },
       "Alternate: Pink Diamonds": {
         "building": "Converter",
         "ingredient1_rate": "120",
@@ -3752,6 +3940,18 @@
         "ingredient2_name": "Quartz Crystal",
         "output1_rate": "15",
         "output1_stack": "1",
+        "output1_name": "Diamonds"
+      },
+      "Alternate: Turbo Diamonds": {
+        "building": "Particle Accelerator",
+        "ingredient1_rate": "600",
+        "ingredient1_stack": "30",
+        "ingredient1_name": "Coal",
+        "ingredient2_rate": "40",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Packaged Turbofuel",
+        "output1_rate": "60",
+        "output1_stack": "3",
         "output1_name": "Diamonds"
       }
     }
@@ -3777,7 +3977,42 @@
     "name": "Dark Matter Crystal",
     "Category": "Quantum Technology",
     "Stack size": "200",
-    "Resource Sink Points": "1,780"
+    "Resource Sink Points": "1,780",
+    "recipes": {
+      "Dark Matter Crystal": {
+        "building": "Particle Accelerator",
+        "ingredient1_rate": "30",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Diamonds",
+        "ingredient2_rate": "150m3",
+        "ingredient2_stack": "5",
+        "ingredient2_name": "Dark Matter Residue",
+        "output1_rate": "30",
+        "output1_stack": "1",
+        "output1_name": "Dark Matter Crystal"
+      },
+      "Alternate: Dark Matter Crystallization": {
+        "building": "Particle Accelerator",
+        "ingredient1_rate": "200m3",
+        "ingredient1_stack": "10",
+        "ingredient1_name": "Dark Matter Residue",
+        "output1_rate": "20",
+        "output1_stack": "1",
+        "output1_name": "Dark Matter Crystal"
+      },
+      "Alternate: Dark Matter Trap": {
+        "building": "Particle Accelerator",
+        "ingredient1_rate": "30",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Time Crystal",
+        "ingredient2_rate": "150m3",
+        "ingredient2_stack": "5",
+        "ingredient2_name": "Dark Matter Residue",
+        "output1_rate": "60",
+        "output1_stack": "2",
+        "output1_name": "Dark Matter Crystal"
+      }
+    }
   },
   {
     "name": "Singularity Cell",
@@ -3791,16 +4026,16 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Nuclear Pasta",
         "ingredient2_rate": "20",
-        "ingredient2_stack": "2",
+        "ingredient2_stack": "20",
         "ingredient2_name": "Dark Matter Crystal",
         "ingredient3_rate": "100",
-        "ingredient3_stack": "1",
+        "ingredient3_stack": "100",
         "ingredient3_name": "Iron Plate",
         "ingredient4_rate": "200",
-        "ingredient4_stack": "2",
+        "ingredient4_stack": "200",
         "ingredient4_name": "Concrete",
         "output1_rate": "10",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Singularity Cell"
       }
     }
@@ -3809,13 +4044,59 @@
     "name": "Neural-Quantum Processor",
     "Category": "Quantum Technology",
     "Stack size": "100",
-    "Resource Sink Points": "248,034"
+    "Resource Sink Points": "248,034",
+    "recipes": {
+      "Neural-Quantum Processor": {
+        "building": "Quantum Encoder",
+        "ingredient1_rate": "15",
+        "ingredient1_stack": "5",
+        "ingredient1_name": "Time Crystal",
+        "ingredient2_rate": "3",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Supercomputer",
+        "ingredient3_rate": "45",
+        "ingredient3_stack": "15",
+        "ingredient3_name": "Ficsite Trigon",
+        "ingredient4_rate": "75m3",
+        "ingredient4_stack": "25",
+        "ingredient4_name": "Excited Photonic Matter",
+        "output1_rate": "3",
+        "output1_stack": "1",
+        "output1_name": "Neural-Quantum Processor",
+        "output2_rate": "75m3",
+        "output2_stack": "25",
+        "output2_name": "Dark Matter Residue"
+      }
+    }
   },
   {
     "name": "Alien Power Matrix",
     "Category": "Quantum Technology",
     "Stack size": "50",
-    "Resource Sink Points": "210"
+    "Resource Sink Points": "210",
+    "recipes": {
+      "Alien Power Matrix": {
+        "building": "Quantum Encoder",
+        "ingredient1_rate": "12.5",
+        "ingredient1_stack": "5",
+        "ingredient1_name": "SAM Fluctuator",
+        "ingredient2_rate": "7.5",
+        "ingredient2_stack": "3",
+        "ingredient2_name": "Power Shard",
+        "ingredient3_rate": "7.5",
+        "ingredient3_stack": "3",
+        "ingredient3_name": "Superposition Oscillator",
+        "ingredient4_rate": "60m3",
+        "ingredient4_stack": "24",
+        "ingredient4_name": "Excited Photonic Matter",
+        "output1_rate": "2.5",
+        "output1_stack": "1",
+        "output1_name": "Alien Power Matrix",
+        "output2_rate": "60m3",
+        "output2_stack": "24",
+        "output2_name": "Dark Matter Residue"
+      }
+    }
   },
   {
     "name": "Empty Canister",
@@ -4177,13 +4458,13 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Alien Protein",
         "output1_rate": "1,500",
-        "output1_stack": "1",
+        "output1_stack": "100",
         "output1_name": "Biomass"
       },
       "Biomass (Leaves)": {
         "building": "Constructor",
         "ingredient1_rate": "120",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "10",
         "ingredient1_name": "Leaves",
         "output1_rate": "60",
         "output1_stack": "5",
@@ -4195,7 +4476,7 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Mycelia",
         "output1_rate": "150",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Biomass"
       },
       "Biomass (Wood)": {
@@ -4204,7 +4485,7 @@
         "ingredient1_stack": "4",
         "ingredient1_name": "Wood",
         "output1_rate": "300",
-        "output1_stack": "2",
+        "output1_stack": "20",
         "output1_name": "Biomass"
       }
     }
@@ -4231,13 +4512,13 @@
       "Ionized Fuel": {
         "building": "Refinery",
         "ingredient1_rate": "40m3",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "16",
         "ingredient1_name": "Rocket Fuel",
         "ingredient2_rate": "2.5",
         "ingredient2_stack": "1",
         "ingredient2_name": "Power Shard",
         "output1_rate": "40m3",
-        "output1_stack": "1",
+        "output1_stack": "16",
         "output1_name": "Ionized Fuel",
         "output2_rate": "5",
         "output2_stack": "2",
@@ -4252,7 +4533,7 @@
         "ingredient2_stack": "1",
         "ingredient2_name": "Nitric Acid",
         "output1_rate": "100m3",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Rocket Fuel",
         "output2_rate": "10",
         "output2_stack": "1",
@@ -4261,13 +4542,13 @@
       "Alternate: Dark-Ion Fuel": {
         "building": "Converter",
         "ingredient1_rate": "240",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "12",
         "ingredient1_name": "Packaged Rocket Fuel",
         "ingredient2_rate": "80",
         "ingredient2_stack": "4",
         "ingredient2_name": "Dark Matter Crystal",
         "output1_rate": "200m3",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Ionized Fuel",
         "output2_rate": "40",
         "output2_stack": "2",
@@ -4483,7 +4764,7 @@
       "Uranium Fuel Rod": {
         "building": "Manufacturer",
         "ingredient1_rate": "20",
-        "ingredient1_stack": "5",
+        "ingredient1_stack": "50",
         "ingredient1_name": "Encased Uranium Cell",
         "ingredient2_rate": "1.2",
         "ingredient2_stack": "3",
@@ -4498,16 +4779,16 @@
       "Alternate: Uranium Fuel Unit": {
         "building": "Manufacturer",
         "ingredient1_rate": "20",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "100",
         "ingredient1_name": "Encased Uranium Cell",
         "ingredient2_rate": "2",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Electromagnetic Control Rod",
         "ingredient3_rate": "0.6",
         "ingredient3_stack": "3",
         "ingredient3_name": "Crystal Oscillator",
         "ingredient4_rate": "2",
-        "ingredient4_stack": "1",
+        "ingredient4_stack": "10",
         "ingredient4_name": "Rotor",
         "output1_rate": "0.6",
         "output1_stack": "3",
@@ -4525,16 +4806,16 @@
       "Plutonium Fuel Rod": {
         "building": "Manufacturer",
         "ingredient1_rate": "7.5",
-        "ingredient1_stack": "3",
+        "ingredient1_stack": "30",
         "ingredient1_name": "Encased Plutonium Cell",
         "ingredient2_rate": "4.5",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "18",
         "ingredient2_name": "Steel Beam",
         "ingredient3_rate": "1.5",
         "ingredient3_stack": "6",
         "ingredient3_name": "Electromagnetic Control Rod",
         "ingredient4_rate": "2.5",
-        "ingredient4_stack": "1",
+        "ingredient4_stack": "10",
         "ingredient4_name": "Heat Sink",
         "output1_rate": "0.25",
         "output1_stack": "1",
@@ -4543,7 +4824,7 @@
       "Alternate: Plutonium Fuel Unit": {
         "building": "Assembler",
         "ingredient1_rate": "10",
-        "ingredient1_stack": "2",
+        "ingredient1_stack": "20",
         "ingredient1_name": "Encased Plutonium Cell",
         "ingredient2_rate": "0.5",
         "ingredient2_stack": "1",
@@ -4760,7 +5041,7 @@
         "ingredient2_stack": "2",
         "ingredient2_name": "Smokeless Powder",
         "output1_rate": "75",
-        "output1_stack": "1",
+        "output1_stack": "15",
         "output1_name": "Rifle Ammo"
       }
     }
@@ -4774,13 +5055,13 @@
       "Homing Rifle Ammo": {
         "building": "Assembler",
         "ingredient1_rate": "50",
-        "ingredient1_stack": "2",
+        "ingredient1_stack": "20",
         "ingredient1_name": "Rifle Ammo",
         "ingredient2_rate": "2.5",
         "ingredient2_stack": "1",
         "ingredient2_name": "High-Speed Connector",
         "output1_rate": "25",
-        "output1_stack": "1",
+        "output1_stack": "10",
         "output1_name": "Homing Rifle Ammo"
       }
     }
@@ -4794,7 +5075,7 @@
       "Turbo Rifle Ammo": {
         "building": "Blender",
         "ingredient1_rate": "125",
-        "ingredient1_stack": "2",
+        "ingredient1_stack": "25",
         "ingredient1_name": "Rifle Ammo",
         "ingredient2_rate": "15",
         "ingredient2_stack": "3",
@@ -4803,7 +5084,22 @@
         "ingredient3_stack": "3",
         "ingredient3_name": "Turbofuel",
         "output1_rate": "250",
-        "output1_stack": "5",
+        "output1_stack": "50",
+        "output1_name": "Turbo Rifle Ammo"
+      },
+      "Turbo Rifle Ammo (Manufacturer)": {
+        "building": "Manufacturer",
+        "ingredient1_rate": "125",
+        "ingredient1_stack": "25",
+        "ingredient1_name": "Rifle Ammo",
+        "ingredient2_rate": "15",
+        "ingredient2_stack": "3",
+        "ingredient2_name": "Aluminum Casing",
+        "ingredient3_rate": "15",
+        "ingredient3_stack": "3",
+        "ingredient3_name": "Packaged Turbofuel",
+        "output1_rate": "250",
+        "output1_stack": "50",
         "output1_name": "Turbo Rifle Ammo"
       }
     }
@@ -4840,7 +5136,7 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Nobelisk",
         "ingredient2_rate": "50",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Biomass",
         "output1_rate": "5",
         "output1_stack": "1",
@@ -4901,10 +5197,10 @@
         "ingredient1_stack": "5",
         "ingredient1_name": "Nobelisk",
         "ingredient2_rate": "10",
-        "ingredient2_stack": "2",
+        "ingredient2_stack": "20",
         "ingredient2_name": "Encased Uranium Cell",
         "ingredient3_rate": "5",
-        "ingredient3_stack": "1",
+        "ingredient3_stack": "10",
         "ingredient3_name": "Smokeless Powder",
         "ingredient4_rate": "3",
         "ingredient4_stack": "6",
@@ -4956,7 +5252,7 @@
       "Encased Uranium Cell": {
         "building": "Blender",
         "ingredient1_rate": "50",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "10",
         "ingredient1_name": "Uranium",
         "ingredient2_rate": "15",
         "ingredient2_stack": "3",
@@ -4983,7 +5279,7 @@
         "ingredient3_stack": "5",
         "ingredient3_name": "Sulfur",
         "ingredient4_rate": "75",
-        "ingredient4_stack": "1",
+        "ingredient4_stack": "15",
         "ingredient4_name": "Quickwire",
         "output1_rate": "20",
         "output1_stack": "4",
@@ -5001,10 +5297,10 @@
       "Non-Fissile Uranium": {
         "building": "Blender",
         "ingredient1_rate": "37.5",
-        "ingredient1_stack": "1",
+        "ingredient1_stack": "15",
         "ingredient1_name": "Uranium Waste",
         "ingredient2_rate": "25",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "10",
         "ingredient2_name": "Silica",
         "ingredient3_rate": "15m3",
         "ingredient3_stack": "6",
@@ -5013,7 +5309,7 @@
         "ingredient4_stack": "6",
         "ingredient4_name": "Sulfuric Acid",
         "output1_rate": "50",
-        "output1_stack": "2",
+        "output1_stack": "20",
         "output1_name": "Non-Fissile Uranium",
         "output2_rate": "15m3",
         "output2_stack": "6",
@@ -5034,7 +5330,7 @@
         "ingredient4_stack": "5",
         "ingredient4_name": "Sulfuric Acid",
         "output1_rate": "100",
-        "output1_stack": "2",
+        "output1_stack": "20",
         "output1_name": "Non-Fissile Uranium",
         "output2_rate": "40m3",
         "output2_stack": "8",
@@ -5047,7 +5343,21 @@
     "Category": "Nuclear",
     "Stack size": "100",
     "Energy": "0MJ",
-    "Resource Sink Points": "Cannot be put into the sink."
+    "Resource Sink Points": "Cannot be put into the sink.",
+    "recipes": {
+      "Plutonium Pellet": {
+        "building": "Particle Accelerator",
+        "ingredient1_rate": "100",
+        "ingredient1_stack": "100",
+        "ingredient1_name": "Non-Fissile Uranium",
+        "ingredient2_rate": "25",
+        "ingredient2_stack": "25",
+        "ingredient2_name": "Uranium Waste",
+        "output1_rate": "30",
+        "output1_stack": "30",
+        "output1_name": "Plutonium Pellet"
+      }
+    }
   },
   {
     "name": "Encased Plutonium Cell",
@@ -5067,6 +5377,18 @@
         "output1_rate": "5",
         "output1_stack": "1",
         "output1_name": "Encased Plutonium Cell"
+      },
+      "Alternate: Instant Plutonium Cell": {
+        "building": "Particle Accelerator",
+        "ingredient1_rate": "75",
+        "ingredient1_stack": "150",
+        "ingredient1_name": "Non-Fissile Uranium",
+        "ingredient2_rate": "10",
+        "ingredient2_stack": "20",
+        "ingredient2_name": "Aluminum Casing",
+        "output1_rate": "10",
+        "output1_stack": "20",
+        "output1_name": "Encased Plutonium Cell"
       }
     }
   },
@@ -5075,26 +5397,88 @@
     "Category": "Nuclear",
     "Stack size": "100",
     "Energy": "0MJ",
-    "Resource Sink Points": "Cannot be put into the sink."
+    "Resource Sink Points": "Cannot be put into the sink.",
+    "recipes": {
+      "Ficsonium": {
+        "building": "Particle Accelerator",
+        "ingredient1_rate": "10",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Plutonium Waste",
+        "ingredient2_rate": "10",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Singularity Cell",
+        "ingredient3_rate": "200m3",
+        "ingredient3_stack": "20",
+        "ingredient3_name": "Dark Matter Residue",
+        "output1_rate": "10",
+        "output1_stack": "1",
+        "output1_name": "Ficsonium"
+      }
+    }
   },
   {
     "name": "Ficsonium Fuel Rod",
     "Category": "Nuclear",
     "Stack size": "50",
     "Energy": "150,000MJ",
-    "Resource Sink Points": "Cannot be put into the sink."
+    "Resource Sink Points": "Cannot be put into the sink.",
+    "recipes": {
+      "Ficsonium Fuel Rod": {
+        "building": "Quantum Encoder",
+        "ingredient1_rate": "5",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Ficsonium",
+        "ingredient2_rate": "5",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Electromagnetic Control Rod",
+        "ingredient3_rate": "100",
+        "ingredient3_stack": "40",
+        "ingredient3_name": "Ficsite Trigon",
+        "ingredient4_rate": "50m3",
+        "ingredient4_stack": "20",
+        "ingredient4_name": "Excited Photonic Matter",
+        "output1_rate": "2.5",
+        "output1_stack": "1",
+        "output1_name": "Ficsonium Fuel Rod",
+        "output2_rate": "50m3",
+        "output2_stack": "20",
+        "output2_name": "Dark Matter Residue"
+      }
+    }
   },
   {
     "name": "Uranium Waste",
     "Category": "Waste",
     "Stack size": "500",
-    "Resource Sink Points": "Cannot be put into the sink."
+    "Resource Sink Points": "Cannot be put into the sink.",
+    "recipes": {
+      "Uranium Waste": {
+        "building": "Nuclear Power Plant",
+        "ingredient1_rate": "0.2",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Uranium Fuel Rod",
+        "output1_rate": "10",
+        "output1_stack": "50",
+        "output1_name": "Uranium Waste"
+      }
+    }
   },
   {
     "name": "Plutonium Waste",
     "Category": "Waste",
     "Stack size": "500",
-    "Resource Sink Points": "Cannot be put into the sink."
+    "Resource Sink Points": "Cannot be put into the sink.",
+    "recipes": {
+      "Plutonium Waste": {
+        "building": "Nuclear Power Plant",
+        "ingredient1_rate": "0.1",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Plutonium Fuel Rod",
+        "output1_rate": "1",
+        "output1_stack": "10",
+        "output1_name": "Plutonium Waste"
+      }
+    }
   },
   {
     "name": "Blue Power Slug",
@@ -5146,6 +5530,27 @@
         "output1_rate": "12.5",
         "output1_stack": "5",
         "output1_name": "Power Shard"
+      },
+      "Synthetic Power Shard": {
+        "building": "Quantum Encoder",
+        "ingredient1_rate": "10",
+        "ingredient1_stack": "2",
+        "ingredient1_name": "Time Crystal",
+        "ingredient2_rate": "10",
+        "ingredient2_stack": "2",
+        "ingredient2_name": "Dark Matter Crystal",
+        "ingredient3_rate": "60",
+        "ingredient3_stack": "12",
+        "ingredient3_name": "Quartz Crystal",
+        "ingredient4_rate": "60m3",
+        "ingredient4_stack": "12",
+        "ingredient4_name": "Excited Photonic Matter",
+        "output1_rate": "5",
+        "output1_stack": "1",
+        "output1_name": "Power Shard",
+        "output2_rate": "60m3",
+        "output2_stack": "12",
+        "output2_name": "Dark Matter Residue"
       }
     }
   },
@@ -5201,7 +5606,7 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Modular Frame",
         "ingredient2_rate": "30",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "12",
         "ingredient2_name": "Steel Beam",
         "output1_rate": "5",
         "output1_stack": "2",
@@ -5236,7 +5641,7 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Stator",
         "ingredient2_rate": "50",
-        "ingredient2_stack": "2",
+        "ingredient2_stack": "20",
         "ingredient2_name": "Cable",
         "output1_rate": "2.5",
         "output1_stack": "1",
@@ -5248,7 +5653,7 @@
         "ingredient1_stack": "2",
         "ingredient1_name": "Stator",
         "ingredient2_rate": "75",
-        "ingredient2_stack": "4",
+        "ingredient2_stack": "40",
         "ingredient2_name": "Wire",
         "ingredient3_rate": "1.88",
         "ingredient3_stack": "1",
@@ -5271,7 +5676,7 @@
         "ingredient1_stack": "2",
         "ingredient1_name": "Motor",
         "ingredient2_rate": "15",
-        "ingredient2_stack": "1",
+        "ingredient2_stack": "15",
         "ingredient2_name": "Rubber",
         "ingredient3_rate": "2",
         "ingredient3_stack": "2",
@@ -5378,7 +5783,21 @@
     "name": "Nuclear Pasta",
     "Category": "Special",
     "Stack size": "50",
-    "Resource Sink Points": "538,976"
+    "Resource Sink Points": "538,976",
+    "recipes": {
+      "Nuclear Pasta": {
+        "building": "Particle Accelerator",
+        "ingredient1_rate": "100",
+        "ingredient1_stack": "200",
+        "ingredient1_name": "Copper Powder",
+        "ingredient2_rate": "0.5",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Pressure Conversion Cube",
+        "output1_rate": "0.5",
+        "output1_stack": "1",
+        "output1_name": "Nuclear Pasta"
+      }
+    }
   },
   {
     "name": "Biochemical Sculptor",
@@ -5392,10 +5811,10 @@
         "ingredient1_stack": "1",
         "ingredient1_name": "Assembly Director System",
         "ingredient2_rate": "40",
-        "ingredient2_stack": "8",
+        "ingredient2_stack": "80",
         "ingredient2_name": "Ficsite Trigon",
         "ingredient3_rate": "10m3",
-        "ingredient3_stack": "2",
+        "ingredient3_stack": "20",
         "ingredient3_name": "Water",
         "output1_rate": "2",
         "output1_stack": "4",
@@ -5421,7 +5840,7 @@
         "ingredient3_stack": "2",
         "ingredient3_name": "Superposition Oscillator",
         "ingredient4_rate": "40",
-        "ingredient4_stack": "4",
+        "ingredient4_stack": "40",
         "ingredient4_name": "Dark Matter Crystal",
         "output1_rate": "1",
         "output1_stack": "1",
@@ -5433,6 +5852,57 @@
     "name": "AI Expansion Server",
     "Category": "Special",
     "Stack size": "50",
-    "Resource Sink Points": "597,652"
+    "Resource Sink Points": "597,652",
+    "recipes": {
+      "AI Expansion Server": {
+        "building": "Quantum Encoder",
+        "ingredient1_rate": "4",
+        "ingredient1_stack": "1",
+        "ingredient1_name": "Magnetic Field Generator",
+        "ingredient2_rate": "4",
+        "ingredient2_stack": "1",
+        "ingredient2_name": "Neural-Quantum Processor",
+        "ingredient3_rate": "4",
+        "ingredient3_stack": "1",
+        "ingredient3_name": "Superposition Oscillator",
+        "ingredient4_rate": "100m3",
+        "ingredient4_stack": "25",
+        "ingredient4_name": "Excited Photonic Matter",
+        "output1_rate": "4",
+        "output1_stack": "1",
+        "output1_name": "AI Expansion Server",
+        "output2_rate": "100m3",
+        "output2_stack": "25",
+        "output2_name": "Dark Matter Residue"
+      }
+    }
+  },
+  {
+    "name": "Hatcher Remains",
+    "Category": "Special",
+    "Stack size": "50",
+    "Energy": "250MJ",
+    "Resource Sink Points": "Cannot be put into the sink."
+  },
+  {
+    "name": "Hog Remains",
+    "Category": "Special",
+    "Stack size": "50",
+    "Energy": "250MJ",
+    "Resource Sink Points": "Cannot be put into the sink."
+  },
+  {
+    "name": "Spitter Remains",
+    "Category": "Special",
+    "Stack size": "50",
+    "Energy": "250MJ",
+    "Resource Sink Points": "Cannot be put into the sink."
+  },
+  {
+    "name": "Stinger Remains",
+    "Category": "Special",
+    "Stack size": "50",
+    "Energy": "250MJ",
+    "Resource Sink Points": "Cannot be put into the sink."
   }
 ]
