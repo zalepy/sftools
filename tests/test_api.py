@@ -145,3 +145,16 @@ def test_entries_on_inactive_branches_are_kept_silently(client):
     }).json()
     assert body["ignored"] == []
     assert next(n for n in body["nodes"] if n["id"] == bolted_screws)["recipe_name"] == "Alternate: Cast Screws"
+
+
+def test_static_assets_are_served(client):
+    page = client.get("/").text
+    for path in ("/static/app.css", "/static/js/main.js"):
+        assert f'{path}?v=' in page
+        response = client.get(path)
+        assert response.status_code == 200
+        assert response.headers["cache-control"] == "no-cache"
+    assert client.get("/static/js/main.js").headers["content-type"].startswith("text/javascript")
+    for module in ("api", "state", "graph", "panel"):
+        assert client.get(f"/static/js/{module}.js").status_code == 200
+    assert 'onclick=' not in page and '<style>' not in page
