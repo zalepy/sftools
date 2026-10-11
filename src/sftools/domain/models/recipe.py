@@ -70,87 +70,73 @@ class Recipe:
     def building(self):
         return self._building
 
+    # --- Outputs -----------------------------------------------------------------------------------------------
+    # output1 is the main product and output2 the optional by-product, as listed in the game data.
+    # A node can run a recipe for either output (e.g. Polymer Resin from the Fuel recipe), so the
+    # methods below take the item the node produces.
+
     @property
     def output_item(self):
-        if self._name.count(self._output1_item.name):
-            return self._output1_item
-        else:
-            return self._output2_item
+        """The recipe's main product."""
+        return self._output1_item
 
     @property
     def output_rate(self):
-        if self._name.count(self._output1_item.name):
-            return self._output1_rate
-        else:
-            return self._output2_rate
-        
-    @property
-    def sink_item(self):
-        if not self.output2_item:
-            return None
-        if self._name.count(self._output1_item.name):
-            return self._output2_item
-        else:
-            return self._output1_item
+        """Per-building rate of the main product."""
+        return self._output1_rate
 
-    @property
-    def sink_rate(self):
-        if not self.output2_item:
-            return None
-        if self._name.count(self._output1_item.name):
-            return self._output2_rate
-        else:
-            return self._output1_rate
+    def outputs(self):
+        return [(item, rate) for item, rate in ((self._output1_item, self._output1_rate),
+                                                 (self._output2_item, self._output2_rate)) if item]
 
-    def generate_demands(self, scaler: float = 1.0) -> List[Demand]:
+    def produces(self, item_name: str) -> bool:
+        return any(item.name == item_name for item, _ in self.outputs())
+
+    def is_main_product(self, item_name: str) -> bool:
+        return self._output1_item is not None and self._output1_item.name == item_name
+
+    def rate_of(self, item_name: str):
+        for item, rate in self.outputs():
+            if item.name == item_name:
+                return rate
+        raise ValueError(f'Recipe {self._name} does not produce {item_name}')
+
+    def byproducts(self, item_name: str):
+        """Outputs other than the one being produced."""
+        return [(item, rate) for item, rate in self.outputs() if item.name != item_name]
+
+    def generate_demands(self, scaler: float = 1.0, product_name: str = None) -> List[Demand]:
+        product_name = product_name or self._output1_item.name
         demands = []
-        if self._ingredient1_item:
-            demands.append(Demand(self._ingredient1_item.name, self._ingredient1_item, self._ingredient1_rate * scaler, DemandType.PRODUCE))
-        if self._ingredient2_item:
-            demands.append(Demand(self._ingredient2_item.name, self._ingredient2_item, self._ingredient2_rate * scaler, DemandType.PRODUCE))
-        if self._ingredient3_item:
-            demands.append(Demand(self._ingredient3_item.name, self._ingredient3_item, self._ingredient3_rate * scaler, DemandType.PRODUCE))
-        if self._ingredient4_item:
-            demands.append(Demand(self._ingredient4_item.name, self._ingredient4_item, self._ingredient4_rate * scaler, DemandType.PRODUCE))
-        if self.sink_item:
-            demands.append(Demand(self.sink_item.name, self.sink_item, self.sink_rate * scaler, DemandType.SINK))
+        for item, rate in self.ingredients():
+            demands.append(Demand(item.name, item, rate * scaler, DemandType.PRODUCE))
+        for item, rate in self.byproducts(product_name):
+            demands.append(Demand(item.name, item, rate * scaler, DemandType.SINK))
 
         return demands
 
+    def ingredients(self):
+        return [(item, rate) for item, rate in (
+            (self._ingredient1_item, self._ingredient1_rate),
+            (self._ingredient2_item, self._ingredient2_rate),
+            (self._ingredient3_item, self._ingredient3_rate),
+            (self._ingredient4_item, self._ingredient4_rate),
+        ) if item]
 
-    def generate_production_node(self, node_id: str, scaler: float = 1.0):
-        # Build base inputs list (1x rates)
-        base_inputs = []
-        if self._ingredient1_item:
-            base_inputs.append({
-                "item": self._ingredient1_item.name,
-                "rate": self._ingredient1_rate
-            })
-        if self._ingredient2_item:
-            base_inputs.append({
-                "item": self._ingredient2_item.name,
-                "rate": self._ingredient2_rate
-            })
-        if self._ingredient3_item:
-            base_inputs.append({
-                "item": self._ingredient3_item.name,
-                "rate": self._ingredient3_rate
-            })
-        if self._ingredient4_item:
-            base_inputs.append({
-                "item": self._ingredient4_item.name,
-                "rate": self._ingredient4_rate
-            })
-        
+    def base_inputs(self):
+        return [{"item": item.name, "rate": rate} for item, rate in self.ingredients()]
+
+    def generate_production_node(self, node_id: str, scaler: float = 1.0, product_name: str = None):
+        product_name = product_name or self._output1_item.name
         return ProductionNode(
             node_id=node_id,
             node_name=self._name,
             building=self.building,
             building_scale=scaler,
-            output_item_name=self.output_item.name,
-            base_output_rate=self.output1_rate,
+            output_item_name=product_name,
+            base_output_rate=self.rate_of(product_name),
             base_power=self.building.power_generated,
-            base_inputs=base_inputs,
+            base_inputs=self.base_inputs(),
             recipe=self
         )
 
@@ -242,8 +228,8 @@ class Recipe:
         if self._ingredient4_item:
             result += ' & ' + self._ingredient4_item.name + '[' + str(self._ingredient4_rate) + ']'
 
-        if self.sink_item:
-            result += ' >>> ' + self.sink_item.name + '[' + str(self.sink_rate) + ']'
+        if self._output2_item:
+            result += ' >>> ' + self._output2_item.name + '[' + str(self._output2_rate) + ']'
 
         return result
 

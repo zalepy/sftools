@@ -1,6 +1,8 @@
 # 003 — Fluid rates parsed 10× too high (+3)
 
-**Type:** bug · **Priority:** P0 · **Status:** Open
+**Type:** bug · **Priority:** P0 · **Status:** Done
+
+> **Update (2026-10-11):** Fixed on `fix/data-correctness`: `parse_number` reads only the leading number, so units are ignored (`120m3` → 120). Used for every numeric field.
 
 ## Problem
 `get_float_or_none` / `get_int_or_none` (`src/sftools/engine/loader.py`) remove everything except `[-0-9.]`, so the "3" in the unit is kept: `"10m3"` → `103.0` and `"120m3"` → `1203.0`.

@@ -11,7 +11,7 @@ The algorithm uses a breadth-first expansion strategy to determine the total pro
 The initial graph is built using a breadth-first expansion strategy:
 
 1.  **Iterative Expansion**: The algorithm runs for a fixed depth (default 10) to expand demand chains layer by layer.
-2.  **Recipe Selection**: Currently defaults to the first **Basic** recipe found for an item.
+2.  **Recipe Selection**: `default_recipe_for(item)` picks a recipe that makes the item: not unpackaging, main product before by-product, then basic → converter → alternate. If an item reappears in its own chain, it is treated as an input instead of being expanded again.
 3.  **Graph Construction**: For each demand, it creates a `ProductionNode` and generates sub-demands for its ingredients.
 4.  **FactoryGraph Generation**: The resulting structure is encapsulated in a `FactoryGraph` object, which manages the master list of all nodes and their initial topology.
 

@@ -1,6 +1,8 @@
 # 013 — Validation tests against the real game data
 
-**Type:** test · **Priority:** P1 · **Status:** Open
+**Type:** test · **Priority:** P1 · **Status:** Done
+
+> **Update (2026-10-11):** `tests/test_game_data.py`: parsing, sane rates, known ingredients, main product, default recipes, every item's plan builds, every recipe can be switched to, and golden Smart Plating, Plastic and by-product chains. Known data gaps are listed in 019.
 
 The current tests only check graph mechanics on hand-built data, which is why 003–005 went unnoticed.
 

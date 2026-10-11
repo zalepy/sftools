@@ -25,4 +25,5 @@ class RecipeInfo(BaseModel):
     name: str
     type: str
     building: str
-    output_rate: float | None
+    output_rate: float  # per building, of the requested item
+    byproduct: bool  # the requested item is the recipe's by-product
