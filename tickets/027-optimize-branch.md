@@ -10,7 +10,7 @@ The tool computes optimizations only when asked, on a part of the plan the user 
   - **goal:** fewest buildings, least power, exact match (no surplus), fewest power shards; later "fits belt Mk N" (028);
   - **scope:** this node, or the branch below it to some depth.
 - Clocks the user has set are left alone unless included explicitly.
-- The result is a **preview**, not a change: per node, before → after for buildings, clocks, power, shards and surplus, each with a checkbox. Applying adds the checked changes to the plan as ordinary clock settings, which the user can edit, and one undo step (026) reverts them.
+- The result is a **preview**, not a change: per node, before → after for buildings, clocks, power, shards and surplus, each with a checkbox. Applying adds the checked changes to the plan as ordinary clock settings, which the user can edit, and one undo step ([026](done/026-undo-redo.md)) reverts them.
 - Consequences the tool can't see (layout, belts, physical space) are why every change can be rejected or undone.
 
 ## Questions

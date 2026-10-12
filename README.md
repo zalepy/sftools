@@ -10,6 +10,7 @@ Live (UAT): https://sftools.onrender.com/
 * **Merging**: drag one node onto another node with the same output item to combine them; unmerge from the side panel.
 * **Splitting**: split a node into equal parts from the side panel, e.g. to build them in different places. Each part has its own inputs, clocks and recipe. Dragging one part onto another merges them back.
 * **Recipe switching**: pick an alternate recipe for an individual node; nodes running an alternate are labelled "(A)". Inputs both recipes use keep their adjustments and are rescaled; inputs the new recipe doesn't use are removed with their whole branch, and new ones are added.
+* **Undo/redo**: the ↶ ↷ buttons in the header, or Ctrl+Z and Ctrl+Y (Ctrl+Shift+Z), step through the plan's changes: merges, splits, recipe switches, clocks, demand edits and imports. Up to 50 steps, kept until the page is reloaded.
 * **Save/load**: the plan is stored in your browser and can be exported to or imported from JSON.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for how it works, [ALGO.md](ALGO.md) for the calculation, [tickets/](tickets/README.md) for known issues and planned work, and [TODO.md](TODO.md) for smaller ideas.

@@ -7,11 +7,10 @@
 | [015](015-external-merge-unmerge-bug.md) | External-demand merge/unmerge bug | bug | P1 | Watch |
 | [018](018-ui-feature-backlog.md) | UI/feature backlog | feature | P3 | Open |
 | [024](024-byproducts-as-supply.md) | By-products count as supply | feature | P2 | Open |
-| [026](026-undo-redo.md) | Undo and redo of plan changes | feature | P2 | Open |
 | [027](027-optimize-branch.md) | "Optimize branch" with preview | feature | P3 | Open |
 | [028](028-belts-and-pipes.md) | Belt and pipe capacity | feature | P3 | Open |
 
-Suggested next: 026, then 027 (agreed order); 024 and 028 when wanted. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
+Suggested next: 027 (agreed order); 024 and 028 when wanted. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
 
 ## Done
 
@@ -41,4 +40,5 @@ Moved to [done/](done/).
 | [022](done/022-recipe-switch-inputs.md) | Recipe switch: keep shared inputs, drop unused branches | feature | P2 | Done |
 | [023](done/023-clock-speeds.md) | Clock speeds per node (replaces building overrides) | feature | P2 | Done |
 | [025](done/025-exact-recipe-rates.md) | Recipe rates rounded to two decimals | data bug | P2 | Done |
+| [026](done/026-undo-redo.md) | Undo and redo of plan changes | feature | P2 | Done |
 | [029](done/029-cleanup-after-clocks.md) | Cleanup: API round-up, fixed scales, legacy engine paths and tests | debt | P2 | Done |

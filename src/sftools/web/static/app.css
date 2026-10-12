@@ -62,7 +62,8 @@ h1 {
     display: none;
 }
 
-.panel-toggle {
+/* Small header buttons: side panel, undo, redo */
+.icon-btn {
     width: auto;
     background: transparent;
     color: var(--text-secondary);
@@ -72,7 +73,7 @@ h1 {
     line-height: 1;
 }
 
-.panel-toggle:hover {
+.icon-btn:hover:not(:disabled) {
     background-color: var(--border);
     color: var(--text-primary);
 }
