@@ -5,6 +5,10 @@ import re
 from sftools.domain.enums.recipe_type import RecipeType
 from sftools.domain.models.production_node import ProductionNode
 
+EPSILON = 1e-9
+INBOUND_PREFIX = "inbound:"  # ID of the node showing an item's inbound production, e.g. 'inbound:Iron Ingot'
+
+
 class FactoryGraph:
     """
     Manages a collection of ProductionNodes and their state (merges, clocks).
@@ -18,6 +22,10 @@ class FactoryGraph:
         self.splits: Dict[str, int] = {}  # node_id -> number of parts (see calculator.split_parts)
         # node_id -> (clock for the rest, [(count, clock), ...] fixed groups such as the last building)
         self.clocks: Dict[str, Tuple[float, List[Tuple[int, float]]]] = {}
+        # item -> rate supplied from outside the plan, used before anything is produced (see recalculate)
+        self.inbound: Dict[str, float] = {}
+        self.inbound_used: Dict[str, Dict[str, float]] = {}  # item -> {consumer id: rate}, set by recalculate
+        self.unused: Set[str] = set()  # nodes left with nothing to make (all covered by inbound production)
 
     def add_node(self, node: ProductionNode):
         self.all_nodes[node.id] = node
@@ -44,12 +52,12 @@ class FactoryGraph:
         """Restores all nodes to the captured initial structure."""
         if not self._initial_structure:
             return
-            
+
         for node_id, node in self.all_nodes.items():
             node.parents.clear()
             node.children.clear()
             node.absorbed_by = None
-            
+
             init = self._initial_structure.get(node_id)
             if init:
                 for p_id in init["parents"]:
@@ -62,12 +70,12 @@ class FactoryGraph:
     def apply_merge(self, source_id: str, target_id: str):
         if source_id == target_id:
             return
-        
+
         source = self.get_node(source_id)
         target = self.get_node(target_id)
         if not source or not target:
             return
-        
+
         if source.output_item_name != target.output_item_name:
             raise ValueError(f"Cannot merge {source_id} and {target_id}: different output items")
 
@@ -79,7 +87,7 @@ class FactoryGraph:
         # Record merge. Each node keeps its own external demand; recalculate adds up the group's.
         self.merges[source_id] = target_id
         source.absorbed_by = target_id
-        
+
         # Execute link transfer
         self._execute_merge_links(source, target)
 
@@ -118,6 +126,11 @@ class FactoryGraph:
         structure: for each input item, the group's need is split between the members' input nodes
         in proportion to each member's share of the group's demand. Members without an input node for
         an item (e.g. the group runs a different recipe) leave their share to the members that have one.
+
+        Inbound production (`self.inbound`) covers demand before anything is produced: each group, top
+        down, takes what it needs of its item until the inbound rate is used up, and makes only the rest.
+        A group left with nothing to make, and everything under it that then needs nothing, goes into
+        `self.unused` and isn't shown.
         """
         active = {node_id: node for node_id, node in self.all_nodes.items() if not node.is_dormant}
         for node in active.values():
@@ -148,6 +161,9 @@ class FactoryGraph:
         queue = [rep_id for rep_id, degree in in_degree.items() if degree == 0]
         demand: Dict[str, float] = {}  # per node (member), from its own parent or the user
         group_demand: Dict[str, float] = {}
+        inbound_left = dict(self.inbound)
+        self.inbound_used = {item: {} for item in self.inbound}
+        self.unused = set()
 
         def share(rep_id: str, member: ProductionNode) -> float:
             total = group_demand[rep_id]
@@ -195,7 +211,18 @@ class FactoryGraph:
                 if parent_id is not None and rate > 0:
                     rep.parent_demands[parent_id] = rep.parent_demands.get(parent_id, 0) + rate
             group_demand[rep_id] = total
-            self._set_scale(rep, total, round_up)
+            covered = 0.0 if rep.is_supplied else min(total, inbound_left.get(rep.output_item_name, 0.0))
+            if covered > 0:
+                inbound_left[rep.output_item_name] -= covered
+                used = self.inbound_used[rep.output_item_name]
+                for consumer, rate in list(rep.parent_demands.items()):
+                    used[consumer] = used.get(consumer, 0) + rate * covered / total
+                    rep.parent_demands[consumer] = rate * (1 - covered / total)
+                rep.parent_demands = {k: v for k, v in rep.parent_demands.items() if v > EPSILON}
+            self._set_scale(rep, total - covered, round_up)
+            if total - covered <= EPSILON and (covered > 0 or (
+                    group_parents[rep_id] and group_parents[rep_id] <= self.unused)):
+                self.unused.add(rep_id)
 
             for child_id in group_children[rep_id]:
                 in_degree[child_id] -= 1
@@ -269,43 +296,64 @@ class FactoryGraph:
         """
         ui_nodes = []
         target_to_constituents: Dict[str, List[ProductionNode]] = {}
-        
+
         for node in self.all_nodes.values():
             if node.absorbed_by:
                 target_id = node.absorbed_by
                 if target_id not in target_to_constituents:
                     target_to_constituents[target_id] = []
                 target_to_constituents[target_id].append(node)
-        
+
+        hidden = set(self.unused)
         for node in self.all_nodes.values():
-            if node.absorbed_by or node.is_dormant:
-                continue # Skip absorbed or dormant nodes from top level
-                
+            if node.absorbed_by or node.is_dormant or node.id in hidden:
+                continue # Skip absorbed, dormant and unused nodes from top level
+
             constituents = [c for c in target_to_constituents.get(node.id, []) if not c.is_dormant]
-            
+
             # Serialize representative
             data = self._serialize_node(node)
-            
+
             # Map parents and children to their merge targets for UI consistency
             data["parents"] = sorted(list(set(
-                self.get_node(p_id).absorbed_by or p_id 
-                for p_id in data["parents"] 
+                self.get_node(p_id).absorbed_by or p_id
+                for p_id in data["parents"]
                 if p_id in self.all_nodes
             )))
             data["children"] = sorted(list(set(
-                self.get_node(c_id).absorbed_by or c_id 
-                for c_id in data["children"] 
+                self.get_node(c_id).absorbed_by or c_id
+                for c_id in data["children"]
                 if c_id in self.all_nodes
-            )))
+            ) - hidden) + [INBOUND_PREFIX + item for item, used in self.inbound_used.items() if node.id in used])
 
             # Mark if it's a merged node and track constituents
             data["is_merged"] = len(constituents) > 0
             data["constituent_ids"] = [c.id for c in constituents]
             data["constituent_derivations"] = [self.derivation(c) for c in constituents]
-            
+
             ui_nodes.append(data)
-            
+
+        ui_nodes.extend(self._inbound_node(item) for item in self.inbound)
         return ui_nodes
+
+    def _inbound_node(self, item: str) -> Dict:
+        """An item's inbound production, in the shape of a serialized node: it feeds the nodes that used it."""
+        used = self.inbound_used.get(item, {})
+        consumers = {consumer: rate for consumer, rate in used.items() if rate > EPSILON}
+        total = sum(consumers.values())
+        node_id = INBOUND_PREFIX + item
+        return {
+            "id": node_id, "name": "Inbound production", "recipe_name": "Inbound production",
+            "building": "Outside the plan", "building_scale": total, "original_building_scale": total,
+            "buildings": 0, "clocks": [], "power_shards": 0, "ideal_building_scale": total,
+            "throughput": total, "power": 0, "output_item": item,
+            "parents": sorted(c for c in consumers if c != "External Demand"), "children": [],
+            "scaled_inputs": [], "parent_demands": consumers, "base_output_rate": 1, "base_inputs": [],
+            "base_power": 0, "is_dormant": False, "is_alternate": False, "is_supplied": True,
+            "derivation": [{"id": node_id, "item": item, "recipe": "Inbound production", "building": "Outside the plan"}],
+            "split": None, "is_merged": False, "constituent_ids": [], "constituent_derivations": [],
+            "inbound": {"rate": self.inbound[item], "used": total},
+        }
 
     def derivation(self, node: ProductionNode) -> List[Dict]:
         """

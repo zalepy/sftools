@@ -229,8 +229,10 @@ export function renderGraph(nodesData) {
         const clocks = clocksText(node, '×');
         const shards = node.power_shards ? ` · ${node.power_shards} shards` : '';
         const clockLine = clocks || shards ? `\n${clocks}${shards}` : '';
-        const made = node.is_supplied ? 'supplied from outside' : `${buildingsText(node)}× ${node.building}`;
-        const label = `${node.output_item}${alternate}${part}\n${parseFloat(node.throughput).toFixed(2)}/m\n(${made})${clockLine}`;
+        const made = node.inbound ? 'inbound'
+            : node.is_supplied ? 'supplied from outside' : `${buildingsText(node)}× ${node.building}`;
+        const of = node.inbound ? ` of ${parseFloat(node.inbound.rate).toFixed(2)}` : '';
+        const label = `${node.output_item}${alternate}${part}\n${parseFloat(node.throughput).toFixed(2)}${of}/m\n(${made})${clockLine}`;
         const color = colorFor(node.output_item);
         const classes = [
             state.clocks[node.id] && 'clocked',
@@ -323,6 +325,7 @@ export function onMergeDrop(callback) {
 
         const targetNode = overlapping[0];
         if (dragData.output_item !== targetNode.data('raw').output_item) return;
+        if (dragData.inbound || targetNode.data('raw').inbound) return;  // inbound production isn't a node of the plan
 
         // Let Cytoscape finish the drag before the graph is re-rendered
         setTimeout(() => callback(dragNode.id(), targetNode.id()), 50);

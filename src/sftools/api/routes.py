@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api")
 
 @router.post("/calculate", response_model=PlanResponse)
 def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
-    unknown = sorted({d.item for d in plan.demands if d.item not in data.items})
+    unknown = sorted({d.item for d in [*plan.demands, *plan.inbound] if d.item not in data.items})
     if unknown:
         raise HTTPException(status_code=422, detail=f"Unknown items: {', '.join(unknown)}")
 
@@ -26,6 +26,7 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
             merges=plan.merges,
             splits=plan.splits,
             clocks=plan.clocks,
+            inbound=[(d.item, d.rate) for d in plan.inbound],
         )
     except ValueError as ex:
         # e.g. merging nodes with different output items

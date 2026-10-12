@@ -336,6 +336,7 @@ def build_plan(
     splits: Optional[Dict[str, int]] = None,
     clocks: Optional[Dict[str, list]] = None,
     exact: bool = False,
+    inbound: Optional[List[Tuple[str, float]]] = None,
 ) -> FactoryGraph:
     """
     Builds a FactoryGraph from the full plan description.
@@ -349,7 +350,8 @@ def build_plan(
     (with everything under them) and builds the new ones. A merge group runs its target's recipe, so
     the absorbed nodes' inputs that it doesn't use are dropped the same way. The recipe name
     OUTSIDE_SUPPLY marks a node as supplied from outside the plan: it keeps its rate and loses its
-    inputs and buildings.
+    inputs and buildings. `inbound` lists (item, rate) supplied from outside the plan: it covers demand
+    for the item before anything is produced (see FactoryGraph.recalculate).
 
     Entries that can't apply are skipped and listed in `graph.ignored` as
     {"kind": "recipe" | "merge" | "split" | "clock", "node_id", "reason"}. Entries on dropped
@@ -455,6 +457,10 @@ def build_plan(
                             "dropped": True})
             continue
         graph.clocks[node_id] = parsed
+
+    graph.inbound = {}
+    for item, rate in inbound or []:
+        graph.inbound[item] = graph.inbound.get(item, 0) + rate
 
     graph.recalculate(round_up=round_up)
     graph.ignored = ignored

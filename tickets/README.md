@@ -42,3 +42,4 @@ Moved to [done/](done/).
 | [025](done/025-exact-recipe-rates.md) | Recipe rates rounded to two decimals | data bug | P2 | Done |
 | [026](done/026-undo-redo.md) | Undo and redo of plan changes | feature | P2 | Done |
 | [029](done/029-cleanup-after-clocks.md) | Cleanup: API round-up, fixed scales, legacy engine paths and tests | debt | P2 | Done |
+| [030](done/030-inbound-production.md) | Inbound production | feature | P2 | Done |

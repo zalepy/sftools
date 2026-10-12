@@ -47,6 +47,7 @@ The browser owns the **plan** and sends all of it on every change:
 ```json
 {
   "demands":   [{"item": "Smart Plating", "rate": 2}],
+  "inbound":   [{"item": "Iron Ingot", "rate": 60}],
   "recipes":   {"<node_id>": "<recipe name>"},
   "merges":    {"<source node_id>": "<target node_id>"},
   "clocks":    {"<node_id>": [{"clock": 1.0}, {"count": 1, "clock": 2.0}]},
@@ -59,6 +60,8 @@ The browser owns the **plan** and sends all of it on every change:
 2. **Recipe switches**, parents first. A child's ID extends its parent's ID, so sorting by ID length is enough. A switch keeps the inputs both recipes use (their nodes, and the adjustments on them, are rescaled), drops the inputs the new recipe doesn't use, with everything under them (they become dormant), and builds the new inputs as in step 1. A switch is skipped if its node doesn't exist or was dropped, or the recipe can't be resolved. The recipe name `Supplied from outside` (`OUTSIDE_SUPPLY`) is resolved to `outside_supply_recipe(item)`: no inputs, no building or power, so the switch drops the node's inputs like any other. `_set_scale` gives such a node no buildings, only its rate, and its clocks are dropped.
 3. **Merges**: `FactoryGraph.apply_merge` marks the source as absorbed by the target. The merged node is one shared set of buildings; each branch keeps its own inputs, sized to its share of the merged node's demand.
 4. **Clocks + propagation**: `FactoryGraph.recalculate` runs Kahn's algorithm (see [ALGO.md](ALGO.md)). Each node's buildings come from its demand and its clocks (`parse_clock_groups`, `FactoryGraph._set_scale`): one group without a count runs as many buildings as the rest of the demand needs, plus fixed groups such as the last building. Building counts are never set directly (ticket 023). `build_plan(exact=True)` gives fractional building counts instead, which the unit tests use to check that every item balances; the API always uses whole buildings.
+
+**Inbound production** (`inbound`) is applied in step 4: `recalculate` goes top down, and each node (or merge group) of an inbound item takes what it needs from what is left of the inbound rate before its buildings are sized for the rest. Its consumers' shares shrink by the same fraction. A group left with nothing to make, and the groups under it that then need nothing, go into `FactoryGraph.unused` and aren't returned; their plan entries stay valid and apply again when the inbound rate drops. Each inbound item is returned as an extra node, `inbound:<item>`, with `inbound: {rate, used}` and the consumers it feeds in `parent_demands`. Nodes switched to "Supplied from outside" don't use inbound production.
 
 Entries that no longer match the graph (typically from an older saved plan) are skipped and returned in `ignored` with a reason; the UI removes them from the saved plan and shows a notice. Entries on dropped inputs (an input the recipe running above it doesn't use, or anything under one) are returned with `"dropped": true`, and the UI removes them without a notice: when the input comes back, it starts as a fresh branch. A merge group runs its target's recipe, so the absorbed nodes' inputs that it doesn't use are dropped too. When a merge target is dropped, the rest of its group stays merged: those entries carry `replacement`, the new target.
 

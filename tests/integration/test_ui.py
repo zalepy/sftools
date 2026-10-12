@@ -376,3 +376,23 @@ def test_text_is_dark_on_bright_node_colors(page):
     page.open(page.base_url, plan(items=["Plastic"], rates=[20]))
     assert page.js(node_style("Plastic", "color")) == "rgb(15,23,42)"  # on #93c5fd
     assert page.js(node_style("Plastic__Crude Oil", "color")) == "rgb(248,250,252)"  # on the default slate
+
+
+def test_inbound_production(page):
+    page.open(page.base_url, plan(inbound=[{"item": "Reinforced Iron Plate", "rate": 3}]))
+    inbound = "inbound:Reinforced Iron Plate"
+    assert page.js(label(inbound)) == "Reinforced Iron Plate\n3.00 of 3.00/m\n(inbound)"
+    assert RIP_SP not in page.node_ids()
+    assert page.js(node_style(inbound, "border-color")) == "rgb(56,189,248)"
+    page.select_node(inbound)
+    for section in ("details-recipe-collapsible", "split-controls", "clock-controls"):
+        assert page.js(f"document.getElementById('{section}').style.display") == "none"
+
+    # Edited in the side panel and applied with Calculate, like the demands
+    page.js("""(() => {
+        document.querySelector('#inbound-rows input[name=rates]').value = '1';
+        document.querySelector('#demand-form button[type=submit]').click();
+    })()""")
+    page.wait_until(f"{SAVED}.inbound[0].rate === 1")
+    assert RIP_SP in page.node_ids()
+    assert page.js(label(inbound)).startswith("Reinforced Iron Plate\n1.00 of 1.00/m")
