@@ -7,10 +7,10 @@
 | [015](015-external-merge-unmerge-bug.md) | External-demand merge/unmerge bug | bug | P1 | Watch |
 | [018](018-ui-feature-backlog.md) | UI/feature backlog | feature | P3 | Open |
 | [024](024-byproducts-as-supply.md) | By-products count as supply | feature | P2 | Open |
-| [027](027-optimize-branch.md) | "Optimize branch" with preview | feature | P3 | Open |
+| [027](027-optimize-branch.md) | "Optimize branch" with preview | feature | P3 | Parked |
 | [028](028-belts-and-pipes.md) | Belt and pipe capacity | feature | P3 | Open |
 
-Suggested next: 027 (agreed order); 024 and 028 when wanted. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
+027 is parked (breakdown agreed in the ticket). Next when wanted: 024, 028. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
 
 ## Done
 
