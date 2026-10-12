@@ -8,6 +8,7 @@ import {
     renderGraph, refreshNodeColors, hasNodes, fitView, resizeGraph, getNodeData, onNodeSelected, reselectNode, onMergeDrop
 } from './graph.js';
 import * as panel from './panel.js';
+import * as history from './history.js';
 
 const $ = id => document.getElementById(id);
 
@@ -15,9 +16,37 @@ function currentPlan() {
     return snapshot(panel.getDemands());
 }
 
+/** Saves the plan in the browser and records it as an undo step (if it changed). */
 function save() {
-    savePlan(currentPlan());
+    const plan = currentPlan();
+    savePlan(plan);
+    history.record(plan);
+    updateHistoryButtons();
 }
+
+function updateHistoryButtons() {
+    $('undo-btn').disabled = !history.canUndo();
+    $('redo-btn').disabled = !history.canRedo();
+}
+
+/** Shows an earlier (or later) plan from the history: the server recalculates it like any other. */
+async function showHistoryStep(plan) {
+    if (!plan) return;
+    const selected = state.selectedNodeId;
+    panel.setDemands(plan.items, plan.rates);
+    applySaved(plan);
+    try {
+        renderGraph(await requestPlan());
+        save();
+        if (selected && getNodeData(selected)) reselectNode(selected); else panel.hideNodeDetails();
+    } catch (e) {
+        console.error("Undo/redo failed", e);
+        alert(`Undo/redo failed: ${e.message}`);
+    }
+}
+
+const undo = () => showHistoryStep(history.undo());
+const redo = () => showHistoryStep(history.redo());
 
 /**
  * Sends the plan (with optional candidate merges/recipes/splits/clocks) and returns the graph nodes.
@@ -290,6 +319,22 @@ $('clear-clocks-node-btn').addEventListener('click', clearClocks);
     if (e.key === 'Enter') applyClocks();
 }));
 $('unmerge-btn').addEventListener('click', unmergeSelectedNode);
+$('undo-btn').addEventListener('click', undo);
+$('redo-btn').addEventListener('click', redo);
+
+// Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z), except while typing, where they edit the text
+document.addEventListener('keydown', e => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+    const key = e.key.toLowerCase();
+    if (key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+    } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+    }
+});
 $('split-btn').addEventListener('click', () => splitSelectedNode(panel.getSplitCount()));
 $('unsplit-btn').addEventListener('click', unsplitSelectedNode);
 $('recipe-select').addEventListener('change', e => switchRecipe(e.target.value));

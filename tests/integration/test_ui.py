@@ -286,3 +286,63 @@ def test_side_panel_collapses_and_the_graph_takes_the_room(page):
     page.js("document.getElementById('panel-toggle').click()")
     assert page.js(sidebar_shown)
     assert page.js(graph_width) == before
+
+
+def undo_state(page):
+    return page.js("[document.getElementById('undo-btn').disabled, document.getElementById('redo-btn').disabled]")
+
+
+def press_ctrl(page, key, shift=False):
+    """A Ctrl+key press on the page (not in a text field)."""
+    modifiers = 2 | (8 if shift else 0)
+    code = f"Key{key.upper()}"
+    for event in ("rawKeyDown", "keyUp"):
+        page.send("Input.dispatchKeyEvent", type=event, modifiers=modifiers, key=key, code=code,
+                  windowsVirtualKeyCode=ord(key.upper()))
+
+
+def test_undo_and_redo_a_merge(page):
+    page.open(page.base_url, plan())
+    assert undo_state(page) == [True, True]  # nothing to undo yet
+
+    page.drag(page.node_position(RIP_MF), page.node_position(RIP_SP))
+    page.wait_until(f"{SAVED}.merges[{json.dumps(RIP_MF)}] !== undefined")
+    assert undo_state(page) == [False, True]
+
+    page.js("document.getElementById('undo-btn').click()")
+    page.wait_until(f"Object.keys({SAVED}.merges).length === 0")
+    page.wait_until(f"document.getElementById('cy')._cyreg.cy.getElementById({json.dumps(RIP_MF)}).length === 1")
+    assert undo_state(page) == [True, False]
+
+    page.js("document.getElementById('redo-btn').click()")
+    page.wait_until(f"{SAVED}.merges[{json.dumps(RIP_MF)}] !== undefined")
+    assert RIP_MF not in page.node_ids()
+    assert undo_state(page) == [False, True]
+
+
+def test_undo_with_the_keyboard_and_a_new_change_drops_redo(page):
+    page.open(page.base_url, plan(items=["Iron Rod"], rates=[144]))
+    page.select_node("Iron Rod")
+    page.js("document.getElementById('clock-all').value = '50'; document.getElementById('apply-clocks-btn').click()")
+    page.wait_until(f"{SAVED}.clocks['Iron Rod'] !== undefined")
+
+    # Ctrl+Z while typing in a field edits the text, not the plan
+    page.js("document.getElementById('clock-last').focus()")
+    press_ctrl(page, "z")
+    page.wait(0.3)
+    assert page.saved_plan()["clocks"] != {}
+
+    page.js("document.activeElement.blur()")
+    press_ctrl(page, "z")
+    page.wait_until(f"Object.keys({SAVED}.clocks).length === 0")
+    press_ctrl(page, "z", shift=True)  # redo
+    page.wait_until(f"{SAVED}.clocks['Iron Rod'] !== undefined")
+    press_ctrl(page, "z")
+    page.wait_until(f"Object.keys({SAVED}.clocks).length === 0")
+
+    # A new change after undo replaces the step that could have been redone
+    page.select_node("Iron Rod")
+    page.js("document.getElementById('clock-all').value = '200'; document.getElementById('apply-clocks-btn').click()")
+    page.wait_until(f"{SAVED}.clocks['Iron Rod'] !== undefined")
+    assert undo_state(page) == [False, True]
+    assert page.saved_plan()["clocks"]["Iron Rod"] == [{"clock": 2}]
