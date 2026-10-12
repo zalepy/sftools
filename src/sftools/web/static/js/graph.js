@@ -108,6 +108,24 @@ zoomSlider.addEventListener('input', (e) => {
 
 cy.on('zoom', updateZoomSlider);
 
+// Cytoscape's own wheel zoom jumps (51% -> 135% for one mouse tick). Handle the wheel here instead,
+// before Cytoscape sees it: about 15% per mouse tick, toward the cursor; trackpads send smaller deltas.
+const WHEEL_ZOOM_RATE = 0.0015;  // per pixel of scroll
+const LINE_HEIGHT = 33;          // pixels per line, for wheels that report lines
+
+// Cytoscape listens on its container, so catch the event on the way down, at the parent.
+cy.container().parentElement.addEventListener('wheel', e => {
+    if (!cy.container().contains(e.target)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const pixels = e.deltaMode === WheelEvent.DOM_DELTA_LINE ? e.deltaY * LINE_HEIGHT : e.deltaY;
+    const box = cy.container().getBoundingClientRect();
+    cy.zoom({
+        level: cy.zoom() * Math.pow(1 + WHEEL_ZOOM_RATE, -pixels),
+        renderedPosition: { x: e.clientX - box.left, y: e.clientY - box.top }
+    });
+}, { capture: true, passive: false });
+
 export function fitView() {
     cy.fit();
     updateZoomSlider();
