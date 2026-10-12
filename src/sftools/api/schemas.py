@@ -11,17 +11,15 @@ class DemandIn(BaseModel):
 class PlanRequest(BaseModel):
     """Full description of a plan. The server keeps no state between requests."""
     demands: List[DemandIn]
-    round_up: bool = True
     recipes: Dict[str, str] = {}  # node_id -> recipe name
     merges: Dict[str, str] = {}  # source node_id -> target node_id
-    overrides: Dict[str, float] = {}  # retired: building counts follow demand and clocks; reported in `ignored`
     splits: Dict[str, int] = {}  # node_id -> number of equal parts
     clocks: Dict[str, List[Dict[str, Any]]] = {}  # node_id -> [{"clock": 1.0}, {"count": 1, "clock": 0.6}]
 
 
 class IgnoredEntry(BaseModel):
     """A plan entry that no longer matches the graph (usually a stale saved plan)."""
-    kind: Literal["recipe", "merge", "override", "split", "clock"]
+    kind: Literal["recipe", "merge", "split", "clock"]
     node_id: str
     reason: str
     dropped: bool = False  # on an input the current recipe doesn't use; the UI removes it quietly

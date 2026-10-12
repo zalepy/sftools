@@ -41,3 +41,4 @@ Moved to [done/](done/).
 | [022](done/022-recipe-switch-inputs.md) | Recipe switch: keep shared inputs, drop unused branches | feature | P2 | Done |
 | [023](done/023-clock-speeds.md) | Clock speeds per node (replaces building overrides) | feature | P2 | Done |
 | [025](done/025-exact-recipe-rates.md) | Recipe rates rounded to two decimals | data bug | P2 | Done |
+| [029](done/029-cleanup-after-clocks.md) | Cleanup: API round-up, fixed scales, legacy engine paths and tests | debt | P2 | Done |

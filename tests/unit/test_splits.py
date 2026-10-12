@@ -1,6 +1,6 @@
 """
 Splitting: a node split into k parts is k nodes, each with an equal share of the demand and its own inputs.
-With round_up=False every item must be made exactly as fast as it is consumed.
+With exact=True every item must be made exactly as fast as it is consumed.
 """
 from collections import defaultdict
 
@@ -21,7 +21,7 @@ def data():
 
 
 def plan(data, demands=DEMANDS, **kwargs):
-    graph = build_plan(data.items, data.recipes, demands, round_up=False, **kwargs)
+    graph = build_plan(data.items, data.recipes, demands, exact=True, **kwargs)
     assert graph.ignored == []
     return graph
 
@@ -69,8 +69,8 @@ def test_split_inner_node_keeps_the_totals(data):
         assert total_output(graph, item) == pytest.approx(total_output(unsplit, item))
 
 
-def test_parts_round_up_on_their_own(data):
-    graph = build_plan(data.items, data.recipes, [("Smart Plating", 2)], round_up=True, splits={"Smart Plating": 2})
+def test_parts_are_rounded_up_on_their_own(data):
+    graph = build_plan(data.items, data.recipes, [("Smart Plating", 2)], splits={"Smart Plating": 2})
     assert graph.get_node("Smart Plating").building_scale == graph.get_node("Smart Plating~2").building_scale == 1
 
 
@@ -90,7 +90,7 @@ def test_split_below_a_recipe_switch(data):
 
 
 def test_part_one_keeps_the_clocks_and_each_part_has_its_own(data):
-    graph = build_plan(data.items, data.recipes, DEMANDS, round_up=True, splits={RIP_SP: 2},
+    graph = build_plan(data.items, data.recipes, DEMANDS, splits={RIP_SP: 2},
                        clocks={RIP_SP: [{"clock": 2.0}], f"{RIP_SP}~2": [{"clock": 0.5}]})
     assert graph.ignored == []
     assert graph.get_node(RIP_SP).building_clocks == [(1, 2.0)]
@@ -127,7 +127,7 @@ def test_split_nodes_are_described(data):
 
 
 def test_invalid_and_stale_splits_are_reported(data):
-    graph = build_plan(data.items, data.recipes, DEMANDS, round_up=False,
+    graph = build_plan(data.items, data.recipes, DEMANDS, exact=True,
                        splits={RIP_SP: 1, "Smart Plating__Gone": 2})
     assert sorted((e["kind"], e["node_id"]) for e in graph.ignored) == [
         ("split", "Smart Plating__Gone"), ("split", RIP_SP)]
@@ -141,6 +141,6 @@ def test_split_on_an_inactive_branch_is_kept_silently(data):
 
 
 @pytest.mark.parametrize("node_id", [n.id for n in running(build_plan(
-    get_game_data().items, get_game_data().recipes, DEMANDS, round_up=False))])
+    get_game_data().items, get_game_data().recipes, DEMANDS, exact=True))])
 def test_any_split_stays_balanced(data, node_id):
     assert_balanced(plan(data, splits={node_id: 2}))

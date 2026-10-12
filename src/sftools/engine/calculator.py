@@ -67,10 +67,8 @@ def split_parts(node_id: str, rate: float, splits: Optional[Dict[str, int]]) -> 
     return [(node_id if part == 1 else f"{node_id}~{part}", rate / count) for part in range(1, count + 1)]
 
 
-def calculate_demands(items_map, root_demands_list: List[Demand], scale_overrides: Dict[str, float] = None, round_up: bool = True,
+def calculate_demands(items_map, root_demands_list: List[Demand], round_up: bool = True,
                       splits: Optional[Dict[str, int]] = None) -> FactoryGraph:
-    if scale_overrides is None:
-        scale_overrides = {}
 
     graph = FactoryGraph()
 
@@ -107,11 +105,8 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
             # Calculate Base Scaler from demand rate
             base_scaler = target_rate / recipe.rate_of(item.name)
 
-            # Apply rounding (only for initial generation when no override exists)
-            if part_id in scale_overrides:
-                # Use the scale override directly - this is the building multiplier
-                scaler = scale_overrides[part_id]
-            elif round_up:
+            # Initial scale; FactoryGraph.recalculate sets the final one from demand and clocks
+            if round_up:
                 # Round up to next integer for buildings
                 scaler = math.ceil(base_scaler - 0.00001) # epsilon for float precision
                 if scaler == 0 and base_scaler > 0: scaler = 1 # Safety
@@ -223,14 +218,6 @@ def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_m
             processed_count += 1
 
 
-def recalculate_graph(graph: FactoryGraph, overrides: Optional[Dict[str, float]] = None, round_up: bool = False):
-    """
-    Recalculates the scales of nodes based on user overrides and parent requirements.
-    This is now a wrapper around FactoryGraph.recalculate.
-    """
-    graph.recalculate(overrides, round_up)
-    return graph
-
 def switch_recipe_in_graph(graph: FactoryGraph, node_id: str, new_recipe: Recipe, items_map: Dict, round_up: bool = True,
                            splits: Optional[Dict[str, int]] = None):
     """
@@ -291,13 +278,12 @@ def _drop_unused_inputs_of_merged(graph: FactoryGraph) -> bool:
         needed = {item.name for item, _ in rep.recipe.ingredients} if rep.recipe else set()
         for child in graph._original_children(node):
             if not child.is_dormant and child.output_item_name not in needed:
-                graph.drop_subtree(child.id)
+                graph.set_subtree_dormancy(child.id, True)
                 dropped = True
     return dropped
 
 
 MIN_CLOCK, MAX_CLOCK = 0.01, 2.5
-OVERRIDES_RETIRED = "building counts are no longer set directly; set clock speeds instead"
 
 
 def parse_clock_groups(groups) -> Tuple[float, List[Tuple[int, float]]]:
@@ -331,18 +317,17 @@ def build_plan(
     items_map: Dict,
     recipes_map: Dict[str, Recipe],
     demands: List[Tuple[str, float]],
-    round_up: bool = True,
     recipes: Optional[Dict[str, str]] = None,
     merges: Optional[Dict[str, str]] = None,
-    overrides: Optional[Dict[str, float]] = None,
     splits: Optional[Dict[str, int]] = None,
     clocks: Optional[Dict[str, list]] = None,
+    exact: bool = False,
 ) -> FactoryGraph:
     """
     Builds a FactoryGraph from the full plan description.
     The API is stateless: every request replays demands (with splits) -> recipe switches -> merges -> clocks.
-    Building counts follow the demand and the clocks (see parse_clock_groups, FactoryGraph._set_scale);
-    `overrides` (building counts set directly) are retired and reported in `ignored`.
+    Building counts follow the demand and the clocks (see parse_clock_groups, FactoryGraph._set_scale).
+    `exact` gives fractional building counts instead, for tests that check every item balances.
     Splits apply as nodes are created (see split_parts), so the parts of a split node, and their
     inputs, exist before any other entry refers to them.
 
@@ -351,11 +336,12 @@ def build_plan(
     the absorbed nodes' inputs that it doesn't use are dropped the same way.
 
     Entries that can't apply are skipped and listed in `graph.ignored` as
-    {"kind": "recipe" | "merge" | "override" | "split" | "clock", "node_id", "reason"}. Entries on dropped
+    {"kind": "recipe" | "merge" | "split" | "clock", "node_id", "reason"}. Entries on dropped
     inputs also have "dropped": True: they belonged to a branch the current recipes no longer use, and
     a new branch starts fresh. When a merge target is dropped, the nodes merged into it stay merged
     with each other: those entries carry "replacement", their new target.
     """
+    round_up = not exact
     ignored = []
     splits = dict(splits or {})
     for node_id, count in list(splits.items()):
@@ -433,9 +419,6 @@ def build_plan(
             report("split", node_id, state)
             del splits[node_id]
 
-    for node_id in overrides or {}:
-        ignored.append({"kind": "override", "node_id": node_id, "reason": OVERRIDES_RETIRED})
-
     graph.clocks = {}
     for node_id, groups in (clocks or {}).items():
         try:
@@ -449,7 +432,7 @@ def build_plan(
             continue
         graph.clocks[node_id] = parsed
 
-    graph.recalculate({}, round_up=round_up)
+    graph.recalculate(round_up=round_up)
     graph.ignored = ignored
     graph.splits = splits
     return graph

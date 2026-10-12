@@ -7,13 +7,12 @@ from sftools.domain.models.production_node import ProductionNode
 
 class FactoryGraph:
     """
-    Manages a collection of ProductionNodes and their state (merges, overrides).
+    Manages a collection of ProductionNodes and their state (merges, clocks).
     Handles calculation and UI representation.
     """
     def __init__(self, nodes: Dict[str, ProductionNode] = None):
         self.all_nodes = nodes or {}
         self.merges: Dict[str, str] = {} # source_id -> target_id
-        self.recipe_overrides: Dict[str, str] = {} # node_path -> recipe_name
         self._initial_structure: Dict[str, Dict[str, List[str]]] = {}
         self.ignored: List[Dict] = []  # plan entries build_plan could not apply
         self.splits: Dict[str, int] = {}  # node_id -> number of parts (see calculator.split_parts)
@@ -40,18 +39,6 @@ class FactoryGraph:
 
     def get_node(self, node_id: str) -> Optional[ProductionNode]:
         return self.all_nodes.get(node_id)
-
-    def capture_initial_structure(self):
-        """
-        Records the parent/child relationships as they are right now. Only needed for graphs
-        wired by hand with add_child/add_parent; `link` records links as they are made.
-        """
-        self._initial_structure = {}
-        for node_id, node in self.all_nodes.items():
-            self._initial_structure[node_id] = {
-                "parents": [p.id for p in node.parents],
-                "children": [c.id for c in node.children]
-            }
 
     def _reset_structure(self):
         """Restores all nodes to the captured initial structure."""
@@ -113,51 +100,16 @@ class FactoryGraph:
             target.add_child(child)
             source.children.discard(child) # Clear link from source
 
-    def remove_merge(self, source_id: str):
-        """Removes a specific merge and rebuilds the structure from other merges."""
-        if source_id not in self.merges:
-            # A merge target: remove all merges into it
-            to_remove = [s for s, t in self.merges.items() if t == source_id]
-            for s in to_remove:
-                del self.merges[s]
-        else:
-            del self.merges[source_id]
-
-        # Rebuild structure
-        self._rebuild_structure()
-
-    def _rebuild_structure(self):
-        """Full reset and re-application of all recorded merges."""
-        self._reset_structure()
-        for s_id, t_id in self.merges.items():
-            source = self.get_node(s_id)
-            target = self.get_node(t_id)
-            if source and target:
-                source.absorbed_by = t_id
-                self._execute_merge_links(source, target)
-
     def set_subtree_dormancy(self, node_id: str, dormant: bool):
-        """
-        Recursively sets the dormancy state for a node and all its descendants.
-        """
+        """Makes a node and everything under it in the unmerged structure dormant (a dropped input) or active."""
         node = self.get_node(node_id)
-        if not node:
+        if node is None:
             return
-            
         node.is_dormant = dormant
-        for child in node.children:
+        for child in self._original_children(node):
             self.set_subtree_dormancy(child.id, dormant)
 
-    def drop_subtree(self, node_id: str):
-        """Makes a node and everything under it in the unmerged structure dormant."""
-        node = self.get_node(node_id)
-        if node is None or node.is_dormant:
-            return
-        node.is_dormant = True
-        for child in self._original_children(node):
-            self.drop_subtree(child.id)
-
-    def recalculate(self, overrides: Dict[str, float] = None, round_up: bool = False):
+    def recalculate(self, round_up: bool = False):
         """
         Propagates demand top-down and sets every node's scale.
 
@@ -167,11 +119,6 @@ class FactoryGraph:
         in proportion to each member's share of the group's demand. Members without an input node for
         an item (e.g. the group runs a different recipe) leave their share to the members that have one.
         """
-        # 1. Apply overrides: None keeps the current ones, a dict replaces them all ({} clears them)
-        if overrides is not None:
-            for node_id, node in self.all_nodes.items():
-                node.user_scale = overrides.get(node_id)
-
         active = {node_id: node for node_id, node in self.all_nodes.items() if not node.is_dormant}
         for node in active.values():
             self._external(node)  # record it before parent_demands is rebuilt below
@@ -395,7 +342,6 @@ class FactoryGraph:
             "building": node.building.name,
             "building_scale": node.building_scale,
             "original_building_scale": node.original_building_scale,
-            "user_scale": node.user_scale,
             "buildings": node.buildings,
             "clocks": [{"count": count, "clock": clock} for count, clock in node.building_clocks or []],
             "power_shards": node.power_shards,

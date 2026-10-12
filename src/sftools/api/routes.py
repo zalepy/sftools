@@ -22,10 +22,8 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
             data.items,
             data.recipes,
             [(d.item, d.rate) for d in plan.demands],
-            round_up=plan.round_up,
             recipes=plan.recipes,
             merges=plan.merges,
-            overrides=plan.overrides,
             splits=plan.splits,
             clocks=plan.clocks,
         )

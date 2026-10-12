@@ -17,7 +17,7 @@ def data():
 
 
 def rod(data, clocks=None, demands=ROD, **kwargs):
-    graph = build_plan(data.items, data.recipes, demands, round_up=True, clocks=clocks, **kwargs)
+    graph = build_plan(data.items, data.recipes, demands, clocks=clocks, **kwargs)
     assert graph.ignored == []
     return graph.get_node("Iron Rod"), graph
 
@@ -76,14 +76,14 @@ def test_power_and_shards(data):
 
 def test_merged_node_uses_the_targets_clocks(data):
     rip_sp, rip_mf = "Smart Plating__Reinforced Iron Plate", "Modular Frame__Reinforced Iron Plate"
-    graph = build_plan(data.items, data.recipes, [("Smart Plating", 2), ("Modular Frame", 2)], round_up=True,
+    graph = build_plan(data.items, data.recipes, [("Smart Plating", 2), ("Modular Frame", 2)],
                        merges={rip_mf: rip_sp}, clocks={rip_sp: all_at(0.5), rip_mf: all_at(2.5)})
     assert graph.get_node(rip_sp).building_clocks == [(2, 0.5)]  # 5 plates/min at 2.5 per building
     assert graph.get_node(rip_mf).building_scale == 0
 
 
 def test_exact_mode_ignores_clocks(data):
-    graph = build_plan(data.items, data.recipes, ROD, round_up=False, clocks={"Iron Rod": all_at(0.5)})
+    graph = build_plan(data.items, data.recipes, ROD, exact=True, clocks={"Iron Rod": all_at(0.5)})
     assert graph.get_node("Iron Rod").building_scale == pytest.approx(9.6)
 
 
@@ -98,11 +98,15 @@ def test_exact_mode_ignores_clocks(data):
 def test_invalid_clocks_are_reported(data, groups, reason):
     with pytest.raises(ValueError, match=reason):
         parse_clock_groups(groups)
-    graph = build_plan(data.items, data.recipes, ROD, round_up=True, clocks={"Iron Rod": groups})
+    graph = build_plan(data.items, data.recipes, ROD, clocks={"Iron Rod": groups})
     assert graph.ignored == [{"kind": "clock", "node_id": "Iron Rod", "reason": reason}]
 
 
-def test_saved_overrides_are_reported_once(data):
-    graph = build_plan(data.items, data.recipes, ROD, round_up=True, overrides={"Iron Rod": 3})
-    assert [(e["kind"], e.get("dropped", False)) for e in graph.ignored] == [("override", False)]
-    assert graph.get_node("Iron Rod").buildings == 10
+def test_a_clock_changes_only_its_own_node(data):
+    """The Rotor's Screws follow the Rotor; the plate's Screws node is separate and stays as it was."""
+    plan = dict(items_map=data.items, recipes_map=data.recipes, demands=[("Smart Plating", 2)])
+    before = build_plan(**plan)
+    after = build_plan(**plan, clocks={"Smart Plating__Rotor": [{"clock": 0.25}]})
+    assert after.get_node("Smart Plating__Rotor").building_clocks == [(2, 0.25)]
+    plate_screws = "Smart Plating__Reinforced Iron Plate__Screws"
+    assert after.get_node(plate_screws).building_clocks == before.get_node(plate_screws).building_clocks

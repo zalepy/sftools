@@ -32,7 +32,6 @@ class ProductionNode:
         self._node_name = node_name
         self._building = building
         self._original_building_scale = building_scale
-        self._user_scale = None
         self._output_item_name = output_item_name
         
         # Base rates (per 1x building/recipe)
@@ -91,9 +90,7 @@ class ProductionNode:
 
     @property
     def building_scale(self):
-        """Building-equivalents at 100%: the sum of each building's clock (fractional without round-up)."""
-        if self._user_scale is not None:
-            return self._user_scale
+        """Building-equivalents at 100%: the sum of each building's clock (fractional in exact mode)."""
         if self._building_clocks is not None:
             return sum(count * clock for count, clock in self._building_clocks)
         return self._original_building_scale
@@ -104,8 +101,6 @@ class ProductionNode:
 
     @property
     def building_clocks(self) -> Optional[List[Tuple[int, float]]]:
-        if self._user_scale is not None:
-            return None
         return self._building_clocks
 
     @property
@@ -128,14 +123,6 @@ class ProductionNode:
     @original_building_scale.setter
     def original_building_scale(self, value: float):
         self._original_building_scale = value
-
-    @property
-    def user_scale(self):
-        return self._user_scale
-
-    @user_scale.setter
-    def user_scale(self, value: float):
-        self._user_scale = value
 
     @property
     def ideal_building_scale(self):
