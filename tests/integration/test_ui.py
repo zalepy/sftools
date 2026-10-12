@@ -182,3 +182,12 @@ def test_mouse_wheel_zooms_in_small_steps(page):
     page.wait(0.3)
     assert page.js(zoom) == pytest.approx(before, rel=0.01)  # and back out
     assert abs(page.node_position(RIP_SP)[0] - x) < 2  # the point under the cursor stays put
+
+
+def test_edges_show_what_each_supplier_provides(page):
+    """A merged plate line needs 60 Screws/min: 24 from the Smart Plating branch, 36 from Modular Frame."""
+    page.open(page.base_url, plan(merges={RIP_MF: RIP_SP}))
+    labels = page.js(f"""document.getElementById('cy')._cyreg.cy.edges('[target = {json.dumps(json.dumps(RIP_SP))[1:-1]}]')
+        .map(e => [e.source().id(), e.data('label')])""")
+    assert dict(labels)[f"{RIP_SP}__Screws"] == "24.00/m"
+    assert dict(labels)[f"{RIP_MF}__Screws"] == "36.00/m"
