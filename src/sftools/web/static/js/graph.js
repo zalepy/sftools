@@ -126,6 +126,11 @@ cy.container().parentElement.addEventListener('wheel', e => {
     });
 }, { capture: true, passive: false });
 
+/** Call after the graph's container changes size (Cytoscape only notices window resizes). */
+export function resizeGraph() {
+    cy.resize();
+}
+
 export function fitView() {
     cy.fit();
     updateZoomSlider();

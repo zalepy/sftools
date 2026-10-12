@@ -57,8 +57,29 @@ h1 {
     gap: 1.5rem;
 }
 
+/* Collapsed: the graph takes the whole width */
+.main-container.panel-collapsed .sidebar {
+    display: none;
+}
+
+.panel-toggle {
+    width: auto;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: 0.25rem 0.6rem;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.panel-toggle:hover {
+    background-color: var(--border);
+    color: var(--text-primary);
+}
+
 .graph-container {
     flex: 1;
+    min-width: 0; /* may shrink below the canvas's last size, e.g. when the side panel opens */
     background-color: var(--bg-color);
     position: relative;
 }

@@ -353,6 +353,42 @@ export function readColorInputs() {
     return colors;
 }
 
+// --- Collapsing the side panel ---
+
+const PANEL_KEY = 'sf_planner_panel_collapsed';
+
+/** Wires the header button; `onResize` runs after the graph area changes width. */
+export function initPanelToggle(onResize) {
+    const button = $('panel-toggle');
+    const container = document.querySelector('.main-container');
+
+    function setCollapsed(collapsed) {
+        container.classList.toggle('panel-collapsed', collapsed);
+        button.setAttribute('aria-expanded', String(!collapsed));
+        button.title = collapsed ? 'Show side panel' : 'Hide side panel';
+        button.innerHTML = collapsed ? '&#x276F;' : '&#x276E;';
+        onResize();
+    }
+
+    let collapsed = false;
+    try {
+        collapsed = localStorage.getItem(PANEL_KEY) === '1';
+    } catch (e) {
+        // Storage unavailable: start expanded
+    }
+    setCollapsed(collapsed);
+
+    button.addEventListener('click', () => {
+        collapsed = !container.classList.contains('panel-collapsed');
+        setCollapsed(collapsed);
+        try {
+            localStorage.setItem(PANEL_KEY, collapsed ? '1' : '0');
+        } catch (e) {
+            // Not remembered; the panel still toggles
+        }
+    });
+}
+
 // --- Toast: a short, non-blocking message ---
 
 let toastTimer = null;
