@@ -6,9 +6,10 @@ import { state } from './state.js';
 const EPSILON = 0.0001;
 const $ = id => document.getElementById(id);
 
-// --- Demand rows ---
+// --- Demand and inbound rows ---
 
 const demandRows = $('demand-rows');
+const inboundRows = $('inbound-rows');
 
 function createRow(item = '', rate = '') {
     const row = document.createElement('div');
@@ -42,35 +43,48 @@ export function addRow() {
     demandRows.appendChild(createRow());
 }
 
+export function addInboundRow() {
+    inboundRows.appendChild(createRow());
+}
+
 // Removing the last row only clears it
-demandRows.addEventListener('click', e => {
+[demandRows, inboundRows].forEach(rows => rows.addEventListener('click', e => {
     const button = e.target.closest('.remove-row');
     if (!button) return;
     const row = button.closest('.demand-row');
-    if (demandRows.children.length > 1) {
+    if (rows.children.length > 1) {
         row.remove();
     } else {
         row.querySelectorAll('input').forEach(i => i.value = '');
     }
-});
+}));
 
-export function getDemands() {
-    const items = [];
-    const rates = [];
-    demandRows.querySelectorAll('.demand-row').forEach(row => {
+/** Filled-in rows as [{item, rate}]. */
+function readRows(rows) {
+    const entries = [];
+    rows.querySelectorAll('.demand-row').forEach(row => {
         const inputs = row.querySelectorAll('input');
         if (inputs[0].value && inputs[1].value) {
-            items.push(inputs[0].value.trim());
-            rates.push(parseFloat(inputs[1].value));
+            entries.push({ item: inputs[0].value.trim(), rate: parseFloat(inputs[1].value) });
         }
     });
-    return { items, rates };
+    return entries;
 }
 
-export function setDemands(items = [], rates = []) {
-    demandRows.replaceChildren();
-    items.forEach((item, i) => demandRows.appendChild(createRow(item, rates[i])));
-    if (items.length === 0) addRow();
+function fillRows(rows, entries) {
+    rows.replaceChildren(...entries.map(({ item, rate }) => createRow(item, rate)));
+    if (entries.length === 0) rows.appendChild(createRow());
+}
+
+/** Demand targets as items and rates, and inbound production as [{item, rate}]. */
+export function getDemands() {
+    const demands = readRows(demandRows);
+    return { items: demands.map(d => d.item), rates: demands.map(d => d.rate), inbound: readRows(inboundRows) };
+}
+
+export function setDemands(items = [], rates = [], inbound = []) {
+    fillRows(demandRows, items.map((item, i) => ({ item, rate: rates[i] })));
+    fillRows(inboundRows, inbound);
 }
 
 
@@ -164,7 +178,8 @@ function renderStats(data) {
     const surplus = buildingScale - idealScale;
 
     const clocks = clocksText(data);
-    $('detail-buildings').innerText = data.is_supplied ? 'None (supplied from outside)'
+    $('detail-buildings').innerText = data.inbound ? `None (inbound, ${parseFloat(data.inbound.rate).toFixed(2)}/min available)`
+        : data.is_supplied ? 'None (supplied from outside)'
         : clocks ? `${buildingsText(data)} (${clocks})` : buildingsText(data);
     $('detail-shards').innerText = data.power_shards || 0;
     $('detail-output-rate').innerText = parseFloat(data.throughput).toFixed(2) + '/min';
@@ -282,13 +297,16 @@ export function showNodeDetails(data) {
     $('clock-last').value = last ? +(last.clock * 100).toFixed(4) : '';
     // No buildings to clock on a node supplied from outside
     $('clock-controls').style.display = data.is_supplied ? 'none' : '';
+    // Inbound production is set in the Inbound Production rows, not on the node
+    $('details-recipe-collapsible').style.display = data.inbound ? 'none' : '';
+    $('split-controls').style.display = data.inbound ? 'none' : '';
 
     // Unmerge is offered on merge targets
     const isMergeTarget = Object.values(state.merges).includes(data.id);
     $('unmerge-btn').style.display = isMergeTarget ? 'block' : 'none';
 
     renderSplit(data);
-    populateRecipeSelector(data.output_item, data.recipe_name || data.name);
+    if (!data.inbound) populateRecipeSelector(data.output_item, data.recipe_name || data.name);
 
     $('node-details').style.display = 'block';
 }

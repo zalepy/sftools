@@ -33,7 +33,7 @@ function updateHistoryButtons() {
 async function showHistoryStep(plan) {
     if (!plan) return;
     const selected = state.selectedNodeId;
-    panel.setDemands(plan.items, plan.rates);
+    panel.setDemands(plan.items, plan.rates, plan.inbound);
     applySaved(plan);
     try {
         renderGraph(await requestPlan());
@@ -55,9 +55,10 @@ const redo = () => showHistoryStep(history.redo());
 async function requestPlan({
     merges = state.merges, recipes = state.recipes, splits = state.splits, clocks = state.clocks
 } = {}) {
-    const { items, rates } = panel.getDemands();
+    const { items, rates, inbound } = panel.getDemands();
     const { nodes, ignored } = await api.calculate({
         demands: items.map((item, i) => ({ item, rate: rates[i] })),
+        inbound,
         recipes,
         merges,
         splits,
@@ -85,7 +86,7 @@ async function recalculate() {
 
 function loadPlan(saved) {
     if (!saved) return;
-    panel.setDemands(saved.items, saved.rates);
+    panel.setDemands(saved.items, saved.rates, saved.inbound);
     applySaved(saved);
     recalculate();
 }
@@ -307,6 +308,7 @@ $('demand-form').addEventListener('submit', e => {
     recalculate();
 });
 $('add-row-btn').addEventListener('click', panel.addRow);
+$('add-inbound-btn').addEventListener('click', panel.addInboundRow);
 $('export-btn').addEventListener('click', () => downloadPlan(currentPlan()));
 $('import-btn').addEventListener('click', () => $('import-input').click());
 $('import-input').addEventListener('change', e => importPlan(e.target));

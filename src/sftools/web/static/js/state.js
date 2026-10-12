@@ -13,11 +13,12 @@ export const state = {
     selectedNodeId: null
 };
 
-/** Plan in its saved/exported shape; `demands` come from the form. */
-export function snapshot({ items, rates }) {
+/** Plan in its saved/exported shape; demands and inbound production come from the form. */
+export function snapshot({ items, rates, inbound }) {
     return {
         items,
         rates,
+        inbound,
         clocks: state.clocks,
         merges: state.merges,
         recipes: state.recipes,

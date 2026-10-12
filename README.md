@@ -10,7 +10,8 @@ Live (UAT): https://sftools.onrender.com/
 * **Merging**: drag one node onto another node with the same output item to combine them; unmerge from the side panel.
 * **Splitting**: split a node into equal parts from the side panel, e.g. to build them in different places. Each part has its own inputs, clocks and recipe. Dragging one part onto another merges them back.
 * **Recipe switching**: pick an alternate recipe for an individual node; nodes running an alternate are labelled "(A)". Inputs both recipes use keep their adjustments and are rescaled; inputs the new recipe doesn't use are removed with their whole branch, and new ones are added.
-* **Supplied from outside**: the last entry in the recipe list marks a node as supplied from outside the plan (e.g. by another factory). It keeps its rate and loses its buildings, inputs and clocks.
+* **Inbound production**: items supplied from outside the plan (e.g. by another factory) at a given rate, listed under the demand targets and applied with Calculate. They cover demand for the item, top down, before anything is produced; a node left with nothing to make disappears with its inputs. An inbound node (sky-blue border) shows how much is used and feeds the nodes that use it.
+* **Supplied from outside**: the last entry in a node's recipe list marks that one node as supplied from outside, whatever its rate. It keeps its rate and loses its buildings, inputs and clocks.
 * **Undo/redo**: the ↶ ↷ buttons in the header, or Ctrl+Z and Ctrl+Y (Ctrl+Shift+Z), step through the plan's changes: merges, splits, recipe switches, clocks, demand edits and imports. Up to 50 steps, kept until the page is reloaded.
 * **Save/load**: the plan is stored in your browser and can be exported to or imported from JSON.
 

@@ -15,6 +15,7 @@ class PlanRequest(BaseModel):
     merges: Dict[str, str] = {}  # source node_id -> target node_id
     splits: Dict[str, int] = {}  # node_id -> number of equal parts
     clocks: Dict[str, List[Dict[str, Any]]] = {}  # node_id -> [{"clock": 1.0}, {"count": 1, "clock": 0.6}]
+    inbound: List[DemandIn] = []  # production supplied from outside the plan, used before producing anything
 
 
 class IgnoredEntry(BaseModel):

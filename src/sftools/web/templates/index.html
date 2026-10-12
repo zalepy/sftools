@@ -49,6 +49,18 @@
                         </div>
                         <button type="button" id="add-row-btn" class="secondary" style="margin-bottom: 0.5rem;">+ Add
                             Item</button>
+
+                        <h3 style="margin-top: 1rem;">Inbound Production</h3>
+                        <div class="hint" style="margin-bottom: 0.5rem;">Items supplied from outside the plan (e.g. another factory). They cover demand for the item, top down, before anything is produced.</div>
+                        <div id="inbound-rows">
+                            <div class="demand-row">
+                                <input type="text" name="items" list="items_list" placeholder="Item">
+                                <input type="number" step="any" name="rates" placeholder="Rate">
+                                <button type="button" class="secondary remove-row" style="width: auto;">✕</button>
+                            </div>
+                        </div>
+                        <button type="button" id="add-inbound-btn" class="secondary" style="margin-bottom: 0.5rem;">+ Add
+                            Inbound</button>
                         <button type="submit" style="margin-bottom: 0.5rem;">Calculate</button>
                         <div style="display: flex; gap: 0.5rem;">
                             <button type="button" id="export-btn" class="secondary">Export JSON</button>
@@ -189,6 +201,7 @@
                     </div>
                     <button type="button" id="unmerge-btn" class="secondary" style="margin-top: 0.5rem; display: none;">Unmerge Node</button>
 
+                    <div id="split-controls">
                     <div class="form-group" style="margin-top: 1rem;">
                         <label for="split-count">Split Into Parts</label>
                         <div style="display: flex; gap: 0.5rem;">
@@ -198,6 +211,7 @@
                         <div class="hint" id="split-hint"></div>
                     </div>
                     <button type="button" id="unsplit-btn" class="secondary" style="display: none;">Unsplit Node</button>
+                    </div>
                 </section>
             </div>
 

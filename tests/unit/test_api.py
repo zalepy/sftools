@@ -248,3 +248,27 @@ def test_merge_into_a_supplied_node_is_supplied_too(client):
     assert [n["id"] for n in rip] == [target] and rip[0]["is_supplied"]
     assert rip[0]["throughput"] == pytest.approx(2 + 3)  # 2 for Smart Plating, 3 for Modular Frame
     assert not any(n["id"].startswith(source + "__") for n in merged)  # the absorbed node's inputs go too
+
+
+def test_inbound_production_covers_demand_top_down(client):
+    """3 plates/min inbound: Smart Plating's 2 first (its branch goes), then 1 of Modular Frame's 3."""
+    body = calculate(client, inbound=[{"item": "Reinforced Iron Plate", "rate": 3}]).json()
+    nodes = {n["id"]: n for n in body["nodes"]}
+    assert "Smart Plating__Reinforced Iron Plate" not in nodes
+    assert not any(node_id.startswith("Smart Plating__Reinforced Iron Plate__") for node_id in nodes)
+    rip_mf = nodes["Modular Frame__Reinforced Iron Plate"]
+    assert rip_mf["parent_demands"] == {"Modular Frame": pytest.approx(2.0)}  # 3 needed, 1 inbound
+
+    inbound = nodes["inbound:Reinforced Iron Plate"]
+    assert inbound["inbound"] == {"rate": 3.0, "used": pytest.approx(3.0)}
+    assert inbound["parent_demands"] == {"Smart Plating": pytest.approx(2.0), "Modular Frame": pytest.approx(1.0)}
+    assert inbound["parents"] == ["Modular Frame", "Smart Plating"]
+    assert "inbound:Reinforced Iron Plate" in nodes["Smart Plating"]["children"]
+
+
+def test_inbound_production_beyond_the_demand_is_left_over(client):
+    body = calculate(client, inbound=[{"item": "Reinforced Iron Plate", "rate": 4},
+                                      {"item": "Reinforced Iron Plate", "rate": 4}]).json()
+    rip = nodes_by_item(body["nodes"], "Reinforced Iron Plate")
+    assert [n["id"] for n in rip] == ["inbound:Reinforced Iron Plate"]  # nothing left to produce
+    assert rip[0]["inbound"] == {"rate": 8.0, "used": pytest.approx(5.0)}
