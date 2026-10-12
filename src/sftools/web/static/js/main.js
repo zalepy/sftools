@@ -4,7 +4,9 @@ import {
     state, snapshot, applySaved, savePlan, loadSavedPlan, downloadPlan, readPlanFile,
     loadSavedColors, saveColors, dropIgnoredEntries
 } from './state.js';
-import { renderGraph, refreshNodeColors, hasNodes, fitView, getNodeData, onNodeSelected, reselectNode, onMergeDrop } from './graph.js';
+import {
+    renderGraph, refreshNodeColors, hasNodes, fitView, resizeGraph, getNodeData, onNodeSelected, reselectNode, onMergeDrop
+} from './graph.js';
 import * as panel from './panel.js';
 
 const $ = id => document.getElementById(id);
@@ -290,6 +292,7 @@ $('save-colors-btn').addEventListener('click', saveColorChanges);
 $('fit-view-btn').addEventListener('click', fitView);
 
 onNodeSelected(panel.showNodeDetails);
+panel.initPanelToggle(resizeGraph);
 onMergeDrop(mergeNodes);
 
 // Module scripts run after the document is parsed. Colors first, so the first render uses them.

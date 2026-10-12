@@ -2,7 +2,7 @@
 
 **Type:** feature · **Priority:** P3 — split into separate tickets when picked up · **Status:** Open
 
-- [ ] Collapsible side panel, to give the graph more room
+- [x] Collapsible side panel, to give the graph more room (done 2026-10-12)
 - [x] "Last building" clock speed: moved to [023](023-last-building-clock-speed.md)
 - [x] Node splitting: done in [021](done/021-node-splitting.md)
 - [ ] "External input" nodes (items supplied from outside the plan)

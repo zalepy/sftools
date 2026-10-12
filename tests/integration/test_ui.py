@@ -245,3 +245,26 @@ def test_switching_away_and_back_starts_a_fresh_branch(page):
     switch_recipe(page, SP_SCREWS, "Screws")
     assert sp_rod in page.node_ids()  # back, on its own
     assert page.saved_plan()["merges"] == {}
+
+
+def test_side_panel_collapses_and_the_graph_takes_the_room(page):
+    page.open(page.base_url, plan())
+    graph_width = "document.getElementById('cy')._cyreg.cy.width()"
+    sidebar_shown = "getComputedStyle(document.getElementById('sidebar')).display !== 'none'"
+    before = page.js(graph_width)
+    assert page.js(sidebar_shown)
+
+    page.js("document.getElementById('panel-toggle').click()")
+    assert not page.js(sidebar_shown)
+    assert page.js(graph_width) > before + 300  # the 350px panel is gone
+    assert page.js("document.getElementById('panel-toggle').getAttribute('aria-expanded')") == "false"
+
+    # Remembered in this browser
+    page.send("Page.reload")
+    page.wait(0.3)
+    page.wait_until("document.readyState === 'complete' && document.querySelectorAll('.color-input').length > 0")
+    assert not page.js(sidebar_shown)
+
+    page.js("document.getElementById('panel-toggle').click()")
+    assert page.js(sidebar_shown)
+    assert page.js(graph_width) == before

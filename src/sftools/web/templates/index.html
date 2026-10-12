@@ -17,6 +17,8 @@
 <body>
     <header>
         <div style="display: flex; align-items: center; gap: 1rem;">
+            <button type="button" id="panel-toggle" class="panel-toggle" aria-controls="sidebar" aria-expanded="true"
+                title="Hide side panel">&#x276E;</button>
             <h1>Satisfactory Planner</h1>
         </div>
         <div class="toggle-switch">
@@ -27,7 +29,7 @@
 
     <div class="main-container">
         <!-- Left Sidebar: Inputs -->
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="tabs">
                 <div class="tab active" data-tab="planner">Planner</div>
                 <div class="tab" data-tab="colors">Colors</div>
