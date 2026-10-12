@@ -69,6 +69,7 @@ Why stateless: on a shared deployment, a single server-side graph would be share
 
 ## Graph model
 
+- **`Recipe`** (a dataclass): `product` (the main product, `output1` in the data), `byproducts` and `ingredients`, each as `(Item, rate per building)`, plus `building` and `type`. `rate_of(item)`, `produces(item)` and `generate_demands` take the item a node makes, since a node can run a recipe for its by-product.
 - **`ProductionNode`**: one recipe run in some number of buildings. It stores base (1×) rates; scaled output, inputs and power are derived from `building_scale`, which is `user_scale` if set and otherwise `original_building_scale`. Base power comes from `Building.power_for(recipe)`; for buildings whose draw depends on the recipe (Particle Accelerator, Quantum Encoder, Converter) it is the midpoint of the listed range. `parent_demands` records how much each parent (or `"External Demand"` for a root) asks for.
 - **`FactoryGraph`** keeps *every* node created for the plan:
   - **Merged** nodes have `absorbed_by` set. Their links move to the target (for the UI view), and `get_ui_data` hides them and lists them in the target's `constituent_ids`. `recalculate` works from the unmerged structure: a group's demand is the sum of its members', and each member's input nodes get that member's share of the group's inputs (see [ALGO.md](ALGO.md)).
