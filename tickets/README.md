@@ -6,13 +6,12 @@
 |---|-------|------|-----|--------|
 | [015](015-external-merge-unmerge-bug.md) | External-demand merge/unmerge bug | bug | P1 | Watch |
 | [018](018-ui-feature-backlog.md) | UI/feature backlog | feature | P3 | Open |
-| [023](023-last-building-clock-speed.md) | Clock speeds per node (replaces building overrides) | feature | P2 | Open |
 | [024](024-byproducts-as-supply.md) | By-products count as supply | feature | P2 | Open |
 | [026](026-undo-redo.md) | Undo and redo of plan changes | feature | P2 | Open |
 | [027](027-optimize-branch.md) | "Optimize branch" with preview | feature | P3 | Open |
 | [028](028-belts-and-pipes.md) | Belt and pipe capacity | feature | P3 | Open |
 
-Suggested next: 023, 026, then 027 (agreed order); 024 and 028 when wanted. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
+Suggested next: 026, then 027 (agreed order); 024 and 028 when wanted. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
 
 ## Done
 
@@ -40,4 +39,5 @@ Moved to [done/](done/).
 | [020](done/020-merge-double-counts-inputs.md) | Merging two nodes double-counts their inputs | bug | P0 | Done |
 | [021](done/021-node-splitting.md) | Node splitting | feature | P3 | Done |
 | [022](done/022-recipe-switch-inputs.md) | Recipe switch: keep shared inputs, drop unused branches | feature | P2 | Done |
+| [023](done/023-clock-speeds.md) | Clock speeds per node (replaces building overrides) | feature | P2 | Done |
 | [025](done/025-exact-recipe-rates.md) | Recipe rates rounded to two decimals | data bug | P2 | Done |

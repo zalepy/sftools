@@ -12,7 +12,7 @@ import * as panel from './panel.js';
 const $ = id => document.getElementById(id);
 
 function currentPlan() {
-    return snapshot(panel.getDemands(), panel.getRoundUp());
+    return snapshot(panel.getDemands());
 }
 
 function save() {
@@ -20,23 +20,24 @@ function save() {
 }
 
 /**
- * Sends the plan (with optional candidate merges/overrides/recipes/splits) and returns the graph nodes.
+ * Sends the plan (with optional candidate merges/recipes/splits/clocks) and returns the graph nodes.
  * Entries the server ignored are dropped from the candidate objects; callers keep them on success.
  */
 async function requestPlan({
-    merges = state.merges, overrides = state.overrides, recipes = state.recipes, splits = state.splits
+    merges = state.merges, overrides = state.overrides, recipes = state.recipes, splits = state.splits,
+    clocks = state.clocks
 } = {}) {
     const { items, rates } = panel.getDemands();
     const { nodes, ignored } = await api.calculate({
         demands: items.map((item, i) => ({ item, rate: rates[i] })),
-        roundUp: panel.getRoundUp(),
         recipes,
         merges,
         overrides,
-        splits
+        splits,
+        clocks
     });
     if (ignored.length) {
-        dropIgnoredEntries(ignored, { merges, overrides, recipes, splits });
+        dropIgnoredEntries(ignored, { merges, overrides, recipes, splits, clocks });
         // Entries on inputs a recipe no longer uses go quietly: that is what the switch (or merge) asked for
         const stale = ignored.filter(entry => !entry.dropped);
         if (stale.length) panel.showPlanNotice(stale);
@@ -58,29 +59,35 @@ async function recalculate() {
 function loadPlan(saved) {
     if (!saved) return;
     panel.setDemands(saved.items, saved.rates);
-    panel.setRoundUp(saved.roundUp ?? true);
     applySaved(saved);
     recalculate();
 }
 
 // --- Node actions ---
 
-function applyOverride() {
+async function setClocks(groups) {
     const nodeId = state.selectedNodeId;
     if (!nodeId) return;
-    const value = panel.getOverrideInput();
-    if (!isNaN(value) && value > 0) {
-        state.overrides[nodeId] = value;
-    } else {
-        delete state.overrides[nodeId];
+    const clocks = { ...state.clocks };
+    if (groups) clocks[nodeId] = groups; else delete clocks[nodeId];
+    try {
+        renderGraph(await requestPlan({ clocks }));
+        state.clocks = clocks;
+        save();
+        reselectNode(nodeId);
+    } catch (e) {
+        console.error("Clock change failed", e);
+        alert(`Clock change failed: ${e.message}`);
     }
-    recalculate();
 }
 
-function clearOverride() {
-    panel.clearOverrideInput();
-    if (state.selectedNodeId) delete state.overrides[state.selectedNodeId];
-    recalculate();
+function applyClocks() {
+    setClocks(panel.getClockInputs());
+}
+
+function clearClocks() {
+    panel.clearClockInputs();
+    setClocks(null);
 }
 
 async function switchRecipe(recipeName) {
@@ -107,8 +114,9 @@ async function mergeNodes(sourceId, targetId) {
     }
     merges[sourceId] = targetId;
 
-    const overrides = { ...state.overrides };
-    delete overrides[sourceId];
+    // The merged node runs on the target's clocks
+    const clocks = { ...state.clocks };
+    delete clocks[sourceId];
 
     // Allowed, but worth a heads-up: the merged node runs the target's recipe
     const source = getNodeData(sourceId);
@@ -116,9 +124,9 @@ async function mergeNodes(sourceId, targetId) {
     const recipesDiffer = source && target && source.recipe_name !== target.recipe_name;
 
     try {
-        renderGraph(await requestPlan({ merges, overrides }));
+        renderGraph(await requestPlan({ merges, clocks }));
         state.merges = merges;
-        state.overrides = overrides;
+        state.clocks = clocks;
         save();
         if (recipesDiffer) {
             panel.showToast(`Merged nodes with different recipes: ${source.recipe_name} into ${target.recipe_name}. The merged node runs ${target.recipe_name}.`);
@@ -180,13 +188,13 @@ async function changeSplit(nodeId, count, selectAfter) {
 
     const splits = filter(state.splits);
     if (count >= 2) splits[nodeId] = count; else delete splits[nodeId];
-    const overrides = filter(state.overrides);
+    const clocks = filter(state.clocks);
     const recipes = filter(state.recipes);
     const merges = Object.fromEntries(Object.entries(state.merges).filter(([id, target]) => keep(id) && keep(target)));
 
     try {
-        renderGraph(await requestPlan({ splits, overrides, recipes, merges }));
-        Object.assign(state, { splits, overrides, recipes, merges });
+        renderGraph(await requestPlan({ splits, clocks, recipes, merges }));
+        Object.assign(state, { splits, clocks, recipes, merges });
         save();
         if (getNodeData(selectAfter)) reselectNode(selectAfter); else panel.hideNodeDetails();
     } catch (e) {
@@ -197,9 +205,9 @@ async function changeSplit(nodeId, count, selectAfter) {
 
 // --- Plan-wide actions ---
 
-function clearOverrides() {
-    if (confirm("Clear all manual scale adjustments?")) {
-        state.overrides = {};
+function clearAllClocks() {
+    if (confirm("Clear all clock speeds? Every node goes back to 100%.")) {
+        state.clocks = {};
         save();
         recalculate();
     }
@@ -275,15 +283,14 @@ $('add-row-btn').addEventListener('click', panel.addRow);
 $('export-btn').addEventListener('click', () => downloadPlan(currentPlan()));
 $('import-btn').addEventListener('click', () => $('import-input').click());
 $('import-input').addEventListener('change', e => importPlan(e.target));
-$('clear-overrides-btn').addEventListener('click', clearOverrides);
+$('clear-clocks-btn').addEventListener('click', clearAllClocks);
 $('clear-merges-btn').addEventListener('click', clearMerges);
-$('round-up-toggle').addEventListener('change', recalculate);
 
-$('apply-override-btn').addEventListener('click', applyOverride);
-$('clear-override-btn').addEventListener('click', clearOverride);
-$('override-scale').addEventListener('keydown', e => {
-    if (e.key === 'Enter') applyOverride();
-});
+$('apply-clocks-btn').addEventListener('click', applyClocks);
+$('clear-clocks-node-btn').addEventListener('click', clearClocks);
+['clock-all', 'clock-last'].forEach(id => $(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') applyClocks();
+}));
 $('unmerge-btn').addEventListener('click', unmergeSelectedNode);
 $('split-btn').addEventListener('click', () => splitSelectedNode(panel.getSplitCount()));
 $('unsplit-btn').addEventListener('click', unsplitSelectedNode);

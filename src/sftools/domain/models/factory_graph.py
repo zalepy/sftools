@@ -17,6 +17,8 @@ class FactoryGraph:
         self._initial_structure: Dict[str, Dict[str, List[str]]] = {}
         self.ignored: List[Dict] = []  # plan entries build_plan could not apply
         self.splits: Dict[str, int] = {}  # node_id -> number of parts (see calculator.split_parts)
+        # node_id -> (clock for the rest, [(count, clock), ...] fixed groups such as the last building)
+        self.clocks: Dict[str, Tuple[float, List[Tuple[int, float]]]] = {}
 
     def add_node(self, node: ProductionNode):
         self.all_nodes[node.id] = node
@@ -183,6 +185,7 @@ class FactoryGraph:
             if rep_of[node_id] != node_id:
                 node.original_building_scale = 0
                 node.ideal_building_scale = 0
+                node.set_clocks(None)
                 node.parent_demands = {}
 
         # 2. Order groups top-down: an edge for every unmerged parent -> child link
@@ -252,20 +255,34 @@ class FactoryGraph:
                 if in_degree[child_id] == 0:
                     queue.append(child_id)
 
-    @staticmethod
-    def _set_scale(node: ProductionNode, required_rate: float, round_up: bool):
+    def _set_scale(self, node: ProductionNode, required_rate: float, round_up: bool):
+        """
+        With round_up, whole buildings: the fixed clock groups (e.g. the last building at 60%) plus as many
+        buildings at the node's clock as the rest of the demand needs, rounded up. The count is never set
+        directly; it follows the demand and the clocks (ticket 023). Without round_up, the exact fractional
+        scale (used by tests to check that every item balances).
+        """
         if node.base_output_rate <= 0:
             node.original_building_scale = 0
             node.ideal_building_scale = 0
+            node.set_clocks([] if round_up else None)
             return
         base_scale = required_rate / node.base_output_rate
-        if round_up:
-            node.original_building_scale = math.ceil(base_scale - 0.00001)
-            if node.original_building_scale == 0 and base_scale > 0:
-                node.original_building_scale = 1
-        else:
-            node.original_building_scale = base_scale
         node.ideal_building_scale = base_scale
+        if not round_up:
+            node.original_building_scale = base_scale
+            node.set_clocks(None)
+            return
+        if base_scale <= 0:
+            node.original_building_scale = 0
+            node.set_clocks([])
+            return
+        rest_clock, fixed = self.clocks.get(node.id, (1.0, []))
+        rest_scale = base_scale - sum(count * clock for count, clock in fixed)
+        rest_count = max(0, math.ceil(rest_scale / rest_clock - 0.00001))
+        groups = [(rest_count, rest_clock)] + fixed
+        node.set_clocks(groups)
+        node.original_building_scale = sum(count * clock for count, clock in groups)
 
     def _representative(self, node: ProductionNode, active: Dict[str, ProductionNode]) -> ProductionNode:
         """The merge target a node runs as (following chains of merges), or the node itself."""
@@ -379,6 +396,9 @@ class FactoryGraph:
             "building_scale": node.building_scale,
             "original_building_scale": node.original_building_scale,
             "user_scale": node.user_scale,
+            "buildings": node.buildings,
+            "clocks": [{"count": count, "clock": clock} for count, clock in node.building_clocks or []],
+            "power_shards": node.power_shards,
             "ideal_building_scale": node.ideal_building_scale,
             "throughput": node.scaled_output,
             "power": node.scaled_power,

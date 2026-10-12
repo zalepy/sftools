@@ -61,7 +61,7 @@ const cy = cytoscape({
             }
         },
         {
-            selector: '.overridden',
+            selector: '.clocked',
             style: {
                 'border-color': '#22d3ee',
                 'border-style': 'dashed'
@@ -163,6 +163,18 @@ function indicatorImage(node) {
     return `data:image/svg+xml;base64,${btoa(svg)}`;
 }
 
+/** "10×", or "8 × 100% + 1 × 200%" when any building runs at another clock. */
+export function clocksText(node, separator = ' × ') {
+    const groups = (node.clocks || []).filter(g => g.count > 0);
+    if (groups.length === 0 || groups.every(g => g.clock === 1)) return '';
+    return groups.map(g => `${g.count}${separator}${+(g.clock * 100).toFixed(2)}%`).join(' + ');
+}
+
+/** Number of buildings: whole with clocks, otherwise the fractional scale. */
+export function buildingsText(node) {
+    return node.clocks && node.clocks.length ? `${node.buildings}` : parseFloat(node.building_scale).toFixed(2);
+}
+
 export function renderGraph(nodesData) {
     if (!Array.isArray(nodesData)) {
         console.warn("renderGraph called with invalid nodesData", nodesData);
@@ -175,7 +187,11 @@ export function renderGraph(nodesData) {
         const indicator = indicatorImage(node);
         const part = node.split ? ` [${node.split.part}/${node.split.count}]` : '';
         const alternate = node.is_alternate ? ' (A)' : '';
-        const label = `${node.output_item}${alternate}${part}\n${parseFloat(node.throughput).toFixed(2)}/m\n(${parseFloat(node.building_scale).toFixed(2)}x ${node.building})`;
+        // A fourth line only when some building runs at another clock than 100%
+        const clocks = clocksText(node, '×');
+        const shards = node.power_shards ? ` · ${node.power_shards} shards` : '';
+        const clockLine = clocks || shards ? `\n${clocks}${shards}` : '';
+        const label = `${node.output_item}${alternate}${part}\n${parseFloat(node.throughput).toFixed(2)}/m\n(${buildingsText(node)}× ${node.building})${clockLine}`;
         elements.push({
             group: 'nodes',
             data: {
@@ -185,7 +201,7 @@ export function renderGraph(nodesData) {
                 backgroundColor: colorFor(node.output_item),
                 ...(indicator && { backgroundImage: indicator })
             },
-            classes: state.overrides[node.id] ? 'overridden' : ''
+            classes: state.clocks[node.id] ? 'clocked' : ''
         });
     });
 

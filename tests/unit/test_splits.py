@@ -89,10 +89,12 @@ def test_split_below_a_recipe_switch(data):
     assert_balanced(graph)
 
 
-def test_part_one_keeps_the_override_and_each_part_has_its_own(data):
-    graph = plan(data, splits={RIP_SP: 2}, overrides={RIP_SP: 2, f"{RIP_SP}~2": 0.5})
-    assert graph.get_node(RIP_SP).building_scale == 2
-    assert graph.get_node(f"{RIP_SP}~2").building_scale == 0.5
+def test_part_one_keeps_the_clocks_and_each_part_has_its_own(data):
+    graph = build_plan(data.items, data.recipes, DEMANDS, round_up=True, splits={RIP_SP: 2},
+                       clocks={RIP_SP: [{"clock": 2.0}], f"{RIP_SP}~2": [{"clock": 0.5}]})
+    assert graph.ignored == []
+    assert graph.get_node(RIP_SP).building_clocks == [(1, 2.0)]
+    assert graph.get_node(f"{RIP_SP}~2").building_clocks == [(1, 0.5)]
 
 
 def test_merging_the_parts_back(data):

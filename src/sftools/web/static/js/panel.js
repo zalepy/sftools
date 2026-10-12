@@ -1,6 +1,6 @@
 // Sidebar: demand rows, selected-node details, recipe picker, colors tab and the plan notice.
 import { fetchRecipes } from './api.js';
-import { getNodeData } from './graph.js';
+import { getNodeData, clocksText, buildingsText } from './graph.js';
 import { state } from './state.js';
 
 const EPSILON = 0.0001;
@@ -73,13 +73,6 @@ export function setDemands(items = [], rates = []) {
     if (items.length === 0) addRow();
 }
 
-export function getRoundUp() {
-    return $('round-up-toggle').checked;
-}
-
-export function setRoundUp(value) {
-    $('round-up-toggle').checked = value;
-}
 
 // --- Selected node ---
 
@@ -170,7 +163,9 @@ function renderStats(data) {
     const idealScale = parseFloat(data.ideal_building_scale);
     const surplus = buildingScale - idealScale;
 
-    $('detail-scale').innerText = buildingScale.toFixed(2) + 'x';
+    const clocks = clocksText(data);
+    $('detail-buildings').innerText = clocks ? `${buildingsText(data)} (${clocks})` : buildingsText(data);
+    $('detail-shards').innerText = data.power_shards || 0;
     $('detail-output-rate').innerText = parseFloat(data.throughput).toFixed(2) + '/min';
     $('detail-power').innerText = parseFloat(data.power).toFixed(2) + ' MW';
 
@@ -186,8 +181,9 @@ function renderStats(data) {
         if (surplus > 1 - EPSILON) surplusEl.style.color = 'var(--status-excessive)';
     }
 
-    // Clock speed per building to run at exactly the needed rate
-    $('detail-clock').innerText = ((idealScale / buildingScale) * 100).toFixed(1) + '%';
+    // Clock at which this many buildings would make exactly what's needed
+    const buildings = parseFloat(data.buildings) || buildingScale;
+    $('detail-clock').innerText = ((idealScale / buildings) * 100).toFixed(1) + '%';
 }
 
 // Each input, broken down by which consumer of this node's output it is for
@@ -273,9 +269,12 @@ export function showNodeDetails(data) {
     renderStats(data);
     renderScaledInputs(data);
 
-    // The override box shows the override if there is one, otherwise the current scale
-    const override = state.overrides[data.id];
-    $('override-scale').value = override ? override : parseFloat(data.building_scale).toFixed(4);
+    // The clock boxes show the node's own settings; empty means the default
+    const groups = state.clocks[data.id] || [];
+    const rest = groups.find(g => g.count === undefined);
+    const last = groups.find(g => g.count !== undefined);
+    $('clock-all').value = rest && rest.clock !== 1 ? +(rest.clock * 100).toFixed(4) : '';
+    $('clock-last').value = last ? +(last.clock * 100).toFixed(4) : '';
 
     // Unmerge is offered on merge targets
     const isMergeTarget = Object.values(state.merges).includes(data.id);
@@ -297,8 +296,8 @@ function renderSplit(data) {
     $('split-hint').textContent = merged
         ? 'Unmerge first to split this node.'
         : data.split
-            ? `Part ${data.split.part} of ${data.split.count}. Each part has its own inputs, override and recipe.`
-            : 'Equal parts, each with its own inputs, override and recipe.';
+            ? `Part ${data.split.part} of ${data.split.count}. Each part has its own inputs, clocks and recipe.`
+            : 'Equal parts, each with its own inputs, clocks and recipe.';
     $('unsplit-btn').style.display = data.split ? 'block' : 'none';
 }
 
@@ -311,12 +310,19 @@ export function hideNodeDetails() {
     state.selectedNodeId = null;
 }
 
-export function getOverrideInput() {
-    return parseFloat($('override-scale').value);
+/** Clock groups from the boxes (percent), or null for the default (all at 100%). */
+export function getClockInputs() {
+    const all = parseFloat($('clock-all').value);
+    const last = parseFloat($('clock-last').value);
+    const allClock = isNaN(all) ? 1 : all / 100;
+    const groups = [{ clock: allClock }];
+    if (!isNaN(last) && last / 100 !== allClock) groups.push({ count: 1, clock: last / 100 });
+    return groups.length === 1 && allClock === 1 ? null : groups;
 }
 
-export function clearOverrideInput() {
-    $('override-scale').value = '';
+export function clearClockInputs() {
+    $('clock-all').value = '';
+    $('clock-last').value = '';
 }
 
 // --- Colors tab ---

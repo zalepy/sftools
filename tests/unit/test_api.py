@@ -39,15 +39,17 @@ def test_unknown_item_is_rejected(client):
     assert "Unobtainium" in response.json()["detail"]
 
 
-def test_merges_and_overrides_are_replayed(client):
+def test_merges_and_clocks_are_replayed(client):
     nodes = calculate(client).json()["nodes"]
     target, source = sorted(n["id"] for n in nodes_by_item(nodes, "Reinforced Iron Plate"))
 
-    merged = calculate(client, merges={source: target}, overrides={target: 3}).json()["nodes"]
+    # 5 plates/min merged: one Assembler; at 50% it takes two
+    merged = calculate(client, round_up=True, merges={source: target}, clocks={target: [{"clock": 0.5}]}).json()["nodes"]
     rip = nodes_by_item(merged, "Reinforced Iron Plate")
     assert [n["id"] for n in rip] == [target]
     assert rip[0]["constituent_ids"] == [source]
-    assert rip[0]["building_scale"] == 3
+    assert rip[0]["buildings"] == 2
+    assert rip[0]["clocks"] == [{"count": 2, "clock": 0.5}]
 
 
 def test_merge_of_different_items_is_rejected(client):
@@ -105,7 +107,9 @@ def test_stale_entries_are_reported_not_rejected(client):
         client,
         recipes={"root__Gone": "Iron Plate", rip: "No Such Recipe", nodes[0]["id"]: "Iron Plate"},
         merges={"root__Gone": rip},
-        overrides={"root__Gone": 3, rip: 2},
+        clocks={"root__Gone": [{"clock": 1.5}], rip: [{"clock": 2.0}]},
+        overrides={rip: 2},
+        round_up=True,
     )
     assert response.status_code == 200
     body = response.json()
@@ -115,10 +119,11 @@ def test_stale_entries_are_reported_not_rejected(client):
         ("recipe", rip, "unknown recipe 'No Such Recipe'"),
         ("recipe", nodes[0]["id"], f"'Iron Plate' does not produce {nodes[0]['output_item']}"),
         ("merge", "root__Gone", "node not in plan: root__Gone"),
-        ("override", "root__Gone", "node not in plan"),
+        ("clock", "root__Gone", "node not in plan"),
+        ("override", rip, "building counts are no longer set directly; set clock speeds instead"),
     ])
-    # The valid override still applies
-    assert next(n for n in body["nodes"] if n["id"] == rip)["building_scale"] == 2
+    # The valid clock still applies
+    assert next(n for n in body["nodes"] if n["id"] == rip)["clocks"] == [{"count": 1, "clock": 2.0}]
 
 
 SP_SCREWS = "Smart Plating__Reinforced Iron Plate__Screws"
@@ -204,12 +209,13 @@ def test_merged_node_lists_constituent_derivations(client):
 
 def test_splits_are_replayed(client):
     rip = "Smart Plating__Reinforced Iron Plate"
-    body = calculate(client, splits={rip: 2}, overrides={f"{rip}~2": 0.5}).json()
+    body = calculate(client, round_up=True, splits={rip: 2}, clocks={f"{rip}~2": [{"clock": 0.5}]}).json()
     assert body["ignored"] == []
     parts = {n["id"]: n for n in nodes_by_item(body["nodes"], "Reinforced Iron Plate") if n["id"].startswith(rip)}
     assert sorted(parts) == [rip, f"{rip}~2"]
     assert parts[f"{rip}~2"]["split"] == {"of": rip, "part": 2, "count": 2}
-    assert parts[f"{rip}~2"]["building_scale"] == 0.5
+    assert parts[f"{rip}~2"]["clocks"] == [{"count": 1, "clock": 0.5}]
+    assert parts[rip]["clocks"] == [{"count": 1, "clock": 1.0}]
     assert parts[rip]["split"]["part"] == 1
 
 

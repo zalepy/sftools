@@ -6,9 +6,9 @@ Live (UAT): https://sftools.onrender.com/
 
 ## Features
 * **Graph visualization**: Cytoscape graph of the production chain. The side panel can be hidden (button left of the title) to give the graph the whole width; the choice is remembered in the browser.
-* **Scale overrides**: set the building count for any node; the change propagates downstream.
+* **Clock speeds**: set a node's clock for all its buildings, and optionally a different one for the last building. The number of buildings is always calculated from the demand and the clocks, and the inputs follow. Power accounts for the clocks, and nodes show the power shards they need.
 * **Merging**: drag one node onto another node with the same output item to combine them; unmerge from the side panel.
-* **Splitting**: split a node into equal parts from the side panel, e.g. to build them in different places. Each part has its own inputs, override and recipe. Dragging one part onto another merges them back.
+* **Splitting**: split a node into equal parts from the side panel, e.g. to build them in different places. Each part has its own inputs, clocks and recipe. Dragging one part onto another merges them back.
 * **Recipe switching**: pick an alternate recipe for an individual node; nodes running an alternate are labelled "(A)". Inputs both recipes use keep their adjustments and are rescaled; inputs the new recipe doesn't use are removed with their whole branch, and new ones are added.
 * **Save/load**: the plan is stored in your browser and can be exported to or imported from JSON.
 
