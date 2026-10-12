@@ -50,12 +50,13 @@ The browser owns the **plan** and sends all of it on every change:
   "round_up":  true,
   "recipes":   {"<node_id>": "<recipe name>"},
   "merges":    {"<source node_id>": "<target node_id>"},
-  "overrides": {"<node_id>": 3}
+  "overrides": {"<node_id>": 3},
+  "splits":    {"<node_id>": 2}
 }
 ```
 
 `build_plan` replays the plan in a fixed order:
-1. **Expand demands** (`calculate_demands`): breadth-first expansion into a tree of `ProductionNode`s, using `default_recipe_for(item)` for each item (see [ALGO.md](ALGO.md)). A node produces one item, which can be either the recipe's main product (`output1` in the data) or its by-product.
+1. **Expand demands** (`calculate_demands`): breadth-first expansion into a tree of `ProductionNode`s, using `default_recipe_for(item)` for each item (see [ALGO.md](ALGO.md)). A node produces one item, which can be either the recipe's main product (`output1` in the data) or its by-product. **Splits** apply here, as nodes are created (`split_parts`): a node split into k parts becomes k nodes with an equal share of its demand, each expanded into its own inputs. Nodes created by a recipe switch (step 2) are split the same way.
 2. **Recipe switches**, parents first. A child's ID extends its parent's ID, so sorting by ID length is enough. A switch is skipped if its node doesn't exist, is dormant (cut off by an upstream switch), or the recipe can't be resolved.
 3. **Merges**: `FactoryGraph.apply_merge` marks the source as absorbed by the target. The merged node is one shared set of buildings; each branch keeps its own inputs, sized to its share of the merged node's demand.
 4. **Overrides + propagation**: `FactoryGraph.recalculate` runs Kahn's algorithm (see [ALGO.md](ALGO.md)).
@@ -81,10 +82,11 @@ Node IDs are item paths (`root_node_ids`, `child_node_id` in `engine/calculator.
 - **Roots** are keyed by item: `Smart Plating`. A second demand row for the same item gets `Smart Plating#2`.
 - **Children** extend the parent's ID with their item: `Smart Plating__Reinforced Iron Plate__Screws`.
 - When the parent runs a recipe other than its default, that recipe is part of the child's ID: `Smart Plating__Reinforced Iron Plate__Alternate: Bolted Iron Plate>Screws`.
+- **Parts of a split node**: part 1 keeps the node's ID, so its override, recipe and merges stay with it. The other parts get `~2`, `~3`, ...: `Smart Plating__Reinforced Iron Plate~2`, whose inputs are `Smart Plating__Reinforced Iron Plate~2__Screws` and so on. Each part is an ordinary node with its own override and recipe, and can be merged. A merged node can't be split (the UI asks to unmerge first). When parts are removed, the UI drops the entries that belonged to them.
 
 A node's ID never depends on its own recipe, only on its ancestors' recipes. Switching a node's recipe therefore gives its inputs new IDs: adjustments below the switch reset, and the old ones apply again when the node is switched back. Merges, overrides and recipe switches refer to nodes by these IDs, so they stay valid as long as nothing above them changes (see `tickets/done/016`).
 
-Names can't contain `__`, `>` or `#`; `tests/unit/test_graph_state.py` covers the scheme.
+Names can't contain `__`, `>`, `#` or `~`; `tests/unit/test_graph_state.py` covers the scheme.
 
 ## API
 

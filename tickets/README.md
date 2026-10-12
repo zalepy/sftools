@@ -33,3 +33,4 @@ Moved to [done/](done/).
 | [017](done/017-frontend-split.md) | Split index.html | refactor | P3 | Done |
 | [019](done/019-scraped-data-gaps.md) | Gaps in the scraped game data | data | P2 | Done |
 | [020](done/020-merge-double-counts-inputs.md) | Merging two nodes double-counts their inputs | bug | P0 | Done |
+| [021](done/021-node-splitting.md) | Node splitting | feature | P3 | Done |

@@ -15,11 +15,12 @@ class PlanRequest(BaseModel):
     recipes: Dict[str, str] = {}  # node_id -> recipe name
     merges: Dict[str, str] = {}  # source node_id -> target node_id
     overrides: Dict[str, float] = {}  # node_id -> building scale
+    splits: Dict[str, int] = {}  # node_id -> number of equal parts
 
 
 class IgnoredEntry(BaseModel):
     """A plan entry that no longer matches the graph (usually a stale saved plan)."""
-    kind: Literal["recipe", "merge", "override"]
+    kind: Literal["recipe", "merge", "override", "split"]
     node_id: str
     reason: str
 

@@ -43,7 +43,7 @@ The `recalculate` method updates the throughput and building counts across the g
 2.  **Order**: groups are processed top-down (Kahn's algorithm) over the edges `group(original parent) -> group(node)`.
 3.  **Demand per member**: for each member of a group, its demand is
     - its external demand (root nodes), plus
-    - its share of what its original parent's group needs of its item. The parent group's need for an item is split between the input nodes for that item under the group's members, in proportion to each member's share of the group's demand. Members without an input node for the item (e.g. the group runs a different recipe) leave their share to the members that have one.
+    - its share of what its original parent's group needs of its item. The parent group's need for an item is split between the input nodes for that item under the group's members, in proportion to each member's share of the group's demand. Members without an input node for the item (e.g. the group runs a different recipe) leave their share to the members that have one. The parts of a split input node divide their parent's share equally.
 4.  **Scale**: a group's demand is the sum of its members' demands. Its target's `original_building_scale` is that demand / output rate (rounded up per building when `round_up` is on).
 5.  **Overrides**: if a node has a `user_scale`, that value is used for `building_scale` and drives the inputs below it. Overrides for merged groups are applied to the target node, and the input split keeps the members' demand shares.
 

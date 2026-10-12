@@ -8,6 +8,7 @@ export const state = {
     overrides: {},      // node_id -> building scale
     merges: {},         // absorbed node_id -> target node_id
     recipes: {},        // node_id -> recipe name
+    splits: {},         // node_id -> number of parts
     colors: {},         // item -> color
     selectedNodeId: null
 };
@@ -20,6 +21,7 @@ export function snapshot({ items, rates }, roundUp) {
         overrides: state.overrides,
         merges: state.merges,
         recipes: state.recipes,
+        splits: state.splits,
         roundUp
     };
 }
@@ -28,6 +30,7 @@ export function applySaved(saved) {
     state.overrides = saved.overrides || {};
     state.merges = saved.merges || {};
     state.recipes = saved.recipes || {};
+    state.splits = saved.splits || {};
 }
 
 export function savePlan(plan) {
@@ -95,8 +98,8 @@ export function saveColors(colors) {
 
 // Entries the server could not apply (usually from an older saved plan) are removed from the
 // plan that was sent; callers save it after a successful request.
-export function dropIgnoredEntries(ignored, { merges, overrides, recipes }) {
-    const byKind = { recipe: recipes, merge: merges, override: overrides };
+export function dropIgnoredEntries(ignored, { merges, overrides, recipes, splits }) {
+    const byKind = { recipe: recipes, merge: merges, override: overrides, split: splits };
     ignored.forEach(entry => {
         const target = byKind[entry.kind];
         if (target) delete target[entry.node_id];

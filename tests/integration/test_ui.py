@@ -122,3 +122,45 @@ def test_colors_are_saved_in_the_browser(page):
     page.wait_until("localStorage.getItem('sf_planner_colors') !== null")
     assert page.js(f"JSON.parse(localStorage.getItem('sf_planner_colors'))[{json.dumps(item)}]") == "#123456"
     assert page.dialogs == ["Colors saved in this browser."]
+
+
+def test_split_set_parts_and_unsplit(page):
+    page.open(page.base_url, plan())
+    page.select_node(RIP_SP)
+    assert page.js("document.getElementById('split-btn').textContent") == "Split"
+    page.js("document.getElementById('split-count').value = '3'; document.getElementById('split-btn').click()")
+    page.wait_until(f"JSON.parse(localStorage.getItem('sf_planner_state')).splits[{json.dumps(RIP_SP)}] === 3")
+    assert {f"{RIP_SP}~2", f"{RIP_SP}~3", f"{RIP_SP}~3__Screws"} <= set(page.node_ids())
+    assert page.js(f"document.getElementById('cy')._cyreg.cy.getElementById({json.dumps(RIP_SP + '~3')}).data('label')"
+                   ).startswith("Reinforced Iron Plate [3/3]")
+
+    # A part has its own override; reducing the number of parts drops what belonged to removed parts
+    page.select_node(f"{RIP_SP}~3")
+    assert "Part 3 of 3" in page.js("document.getElementById('split-hint').textContent")
+    page.js("document.getElementById('override-scale').value = '2'; document.getElementById('apply-override-btn').click()")
+    page.wait_until(f"JSON.parse(localStorage.getItem('sf_planner_state')).overrides[{json.dumps(RIP_SP + '~3')}] === 2")
+    page.select_node(f"{RIP_SP}~2")
+    page.js("document.getElementById('split-count').value = '2'; document.getElementById('split-btn').click()")
+    page.wait_until(f"JSON.parse(localStorage.getItem('sf_planner_state')).splits[{json.dumps(RIP_SP)}] === 2")
+    assert page.saved_plan()["overrides"] == {}
+    assert f"{RIP_SP}~3" not in page.node_ids()
+    assert page.js("document.getElementById('detail-id').textContent") == f"{RIP_SP}~2"
+
+    page.js("document.getElementById('unsplit-btn').click()")
+    page.wait_until("Object.keys(JSON.parse(localStorage.getItem('sf_planner_state')).splits).length === 0")
+    assert f"{RIP_SP}~2" not in page.node_ids()
+    assert page.js("document.getElementById('detail-id').textContent") == RIP_SP
+
+
+def test_merged_node_cannot_be_split(page):
+    page.open(page.base_url, plan(merges={RIP_MF: RIP_SP}))
+    page.select_node(RIP_SP)
+    assert page.js("document.getElementById('split-btn').disabled")
+    assert "Unmerge first" in page.js("document.getElementById('split-hint').textContent")
+
+
+def test_dragging_a_part_onto_another_merges_them(page):
+    page.open(page.base_url, plan(splits={RIP_SP: 2}))
+    page.drag(page.node_position(f"{RIP_SP}~2"), page.node_position(RIP_SP))
+    page.wait_until(f"JSON.parse(localStorage.getItem('sf_planner_state')).merges[{json.dumps(RIP_SP + '~2')}] !== undefined")
+    assert page.saved_plan()["merges"] == {f"{RIP_SP}~2": RIP_SP}

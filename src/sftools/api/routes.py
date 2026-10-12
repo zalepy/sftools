@@ -26,6 +26,7 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
             recipes=plan.recipes,
             merges=plan.merges,
             overrides=plan.overrides,
+            splits=plan.splits,
         )
     except ValueError as ex:
         # e.g. merging nodes with different output items
