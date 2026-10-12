@@ -140,6 +140,14 @@
                     <details id="details-tech-collapsible">
                         <summary>Technical Info</summary>
                         <div class="details-content">
+                            <div class="stat-row" style="flex-direction: column; align-items: flex-start;">
+                                <span class="stat-label">Derivation (demand → this node):</span>
+                                <ol class="derivation" id="detail-derivation"></ol>
+                            </div>
+                            <div class="stat-row" id="detail-merged-row" style="flex-direction: column; align-items: flex-start; display: none;">
+                                <span class="stat-label">Merged from:</span>
+                                <div id="detail-merged"></div>
+                            </div>
                             <div class="stat-row">
                                 <span class="stat-label">Node ID:</span>
                                 <span class="stat-value" style="font-family: monospace; font-size: 0.75rem;"

@@ -74,7 +74,15 @@ Why stateless: on a shared deployment, a single server-side graph would be share
   - `recalculate(overrides)` replaces all overrides when given a dict (`{}` clears them) and keeps the current ones when given `None`.
 
 ### Node identity
-Node IDs are paths: `root__<Recipe>` for roots and `<parent_id>__[r]<parent recipe>__<Recipe>` below them. Merges, overrides and recipe switches refer to nodes by these IDs, so they only stay valid while everything upstream is unchanged. See `tickets/016`.
+Node IDs are item paths (`root_node_ids`, `child_node_id` in `engine/calculator.py`):
+
+- **Roots** are keyed by item: `Smart Plating`. A second demand row for the same item gets `Smart Plating#2`.
+- **Children** extend the parent's ID with their item: `Smart Plating__Reinforced Iron Plate__Screws`.
+- When the parent runs a recipe other than its default, that recipe is part of the child's ID: `Smart Plating__Reinforced Iron Plate__Alternate: Bolted Iron Plate>Screws`.
+
+A node's ID never depends on its own recipe, only on its ancestors' recipes. Switching a node's recipe therefore gives its inputs new IDs: adjustments below the switch reset, and the old ones apply again when the node is switched back. Merges, overrides and recipe switches refer to nodes by these IDs, so they stay valid as long as nothing above them changes (see `tickets/done/016`).
+
+Names can't contain `__`, `>` or `#`; `tests/test_graph_state.py` covers the scheme.
 
 ## API
 

@@ -38,24 +38,46 @@ def default_recipe_for(item: Item) -> Optional[Recipe]:
     return min(candidates, key=rank)[1]
 
 
+def root_node_ids(item_names: List[str]) -> List[str]:
+    """Root nodes are keyed by item; a repeated item gets '#2', '#3', ... in order."""
+    seen: Dict[str, int] = {}
+    ids = []
+    for name in item_names:
+        seen[name] = seen.get(name, 0) + 1
+        ids.append(name if seen[name] == 1 else f"{name}#{seen[name]}")
+    return ids
+
+
+def child_node_id(parent: ProductionNode, item_name: str, items_map: Dict) -> str:
+    """
+    '<parent id>__<item>'. When the parent runs a recipe other than its default, the recipe is part
+    of the child's ID ('<parent id>__<recipe>><item>'), so each recipe gets its own input nodes:
+    adjustments made under one recipe stay with it and come back when the parent is switched back.
+    """
+    if parent.recipe is not None and parent.recipe is not default_recipe_for(items_map[parent.output_item_name]):
+        return f"{parent.id}__{parent.recipe.name}>{item_name}"
+    return f"{parent.id}__{item_name}"
+
+
 def calculate_demands(items_map, root_demands_list: List[Demand], scale_overrides: Dict[str, float] = None, round_up: bool = True) -> FactoryGraph:
     if scale_overrides is None:
         scale_overrides = {}
 
     graph = FactoryGraph()
     
-    # Queue: (Demand, ParentNodePath, ParentNode, items produced by the ancestors)
-    # ParentNode can be None for root
+    # Queue: (Demand, NodeId, ParentNode, items produced by the ancestors)
+    # ParentNode is None for roots
     queue: List[Tuple[Demand, str, Optional[ProductionNode], frozenset]] = []
     
-    for d in root_demands_list:
-        queue.append((d, "root", None, frozenset()))
+    root_ids = root_node_ids([d.item.name for d in root_demands_list])
+    for d, root_id in zip(root_demands_list, root_ids):
+        queue.append((d, root_id, None, frozenset()))
 
     processed_count = 0
     max_nodes = 5000 # Safety brake
 
     while queue and processed_count < max_nodes:
-        current_demand, parent_path, parent_node, ancestors = queue.pop(0)
+        current_demand, node_id, parent_node, ancestors = queue.pop(0)
         
         if current_demand.type == DemandType.SINK:
             # Sinks are terminal for this logic, we don't produce them
@@ -72,14 +94,6 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
         if recipe is None:
             continue
 
-        # Determine Node ID
-        # Format: parent_path__[r]ParentRecipeName__RecipeName
-        # For root nodes, parent_path is "root" and there is no ParentRecipeName
-        if parent_node and parent_node.recipe:
-            node_id = f"{parent_path}__[r]{parent_node.recipe.name}__{recipe.name}"
-        else:
-            node_id = f"{parent_path}__{recipe.name}"
-        
         # Calculate Base Scaler from demand rate
         target_rate = current_demand.rate
         base_scaler = target_rate / recipe.rate_of(item.name)
@@ -116,7 +130,7 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
         
         # Enqueue Sub-Demands
         for sd in sub_demands:
-            queue.append((sd, node_id, node, ancestors | {item.name}))
+            queue.append((sd, child_node_id(node, sd.item.name, items_map), node, ancestors | {item.name}))
             
         processed_count += 1
 
@@ -148,13 +162,13 @@ def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_m
     # Use effective scale for initial sub-demands
     sub_demands = parent_node.recipe.generate_demands(parent_node.building_scale, parent_node.output_item_name)
     for sd in sub_demands:
-        queue.append((sd, parent_node.id, parent_node, ancestors))
+        queue.append((sd, child_node_id(parent_node, sd.item.name, items_map), parent_node, ancestors))
 
     processed_count = 0
     max_nodes = 1000 # Smaller brake for subtree
 
     while queue and processed_count < max_nodes:
-        current_demand, parent_path, p_node, ancestors = queue.pop(0)
+        current_demand, node_id, p_node, ancestors = queue.pop(0)
         
         if current_demand.type == DemandType.SINK:
             continue
@@ -169,9 +183,6 @@ def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_m
         if recipe is None:
             continue
 
-        # Determine Node ID using the isolated scheme
-        node_id = f"{parent_path}__[r]{p_node.recipe.name}__{recipe.name}"
-        
         # Check if node already exists
         existing_node = graph.get_node(node_id)
         if existing_node:
@@ -199,7 +210,7 @@ def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_m
 
         # Recurse
         for sd in recipe.generate_demands(scaler, item.name):
-            queue.append((sd, node_id, node, ancestors | {item.name}))
+            queue.append((sd, child_node_id(node, sd.item.name, items_map), node, ancestors | {item.name}))
             
         processed_count += 1
 
@@ -237,19 +248,23 @@ def switch_recipe_in_graph(graph: FactoryGraph, node_id: str, new_recipe: Recipe
     graph.recalculate(round_up=round_up)
 
 
-def _on_inactive_branch(graph: FactoryGraph, node_id: str) -> bool:
+def _on_inactive_branch(graph: FactoryGraph, node_id: str, items_map: Dict) -> bool:
     """
-    Node IDs are '<parent_id>__[r]<parent recipe>__<recipe>'. A missing node whose closest existing
-    ancestor now runs a different recipe was created under that ancestor's other recipe: the entry
-    is not stale, it applies again if the user switches the ancestor back.
+    A missing node whose closest existing ancestor now runs a different recipe than the one in the ID
+    (see child_node_id) was created under that ancestor's other recipe: the entry is not stale, it
+    applies again if the user switches the ancestor back.
     """
-    marker = '__[r]'
     end = len(node_id)
-    while (end := node_id.rfind(marker, 0, end)) != -1:
+    while (end := node_id.rfind('__', 0, end)) != -1:
         ancestor = graph.get_node(node_id[:end])
-        if ancestor is not None:
-            ancestor_recipe = node_id[end + len(marker):].split('__', 1)[0]
-            return ancestor.recipe is not None and ancestor.recipe.name != ancestor_recipe
+        if ancestor is None:
+            continue
+        segment = node_id[end + 2:].split('__', 1)[0]
+        recipe_name, marker, _ = segment.rpartition('>')
+        if not marker:
+            default = default_recipe_for(items_map[ancestor.output_item_name])
+            recipe_name = default.name if default else None
+        return ancestor.recipe is not None and ancestor.recipe.name != recipe_name
     return False
 
 
@@ -275,7 +290,7 @@ def build_plan(
     ignored = []
 
     def missing(node_id: str) -> bool:
-        return graph.get_node(node_id) is None and not _on_inactive_branch(graph, node_id)
+        return graph.get_node(node_id) is None and not _on_inactive_branch(graph, node_id, items_map)
 
     # Parents first: a child's ID extends its parent's ID, so shorter IDs are switched first.
     for node_id, recipe_name in sorted((recipes or {}).items(), key=lambda kv: len(kv[0])):

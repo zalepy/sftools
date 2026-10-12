@@ -292,6 +292,7 @@ class FactoryGraph:
             # Mark if it's a merged node and track constituents
             data["is_merged"] = len(constituents) > 0
             data["constituent_ids"] = [c.id for c in constituents]
+            data["constituent_derivations"] = [self.derivation(c) for c in constituents]
             
             # NOTE: Aggregation of scales/throughput is no longer needed 
             # as the representative node's parents/children set correctly 
@@ -300,6 +301,29 @@ class FactoryGraph:
             ui_nodes.append(data)
             
         return ui_nodes
+
+    def derivation(self, node: ProductionNode) -> List[Dict]:
+        """
+        How the node came about: one step per node from the root demand down to `node`, with the
+        item it makes and the recipe it currently runs. Relies on IDs being paths, where each
+        ancestor's ID is a '__'-separated prefix of its descendants' IDs (see child_node_id).
+        """
+        steps = []
+        end = 0
+        while True:
+            end = node.id.find('__', end)
+            prefix = node.id if end == -1 else node.id[:end]
+            ancestor = self.get_node(prefix)
+            if ancestor is not None:
+                steps.append({
+                    "id": ancestor.id,
+                    "item": ancestor.output_item_name,
+                    "recipe": ancestor.recipe.name if ancestor.recipe else ancestor.name,
+                    "building": ancestor.building.name,
+                })
+            if end == -1:
+                return steps
+            end += 2
 
     def _serialize_node(self, node: ProductionNode) -> Dict:
         return {
@@ -321,5 +345,6 @@ class FactoryGraph:
             "base_output_rate": node.base_output_rate,
             "base_inputs": node.base_inputs,
             "base_power": node.base_power,
-            "is_dormant": node.is_dormant
+            "is_dormant": node.is_dormant,
+            "derivation": self.derivation(node)
         }

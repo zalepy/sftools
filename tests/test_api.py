@@ -158,3 +158,24 @@ def test_static_assets_are_served(client):
     for module in ("api", "state", "graph", "panel"):
         assert client.get(f"/static/js/{module}.js").status_code == 200
     assert 'onclick=' not in page and '<style>' not in page
+
+
+def test_nodes_carry_their_derivation(client):
+    """Each node lists the chain from its demand down to itself, with the recipe each step runs."""
+    rip = "Smart Plating__Reinforced Iron Plate"
+    nodes = calculate(client, recipes={rip: "Alternate: Bolted Iron Plate"}).json()["nodes"]
+    screws = next(n for n in nodes if n["id"] == f"{rip}__Alternate: Bolted Iron Plate>Screws")
+    assert [(s["item"], s["recipe"]) for s in screws["derivation"]] == [
+        ("Smart Plating", "Smart Plating"),
+        ("Reinforced Iron Plate", "Alternate: Bolted Iron Plate"),
+        ("Screws", "Screws"),
+    ]
+    assert screws["derivation"][-1]["id"] == screws["id"]
+
+
+def test_merged_node_lists_constituent_derivations(client):
+    nodes = calculate(client).json()["nodes"]
+    target, source = sorted(n["id"] for n in nodes_by_item(nodes, "Reinforced Iron Plate"))
+    merged = calculate(client, merges={source: target}).json()["nodes"]
+    rip = nodes_by_item(merged, "Reinforced Iron Plate")[0]
+    assert [step["item"] for step in rip["constituent_derivations"][0]] == [source.split("__")[0], "Reinforced Iron Plate"]
