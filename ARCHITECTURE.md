@@ -21,7 +21,7 @@ sftools is a production planner for Satisfactory. A user enters target items and
 | `src/sftools/config.py` | Paths (data dir, templates) and env overrides |
 | `src/sftools/domain/enums/` | Building/item categories, recipe type, demand type |
 | `src/sftools/domain/models/` | `Item`, `Recipe`, `Building`, `Demand`, `ProductionNode`, `FactoryGraph` |
-| `src/sftools/engine/loader.py` | Parses the scraped JSON into domain models |
+| `src/sftools/engine/loader.py` | Parses the scraped JSON into domain models. The scraped rates are rounded to two decimals, so it recomputes them from each recipe's cycle time (`cycle_seconds`, ticket 025) |
 | `src/sftools/engine/game_data.py` | Process-wide, read-only cache of the loaded models |
 | `src/sftools/engine/calculator.py` | Graph construction: `calculate_demands`, recipe switching, `build_plan` |
 | `src/sftools/api/app.py` | FastAPI app factory; serves the UI at `/` and `/healthz` |
