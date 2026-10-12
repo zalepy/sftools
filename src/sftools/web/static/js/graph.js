@@ -183,13 +183,12 @@ export function renderGraph(nodesData) {
         });
     });
 
-    // Edges point from supplier to consumer, labelled with how much the consumer takes
+    // Edges point from supplier to consumer, labelled with what this supplier provides to it. A merged
+    // consumer can have several suppliers of an item, each covering one branch's share (parent_demands).
     nodesData.forEach(node => {
         (node.parents || []).forEach(parentId => {
-            const parentNode = nodeMap[parentId];
-            if (!parentNode) return;
-            const input = (parentNode.scaled_inputs || []).find(inp => inp.item === node.output_item);
-            const rate = input ? input.rate : 0;
+            if (!nodeMap[parentId]) return;
+            const rate = (node.parent_demands || {})[parentId] || 0;
             elements.push({
                 group: 'edges',
                 data: {
