@@ -1,6 +1,8 @@
 """Browser tests of the planner UI (see conftest.py for the server and browser fixtures)."""
 import json
 
+import pytest
+
 RIP_SP = "Smart Plating__Reinforced Iron Plate"
 RIP_MF = "Modular Frame__Reinforced Iron Plate"
 TWO_ROOTS = {"items": ["Smart Plating", "Modular Frame"], "rates": [2, 2], "roundUp": True,
@@ -164,3 +166,19 @@ def test_dragging_a_part_onto_another_merges_them(page):
     page.drag(page.node_position(f"{RIP_SP}~2"), page.node_position(RIP_SP))
     page.wait_until(f"JSON.parse(localStorage.getItem('sf_planner_state')).merges[{json.dumps(RIP_SP + '~2')}] !== undefined")
     assert page.saved_plan()["merges"] == {f"{RIP_SP}~2": RIP_SP}
+
+
+def test_mouse_wheel_zooms_in_small_steps(page):
+    page.open(page.base_url, plan())
+    page.wait(1)  # layout and fit
+    zoom = "document.getElementById('cy')._cyreg.cy.zoom()"
+    before = page.js(zoom)
+    x, y = page.node_position(RIP_SP)
+    page.send("Input.dispatchMouseEvent", type="mouseWheel", x=x, y=y, deltaX=0, deltaY=-100)
+    page.wait(0.3)
+    after = page.js(zoom)
+    assert 1.1 < after / before < 1.25  # one tick in
+    page.send("Input.dispatchMouseEvent", type="mouseWheel", x=x, y=y, deltaX=0, deltaY=100)
+    page.wait(0.3)
+    assert page.js(zoom) == pytest.approx(before, rel=0.01)  # and back out
+    assert abs(page.node_position(RIP_SP)[0] - x) < 2  # the point under the cursor stays put
