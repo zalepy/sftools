@@ -78,14 +78,14 @@ def test_a_part_can_switch_recipe(data):
     graph = plan(data, splits={RIP_SP: 2}, recipes={f"{RIP_SP}~2": BOLTED})
     assert graph.get_node(RIP_SP).recipe.name == "Reinforced Iron Plate"
     assert graph.get_node(f"{RIP_SP}~2").recipe.name == BOLTED
-    assert graph.get_node(f"{RIP_SP}~2__{BOLTED}>Screws") is not None
+    assert graph.get_node(f"{RIP_SP}~2__Screws") is not None
     assert_balanced(graph)
 
 
 def test_split_below_a_recipe_switch(data):
-    switched = f"{RIP_SP}__{BOLTED}>Screws"
-    graph = plan(data, recipes={RIP_SP: BOLTED}, splits={switched: 2})
-    assert graph.get_node(f"{switched}~2") is not None
+    screws = f"{RIP_SP}__Screws"
+    graph = plan(data, recipes={RIP_SP: BOLTED}, splits={screws: 2})
+    assert not graph.get_node(f"{screws}~2").is_dormant
     assert_balanced(graph)
 
 

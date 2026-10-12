@@ -96,12 +96,14 @@ export function saveColors(colors) {
     state.colors = colors;
 }
 
-// Entries the server could not apply (usually from an older saved plan) are removed from the
-// plan that was sent; callers save it after a successful request.
+// Entries the server could not apply are removed from the plan that was sent; callers save it after
+// a successful request. A merge whose target was dropped can name a new target (`replacement`).
 export function dropIgnoredEntries(ignored, { merges, overrides, recipes, splits }) {
     const byKind = { recipe: recipes, merge: merges, override: overrides, split: splits };
     ignored.forEach(entry => {
         const target = byKind[entry.kind];
-        if (target) delete target[entry.node_id];
+        if (!target) return;
+        if (entry.replacement) target[entry.node_id] = entry.replacement;
+        else delete target[entry.node_id];
     });
 }

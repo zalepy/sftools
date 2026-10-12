@@ -83,10 +83,11 @@ export function setRoundUp(value) {
 
 // --- Selected node ---
 
-// IDs are item paths ('Smart Plating__Rotor__Screws', see child_node_id): name a consumer by
-// its item and the item it feeds, which tells apart several nodes making the same item.
+// IDs are item paths ('Smart Plating__Rotor__Screws', see child_node_id), with '~n' for the parts
+// of a split node: name a consumer by its item and the item it feeds, which tells apart several
+// nodes making the same item.
 function itemOf(segment) {
-    return segment.split('>').pop();
+    return segment.replace(/~\d+$/, '');
 }
 
 /** One line per step, e.g. "Reinforced Iron Plate ← Alternate: Bolted Iron Plate (Assembler)". */
