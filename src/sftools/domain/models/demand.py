@@ -25,28 +25,5 @@ class Demand:
     def type(self):
         return self._type
 
-    def __add__(self, other: 'Demand'):
-        if self._name != other.name:
-            raise TypeError('Cannot add demands with different names')
-        if self._item != other.item:
-            raise TypeError('Cannot add demands with different items')
-
-        if self._type == other.type:
-            self._rate += other.rate
-        else:
-            # handle type mismatch
-            # e.g. when one type is PRODUCE, and the other is SINK
-            self._rate -= other._rate
-
-        # handle negative rate (occurs when we __add__ with SINK with greater rate)
-        if self._rate < 0:
-            self._rate = -self.rate
-            if self._type == DemandType.PRODUCE:
-                self._type = DemandType.SINK
-            else:
-                self._type = DemandType.PRODUCE
-
-        return self
-
     def __repr__(self):
         return 'name: ' + self._name + '; rate: ' + str(self._rate) + '; type: ' + str(self._type) + '; item: ' + str(self._item)

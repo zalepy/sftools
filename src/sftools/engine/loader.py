@@ -99,32 +99,23 @@ def recipe_type_for(recipe_name: str, building_name: str) -> RecipeType:
 def build_recipe(recipe_name: str, details: Dict, items: Dict[str, Item], buildings: Dict[str, Building]) -> Recipe:
     """
     output1 is the recipe's main product and output2 its by-product, as in the game data.
-    Ingredients or outputs that refer to unknown items are dropped; tests/unit/test_game_data.py checks there are none.
+    Ingredients or by-products that refer to unknown items are dropped, and an unknown main product
+    is kept as None; tests/unit/test_game_data.py checks there are none.
     """
     def item_and_rate(prefix):
         return items.get(details.get(f'{prefix}_name')), get_float_or_none(details, f'{prefix}_rate')
 
-    output1_item, output1_rate = item_and_rate('output1')
-    output2_item, output2_rate = item_and_rate('output2')
-    ingredients = {}
-    for i in range(1, 5):
-        item, rate = item_and_rate(f'ingredient{i}')
-        ingredients[f'ingredient{i}_item'] = item
-        ingredients[f'ingredient{i}_rate'] = rate
-        ingredients[f'ingredient{i}_stack'] = get_int_or_none(details, f'ingredient{i}_stack')
+    def known(prefixes):
+        return [(item, rate) for item, rate in map(item_and_rate, prefixes) if item is not None]
 
     building_name = details.get('building')
     return Recipe(
-        recipe_name,
-        buildings.get(building_name),
-        output1_item,
-        output1_rate,
-        get_int_or_none(details, 'output1_stack'),
-        output2_item=output2_item,
-        output2_rate=output2_rate,
-        output2_stack=get_int_or_none(details, 'output2_stack'),
-        recipe_type=recipe_type_for(recipe_name, building_name),
-        **ingredients,
+        name=recipe_name,
+        building=buildings.get(building_name),
+        product=item_and_rate('output1'),
+        byproducts=known(['output2']),
+        ingredients=known([f'ingredient{i}' for i in range(1, 5)]),
+        type=recipe_type_for(recipe_name, building_name),
     )
 
 
@@ -152,7 +143,7 @@ def load_items(path: str, buildings: Dict[str, Building]) -> Tuple[Dict[str, Ite
             if recipe is None:
                 recipe = build_recipe(recipe_name, details, items_by_name, buildings)
                 recipes_by_name[recipe_name] = recipe
-            if recipe.produces(item.name):
+            if recipe.output_item is not None and recipe.produces(item.name):
                 item.add_recipe(recipe)
 
     return items_by_name, recipes_by_name

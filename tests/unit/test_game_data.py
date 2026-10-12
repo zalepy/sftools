@@ -55,7 +55,7 @@ def test_every_recipe_has_building_and_outputs(game):
 def test_rates_are_sane(game):
     _, recipes = game
     for recipe in recipes.values():
-        for item, rate in recipe.outputs() + recipe.ingredients():
+        for item, rate in recipe.outputs() + recipe.ingredients:
             assert rate is not None and 0 < rate <= MAX_RATE, (recipe.name, item.name, rate)
 
 
@@ -64,7 +64,7 @@ def test_fluid_rates_are_not_corrupted(game):
     _, recipes = game
     alumina = recipes["Alumina Solution"]
     assert [(i.name, r) for i, r in alumina.outputs()] == [("Alumina Solution", 120), ("Silica", 50)]
-    assert [(i.name, r) for i, r in alumina.ingredients()] == [("Bauxite", 120), ("Water", 180)]
+    assert [(i.name, r) for i, r in alumina.ingredients] == [("Bauxite", 120), ("Water", 180)]
     assert recipes["Unpackage Water"].rate_of("Water") == 120
 
 
@@ -86,7 +86,7 @@ def test_recipes_from_multi_word_buildings(game):
     """The scraper used to drop every recipe made in e.g. a Particle Accelerator (tickets/done/019)."""
     items, recipes = game
     assert recipes["Diamonds"].building.name == "Particle Accelerator"
-    assert [(i.name, r) for i, r in recipes["Diamonds"].ingredients()] == [("Coal", 600)]
+    assert [(i.name, r) for i, r in recipes["Diamonds"].ingredients] == [("Coal", 600)]
     assert default_recipe_for(items["Diamonds"]).name == "Diamonds"
     assert recipes["Alien Power Matrix"].building.name == "Quantum Encoder"
 
@@ -94,7 +94,7 @@ def test_recipes_from_multi_word_buildings(game):
 def test_converter_recipe_without_ingredients(game):
     _, recipes = game
     epm = recipes["Excited Photonic Matter"]
-    assert epm.ingredients() == []
+    assert epm.ingredients == []
     assert epm.rate_of("Excited Photonic Matter") == 200
 
 

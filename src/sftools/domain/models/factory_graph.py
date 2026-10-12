@@ -113,7 +113,7 @@ class FactoryGraph:
     def remove_merge(self, source_id: str):
         """Removes a specific merge and rebuilds the structure from other merges."""
         if source_id not in self.merges:
-            # Maybe it's a target? Remove all merges into this target
+            # A merge target: remove all merges into it
             to_remove = [s for s, t in self.merges.items() if t == source_id]
             for s in to_remove:
                 del self.merges[s]
@@ -283,20 +283,10 @@ class FactoryGraph:
 
     def get_ui_data(self) -> List[Dict]:
         """
-        Returns serialized nodes for the UI.
-        Absorbed nodes are omitted from the flat list, 
-        but their values are aggregated into their targets?
-        Actually, the user said "overrides ... for merged nodes, should 'bubble up'".
-        If A is absorbed by B, we only send B' to UI.
-        B'.building_scale = B.scale + A.scale (if they were separate)
-        Wait, if they are merged, they share the SAME scale if the override is applied to B.
-        If B' has override 10, then A and B are both operating?
-        No, usually a merge means they are combined into one physical factory.
-        If A and B both had 1.0 scale originally, the merged node has 2.0.
-        If the user overrides the merged node to 5.0, what happens?
-        
-        Let's treat the merged node as ONE entity in the UI.
-        Backend: B is the representative. B's properties (throughput, power) = sum(B, A).
+        Serialized nodes for the UI. A merge group is shown as its target alone: absorbed and dormant
+        nodes are left out, links to absorbed nodes point to their target, and the target lists its
+        absorbed nodes in `constituent_ids` / `constituent_derivations`. The target's scale and rates
+        already cover the whole group (see recalculate).
         """
         ui_nodes = []
         target_to_constituents: Dict[str, List[ProductionNode]] = {}
@@ -333,10 +323,6 @@ class FactoryGraph:
             data["is_merged"] = len(constituents) > 0
             data["constituent_ids"] = [c.id for c in constituents]
             data["constituent_derivations"] = [self.derivation(c) for c in constituents]
-            
-            # NOTE: Aggregation of scales/throughput is no longer needed 
-            # as the representative node's parents/children set correctly 
-            # accounts for the whole group demand.
             
             ui_nodes.append(data)
             
