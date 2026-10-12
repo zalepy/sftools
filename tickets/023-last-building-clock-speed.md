@@ -1,24 +1,33 @@
-# 023 — "Last building" clock speed
+# 023 — Clock speeds per node (replaces building overrides)
 
-**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** 018 (moved from its backlog)
+**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** 018, 026, 027, 028
 
-## Goal
-Run all of a node's buildings at one clock speed except the last, which runs at whatever speed covers the remainder exactly. For example, 5.2 buildings' worth of demand becomes "5 × 100% + 1 × 20%" instead of 6 buildings, each at 86.7%. This is how the game is usually built: whole buildings at a round clock, plus one tuned building.
+> **Redesigned (2026-10-12)** in a design session with the user. The first version computed the last building's clock automatically; the user wants no automatic adjustment, ever.
 
-## Prior art: the planning spreadsheet
-The author's Google Sheets planner has this as two columns per item: `ocall` (the clock for all buildings) and `oclast` (the clock for the last one):
-- buildings: `n = roundup((target − rate × oclast) / (rate × ocall) + 1)`
-- output: `rate × ocall × (n − 1) + rate × oclast`, and each input likewise
-- power: `unit MW × ocall^1.6 × (n − 1) + unit MW × oclast^1.6`
+## Principles (from the user)
+- **The tool never adjusts on its own.** Changes happen only when the user sets something, or explicitly runs an optimization (027).
+- **Building counts are never edited directly**, as in the user's spreadsheet, where typing over a computed cell destroys its formula. The count is always calculated from the demand and the clocks, so it keeps following demand.
+- **Clocks are what the user sets.** Example: 144 Iron Rod/min needs 9.6 buildings. 10 buildings at 100% is often what's wanted: the 0.4% extra rods go to a buffer, and the inputs stay on round numbers (120 + 30 ore). Another time, the last building may not fit physically, so it runs at 200% instead.
 
-In the sheet the user sets `oclast`. Here it can be computed: `oclast = (demand − rate × ocall × (n − 1)) / rate`, with `n = ceil(demand / (rate × ocall))`.
+## Design
+- Per node, both optional:
+  - **clock**: the clock for all buildings, default 100%.
+  - **last clock**: the last building's clock, default the same as clock. Never calculated.
+- **Buildings** (read-only) = `ceil((demand − rate × last) / (rate × clock) + 1)`, at least 1 when there is demand. This is the spreadsheet's formula. With both clocks at 100% it is today's rounded-up count.
+- **Output** = `rate × (clock × (buildings − 1) + last)`, which is at least the demand. The status dot shows the surplus as now. Inputs follow what the buildings use, so a clock change cascades down the chain.
+- **Stored as groups**, `clocks: {node_id: [{"count": n, "clock": c}, ...]}`, where the last group has no count ("the rest"). The panel shows two fields, all and last, which covers today's needs. The format also covers "last two at 150%" and a later per-building configurator (018) without changing.
+- **Power** follows the clocks: `unit MW × clock^k` per building, plus a **power shard** count (1 per 50% above 100%, up to 3 per building at 250%). Verify `k` in game: the spreadsheet uses 1.6, and 1.0 may have changed it to about 1.32 (log2 2.5). Keep it one constant.
+- Clock range 1%–250%. Showing which clocks are unlocked yet (mid-game for above 100%) is out of scope.
+- **Merged nodes:** the clocks are on the merge target (the shared buildings). **Split parts:** each part has its own.
 
-## Design sketch
-- New per-node setting, e.g. `clocks: {node_id: <clock for all buildings, default 1.0>}` in the plan. The last building's clock is derived from the demand. Clocks above 1 need power shards (up to 2.5 in 1.0).
-- The node shows "n × A% + 1 × B%", and the status dot compares the planned output with the demand as now.
-- `building_scale` stays the number of building-equivalents, `A × (n − 1) + B`, so the downstream maths doesn't change.
-- **Power:** a clock changes power non-linearly. The game's exponent should be checked: the sheet uses 1.6, and I believe 1.0 changed it to about 1.32 (log2 2.5). sftools power is linear in `building_scale` today, which treats fractional scales as more buildings.
+## Retired
+- **"Round Up Buildings" toggle:** buildings are always whole. The engine keeps an exact, fractional mode for the unit tests' balance checks; the UI no longer offers it.
+- **Override Scale Factor** (a fractional building count): replaced by clocks. Saved overrides are dropped once, with the usual "no longer match" notice. They set a building count, which is no longer something the user sets.
 
-## Questions
-- How does it combine with an override (a fixed building scale)? Probably: the override sets the total, and the clock decides how it's split into buildings.
-- Should merged nodes and split parts each have their own clock? Probably yes, since each is built separately.
+## Display
+- Node label: `n × 100%`, or `9 × 100% + 1 × 60%` when the last clock differs; shards if any.
+- Panel: buildings (read-only), clock, last clock, output, surplus, power, shards.
+
+## Tests
+- Unit: buildings and output from clocks, including the examples above; power and shards; merged and split nodes; saved overrides reported.
+- Browser: set clocks and see the label, buildings and the downstream change; no building-count field and no round-up toggle.
