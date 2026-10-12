@@ -30,10 +30,9 @@ The `FactoryGraph` class serves as the stateful orchestrator for the production 
     - The source node is preserved in the master graph.
     - **Meaning:** the merged nodes are built together in the game, as one shared set of buildings. Each branch keeps its own inputs, sized to that branch's share (see below). Merging is used to:
         - consolidate fractional counts (two lines at x.5 buildings each become a whole number),
-        - set one scale factor (overclock) for the whole set,
+        - set one clock speed for the whole set,
         - reduce clutter in a big graph.
     - Merging nodes that run different recipes is allowed (the merged node runs the target's recipe). The UI shows a brief message when it happens.
-- **`remove_merge(source_id)`**: Rebuilds the graph structure from the captured initial topology plus the remaining active merges. This allows for instant "unmerging" without a full backend recalculation.
 
 ## Propagation Algorithm (Recalculation)
 
@@ -44,7 +43,7 @@ The `recalculate` method updates the throughput and building counts across the g
 3.  **Demand per member**: for each member of a group, its demand is
     - its external demand (root nodes), plus
     - its share of what its original parent's group needs of its item. The parent group's need for an item is split between the input nodes for that item under the group's members, in proportion to each member's share of the group's demand. Members without an input node for the item (e.g. the group runs a different recipe) leave their share to the members that have one. The parts of a split input node divide their parent's share equally.
-4.  **Scale**: a group's demand is the sum of its members' demands. Its target's buildings come from that demand and the target's clocks: fixed groups (e.g. the last building at 200%) plus as many buildings at the node's clock as the rest needs, rounded up. `building_scale` is the sum of the buildings' clocks, and the inputs scale with it. Without `round_up` (tests only) the scale is the exact demand / output rate.
+4.  **Scale**: a group's demand is the sum of its members' demands. Its target's buildings come from that demand and the target's clocks: fixed groups (e.g. the last building at 200%) plus as many buildings at the node's clock as the rest needs, rounded up. `building_scale` is the sum of the buildings' clocks, and the inputs scale with it. In exact mode (`build_plan(exact=True)`, tests only) the scale is the exact demand / output rate.
 5.  **Power**: each building draws `base power × clock^1.321928` (`CLOCK_POWER_EXPONENT`), and needs one power shard per 50% above 100%.
 
 So with 2/min Smart Plating and 2/min Modular Frame, merging their two Reinforced Iron Plate nodes gives one plate line at 5/min (2 + 3). The Smart Plating branch's Screws node supplies 2/5 of that line's Screws, and the Modular Frame branch's supplies 3/5. Every item is made exactly as fast as it is consumed (`tests/unit/test_merges.py`).

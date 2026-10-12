@@ -24,20 +24,18 @@ function save() {
  * Entries the server ignored are dropped from the candidate objects; callers keep them on success.
  */
 async function requestPlan({
-    merges = state.merges, overrides = state.overrides, recipes = state.recipes, splits = state.splits,
-    clocks = state.clocks
+    merges = state.merges, recipes = state.recipes, splits = state.splits, clocks = state.clocks
 } = {}) {
     const { items, rates } = panel.getDemands();
     const { nodes, ignored } = await api.calculate({
         demands: items.map((item, i) => ({ item, rate: rates[i] })),
         recipes,
         merges,
-        overrides,
         splits,
         clocks
     });
     if (ignored.length) {
-        dropIgnoredEntries(ignored, { merges, overrides, recipes, splits, clocks });
+        dropIgnoredEntries(ignored, { merges, recipes, splits, clocks });
         // Entries on inputs a recipe no longer uses go quietly: that is what the switch (or merge) asked for
         const stale = ignored.filter(entry => !entry.dropped);
         if (stale.length) panel.showPlanNotice(stale);

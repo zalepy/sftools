@@ -147,13 +147,6 @@ button:disabled {
     margin-bottom: 0.5rem;
 }
 
-.toggle-switch {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-}
-
 /* Node Details Panel */
 #node-details {
     border-top: 1px solid var(--border);

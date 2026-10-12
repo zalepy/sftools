@@ -6,7 +6,6 @@ const COLORS_KEY = 'sf_planner_colors';
 // Mutable shared state; modules read and replace its fields.
 export const state = {
     clocks: {},         // node_id -> [{clock}, {count, clock}...]: see clock groups in ticket 023
-    overrides: {},      // retired building counts from older saved plans; sent once, then reported and dropped
     merges: {},         // absorbed node_id -> target node_id
     recipes: {},        // node_id -> recipe name
     splits: {},         // node_id -> number of parts
@@ -20,7 +19,6 @@ export function snapshot({ items, rates }) {
         items,
         rates,
         clocks: state.clocks,
-        ...(Object.keys(state.overrides).length && { overrides: state.overrides }),
         merges: state.merges,
         recipes: state.recipes,
         splits: state.splits
@@ -28,7 +26,6 @@ export function snapshot({ items, rates }) {
 }
 
 export function applySaved(saved) {
-    state.overrides = saved.overrides || {};
     state.clocks = saved.clocks || {};
     state.merges = saved.merges || {};
     state.recipes = saved.recipes || {};
@@ -100,8 +97,8 @@ export function saveColors(colors) {
 
 // Entries the server could not apply are removed from the plan that was sent; callers save it after
 // a successful request. A merge whose target was dropped can name a new target (`replacement`).
-export function dropIgnoredEntries(ignored, { merges, overrides, recipes, splits, clocks }) {
-    const byKind = { recipe: recipes, merge: merges, override: overrides, split: splits, clock: clocks };
+export function dropIgnoredEntries(ignored, { merges, recipes, splits, clocks }) {
+    const byKind = { recipe: recipes, merge: merges, split: splits, clock: clocks };
     ignored.forEach(entry => {
         const target = byKind[entry.kind];
         if (!target) return;

@@ -227,7 +227,7 @@ def node_for(graph, item):
 def test_golden_smart_plating(game):
     """2/min Smart Plating with exact (unrounded) building counts, from the in-game recipes."""
     items, recipes = game
-    graph = build_plan(items, recipes, [("Smart Plating", 2)], round_up=False)
+    graph = build_plan(items, recipes, [("Smart Plating", 2)], exact=True)
 
     assert node_for(graph, "Smart Plating").building_scale == pytest.approx(1.0)
     assert node_for(graph, "Reinforced Iron Plate").building_scale == pytest.approx(0.4)
@@ -242,7 +242,7 @@ def test_golden_smart_plating(game):
 def test_golden_fluid_chain(game):
     """20/min Plastic needs 30 m3/min Crude Oil: half an impure Oil Extractor."""
     items, recipes = game
-    graph = build_plan(items, recipes, [("Plastic", 20)], round_up=False)
+    graph = build_plan(items, recipes, [("Plastic", 20)], exact=True)
 
     assert node_for(graph, "Plastic").building_scale == pytest.approx(1.0)
     crude = node_for(graph, "Crude Oil")
@@ -254,7 +254,7 @@ def test_node_can_produce_a_byproduct(game):
     """Polymer Resin from the Fuel recipe: 60 Crude Oil -> 40 Fuel + 30 Polymer Resin."""
     items, recipes = game
     root_id = next(iter(build_plan(items, recipes, [("Polymer Resin", 30)]).all_nodes))
-    graph = build_plan(items, recipes, [("Polymer Resin", 30)], round_up=False, recipes={root_id: "Fuel"})
+    graph = build_plan(items, recipes, [("Polymer Resin", 30)], exact=True, recipes={root_id: "Fuel"})
 
     root = graph.get_node(root_id)
     assert root.output_item_name == "Polymer Resin"

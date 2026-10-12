@@ -1,6 +1,6 @@
 """
 Merging: the merged node is shared, each branch keeps its own inputs (tickets/done/020).
-With round_up=False every item must be made exactly as fast as it is consumed.
+With exact=True every item must be made exactly as fast as it is consumed.
 """
 from collections import defaultdict
 from itertools import combinations
@@ -21,7 +21,7 @@ def data():
 
 
 def plan(data, demands=DEMANDS, **kwargs):
-    graph = build_plan(data.items, data.recipes, demands, round_up=False, **kwargs)
+    graph = build_plan(data.items, data.recipes, demands, exact=True, **kwargs)
     assert graph.ignored == []
     return graph
 

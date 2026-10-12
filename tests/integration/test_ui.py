@@ -108,11 +108,13 @@ def test_clocks_apply_and_clear(page):
     assert page.js(label("Iron Rod")).endswith("(10× Constructor)")
 
 
-def test_saved_building_overrides_are_dropped_with_a_notice(page):
-    page.open(page.base_url, plan(overrides={RIP_SP: 3}))
-    page.wait_until("!document.getElementById('plan-notice').hidden")
-    assert "clock speeds" in page.js("document.querySelector('#plan-notice ul').textContent")
+def test_old_plans_with_building_overrides_still_load(page):
+    """Plans saved before clock speeds have an 'overrides' key; it is ignored and gone once the plan is saved."""
+    page.open(page.base_url, plan(overrides={RIP_SP: 3}, roundUp=False))
+    page.wait_until(f"{SAVED}.clocks !== undefined")
     assert "overrides" not in page.saved_plan()
+    assert "roundUp" not in page.saved_plan()
+    assert page.js("document.getElementById('plan-notice').hidden")
 
 
 def test_merge_by_drag_and_unmerge(page):

@@ -11,7 +11,6 @@ def client():
 
 def calculate(client, **plan):
     plan.setdefault("demands", [{"item": "Smart Plating", "rate": 2}, {"item": "Modular Frame", "rate": 2}])
-    plan.setdefault("round_up", False)
     return client.post("/api/calculate", json=plan)
 
 
@@ -44,7 +43,7 @@ def test_merges_and_clocks_are_replayed(client):
     target, source = sorted(n["id"] for n in nodes_by_item(nodes, "Reinforced Iron Plate"))
 
     # 5 plates/min merged: one Assembler; at 50% it takes two
-    merged = calculate(client, round_up=True, merges={source: target}, clocks={target: [{"clock": 0.5}]}).json()["nodes"]
+    merged = calculate(client, merges={source: target}, clocks={target: [{"clock": 0.5}]}).json()["nodes"]
     rip = nodes_by_item(merged, "Reinforced Iron Plate")
     assert [n["id"] for n in rip] == [target]
     assert rip[0]["constituent_ids"] == [source]
@@ -75,7 +74,7 @@ def test_recipe_switch_is_replayed(client):
 
 def test_requests_do_not_share_state(client):
     expected = calculate(client).json()["nodes"]
-    calculate(client, demands=[{"item": "Rotor", "rate": 4}], overrides={"anything": 9})
+    calculate(client, demands=[{"item": "Rotor", "rate": 4}], clocks={"Rotor": [{"clock": 2.0}]})
     assert calculate(client).json()["nodes"] == expected
 
 
@@ -95,7 +94,7 @@ def test_merge_into_node_made_dormant_by_recipe_switch(client):
 
     produced = sum(n["throughput"] for n in nodes_by_item(merged, "Screws"))
     needed = sum(i["rate"] for n in merged for i in n["scaled_inputs"] if i["item"] == "Screws")
-    assert produced == pytest.approx(needed)
+    assert produced >= needed - 1e-9  # whole buildings: at least what's needed
     assert any(n["id"] == screws_b for n in nodes_by_item(merged, "Screws"))
 
 
@@ -108,8 +107,6 @@ def test_stale_entries_are_reported_not_rejected(client):
         recipes={"root__Gone": "Iron Plate", rip: "No Such Recipe", nodes[0]["id"]: "Iron Plate"},
         merges={"root__Gone": rip},
         clocks={"root__Gone": [{"clock": 1.5}], rip: [{"clock": 2.0}]},
-        overrides={rip: 2},
-        round_up=True,
     )
     assert response.status_code == 200
     body = response.json()
@@ -120,7 +117,6 @@ def test_stale_entries_are_reported_not_rejected(client):
         ("recipe", nodes[0]["id"], f"'Iron Plate' does not produce {nodes[0]['output_item']}"),
         ("merge", "root__Gone", "node not in plan: root__Gone"),
         ("clock", "root__Gone", "node not in plan"),
-        ("override", rip, "building counts are no longer set directly; set clock speeds instead"),
     ])
     # The valid clock still applies
     assert next(n for n in body["nodes"] if n["id"] == rip)["clocks"] == [{"count": 1, "clock": 2.0}]
@@ -163,8 +159,8 @@ def test_dropped_merge_target_leaves_the_others_merged(client):
 
 def test_entries_from_older_plans_are_not_marked_dropped(client):
     body = calculate(client, demands=[{"item": "Smart Plating", "rate": 2}],
-                     overrides={f"Smart Plating__Reinforced Iron Plate__Alternate: Bolted Iron Plate>Screws": 2}).json()
-    assert [(e["kind"], e["dropped"]) for e in body["ignored"]] == [("override", False)]
+                     clocks={f"Smart Plating__Reinforced Iron Plate__Alternate: Bolted Iron Plate>Screws": [{"clock": 2}]}).json()
+    assert [(e["kind"], e["dropped"]) for e in body["ignored"]] == [("clock", False)]
 
 
 def test_alternate_recipes_are_marked(client):
@@ -209,7 +205,7 @@ def test_merged_node_lists_constituent_derivations(client):
 
 def test_splits_are_replayed(client):
     rip = "Smart Plating__Reinforced Iron Plate"
-    body = calculate(client, round_up=True, splits={rip: 2}, clocks={f"{rip}~2": [{"clock": 0.5}]}).json()
+    body = calculate(client, splits={rip: 2}, clocks={f"{rip}~2": [{"clock": 0.5}]}).json()
     assert body["ignored"] == []
     parts = {n["id"]: n for n in nodes_by_item(body["nodes"], "Reinforced Iron Plate") if n["id"].startswith(rip)}
     assert sorted(parts) == [rip, f"{rip}~2"]
