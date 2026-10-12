@@ -2,7 +2,7 @@
 
 **Type:** bug · **Priority:** P2 · **Depends on:** 001 · **Status:** Done
 
-> **Update (2026-10-11):** Done with 010: `HTTPException` everywhere, `demands: [{item, rate}]` schema, 422 for unknown items, 400 for an invalid merge, endpoint tests in `tests/test_api.py`. Left: unknown or unresolvable recipe names are skipped silently.
+> **Update (2026-10-11):** Done with 010: `HTTPException` everywhere, `demands: [{item, rate}]` schema, 422 for unknown items, 400 for an invalid merge, endpoint tests in `tests/unit/test_api.py`. Left: unknown or unresolvable recipe names are skipped silently.
 
 > **Fixed (2026-10-11):** Plan entries that can't apply are now *reported, not rejected*. A 422 would make a stale saved plan fail on every load (e.g. after default recipes or recipe names change). `POST /api/calculate` builds what it can and returns `ignored: [{kind, node_id, reason}]` for:
 > - recipe switches on unknown nodes, with unknown recipe names, or with recipes that don't produce the node's item

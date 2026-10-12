@@ -8,7 +8,7 @@
 > - **Roots** are keyed by item. A repeated item gets `#2`, which **fixes a bug**: two demand rows for the same item collided on one ID, and one row's rate was lost.
 > - **Old saved plans:** old-style IDs are no longer matched. They're reported in `ignored` and dropped once (with the notice); there is no migration (decision 2026-10-12).
 > - **UI:** labels for a consumer now read "<item> (in <item it feeds>)".
-> - **Tests:** `tests/test_graph_state.py` (ID shape, duplicate roots, reset below a switch, old IDs reported).
+> - **Tests:** `tests/unit/test_graph_state.py` (ID shape, duplicate roots, reset below a switch, old IDs reported).
 > - **For splits** (SPLIT_PLAN.md): use an instance suffix in the same `#n` style.
 
 - IDs look like `root_0__Recipe__[r]Recipe__Recipe…` and grow with depth.
