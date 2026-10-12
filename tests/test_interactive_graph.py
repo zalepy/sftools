@@ -28,14 +28,10 @@ def test_graph_structure_and_ids(data_models):
     assert 'Reinforced Iron Plate' in child_items
     assert 'Rotor' in child_items
     
-    # Check IDs are path-based (contain parent ID)
-    # Child ID should contain Parent ID or at least be unique
-    # Implementation used: f"{parent_path}__{recipe.name}"
-    # sp_node (root) path was "root"
-    assert "root" in sp_node.id
-    
+    # IDs are item paths: the root is keyed by its item, children extend the parent's ID
+    assert sp_node.id == 'Smart Plating'
     for child in sp_node.children:
-        assert sp_node.id in child.id or "root" in child.id 
+        assert child.id == f"Smart Plating__{child.output_item_name}"
 
 def test_overrides(data_models):
     items, _, _ = data_models

@@ -85,3 +85,47 @@ def test_switch_merge_unmerge_round_trip(data):
     graph.recalculate(round_up=False)
     after = {n.id: n.building_scale for n in graph.all_nodes.values() if not n.is_dormant}
     assert after == pytest.approx(before)
+
+
+# --- Node IDs (tickets/done/016) ---
+
+from sftools.engine.calculator import build_plan  # noqa: E402
+
+
+def test_node_ids_are_item_paths(data):
+    graph = build_plan(data.items, data.recipes, [("Smart Plating", 2)])
+    ids = set(graph.all_nodes)
+    assert "Smart Plating" in ids
+    assert "Smart Plating__Reinforced Iron Plate__Screws" in ids
+    assert max(map(len, ids)) < 120
+
+
+def test_same_item_demanded_twice_keeps_both(data):
+    """Two rows for the same item used to collide on one ID; the 2/min was lost."""
+    graph = build_plan(data.items, data.recipes, [("Smart Plating", 2), ("Smart Plating", 3)], round_up=False)
+    roots = {n.id: n.scaled_output for n in graph.all_nodes.values() if not n.parents}
+    assert roots == pytest.approx({"Smart Plating": 2, "Smart Plating#2": 3})
+
+
+def test_recipe_switch_gives_inputs_new_ids(data):
+    """Adjustments below a node are reset by switching its recipe, and come back on switching back."""
+    rip = "Smart Plating__Reinforced Iron Plate"
+    screws = f"{rip}__Screws"
+    plan = dict(items_map=data.items, recipes_map=data.recipes, demands=[("Smart Plating", 2)], round_up=False)
+
+    graph = build_plan(**plan, recipes={rip: "Alternate: Bolted Iron Plate"}, overrides={screws: 7})
+    bolted_screws = f"{rip}__Alternate: Bolted Iron Plate>Screws"
+    assert graph.get_node(bolted_screws).user_scale is None
+    assert graph.get_node(screws).is_dormant
+    assert graph.ignored == []
+
+    # The override on the default recipe's Screws applies again without the switch
+    graph = build_plan(**plan, overrides={screws: 7, bolted_screws: 4})
+    assert graph.get_node(screws).building_scale == 7
+    assert graph.ignored == []  # the Bolted-branch override is kept for when Bolted is chosen again
+
+
+def test_old_style_ids_are_reported(data):
+    old = "root__Smart Plating__[r]Smart Plating__Reinforced Iron Plate"
+    graph = build_plan(data.items, data.recipes, [("Smart Plating", 2)], overrides={old: 3}, merges={old: "Smart Plating"})
+    assert sorted(e["kind"] for e in graph.ignored) == ["merge", "override"]

@@ -6,8 +6,8 @@ Allow users to split a single `ProductionNode` into two or more separate nodes. 
 ## Technical Strategy
 
 ### 1. Identity & Addressing
-Currently, `node_id` is derived from the "parent path" (`parent_path__RecipeName`). To allow multiple nodes for the same path, we must introduce a unique suffix or "Instance Index".
-- **Proposed ID Format**: `parent_path__RecipeName[instance_id]`
+Node IDs are item paths (`Smart Plating__Reinforced Iron Plate__Screws`; see ARCHITECTURE.md, "Node identity"). To allow multiple nodes for the same path, add an instance suffix in the same style as repeated roots (`Smart Plating#2`).
+- **Proposed ID Format**: `<parent id>__<item>#<instance>` (instance 1 keeps the plain ID, so existing adjustments stay valid)
 - **Impact**: The `calculate_demands` logic will need to check a "Split Map" to see if it should generate multiple nodes instead of a single one.
 
 ### 2. Instruction Persistence

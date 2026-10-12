@@ -83,10 +83,46 @@ export function setRoundUp(value) {
 
 // --- Selected node ---
 
+// IDs are item paths ('Smart Plating__Rotor__Screws', see child_node_id): name a consumer by
+// its item and the item it feeds, which tells apart several nodes making the same item.
+function itemOf(segment) {
+    return segment.split('>').pop();
+}
+
+/** One line per step, e.g. "Reinforced Iron Plate ← Alternate: Bolted Iron Plate (Assembler)". */
+export function derivationText(derivation) {
+    return derivation.map(step => `${step.item} ← ${step.recipe} (${step.building})`).join('\n');
+}
+
+function derivationList(derivation) {
+    const list = document.createElement('ol');
+    list.className = 'derivation';
+    list.replaceChildren(...derivation.map(step => {
+        const li = document.createElement('li');
+        const item = document.createElement('span');
+        item.className = 'item';
+        item.textContent = step.item;
+        li.append(item, ` ← ${step.recipe} (${step.building})`);
+        li.title = step.id;
+        return li;
+    }));
+    return list;
+}
+
+function renderDerivation(data) {
+    $('detail-derivation').replaceWith(Object.assign(derivationList(data.derivation || []), { id: 'detail-derivation' }));
+
+    const merged = data.constituent_derivations || [];
+    $('detail-merged-row').style.display = merged.length ? 'flex' : 'none';
+    $('detail-merged').replaceChildren(...merged.map(derivationList));
+}
+
 function parentLabel(parentId) {
     if (parentId === 'External Demand') return 'External Demand';
     const raw = getNodeData(parentId);
-    return raw ? `${raw.output_item} (id: ${parentId.split('__').pop()})` : parentId;
+    if (!raw) return parentId;
+    const path = parentId.split('__');
+    return path.length > 1 ? `${raw.output_item} (in ${itemOf(path.at(-2))})` : `${raw.output_item} (demand)`;
 }
 
 function statRow(label, value, { className = 'stat-row', style = '' } = {}) {
@@ -182,7 +218,10 @@ function renderScaledInputs(data) {
         let sumDemand = 0;
         for (const [parentId, rate] of Object.entries(parentDemands)) {
             const part = totalOutput > 0 ? totalInputRate * (rate / totalOutput) : 0;
-            breakdown.appendChild(statRow(`for ${parentLabel(parentId)}:`, `${part.toFixed(2)}/min`, { className: 'breakdown-row' }));
+            const row = statRow(`for ${parentLabel(parentId)}:`, `${part.toFixed(2)}/min`, { className: 'breakdown-row' });
+            const parent = getNodeData(parentId);
+            if (parent && parent.derivation) row.title = derivationText(parent.derivation);
+            breakdown.appendChild(row);
             sumDemand += rate;
         }
 
@@ -228,6 +267,7 @@ export function showNodeDetails(data) {
     $('detail-parents').innerText = data.parents.length > 0 ? data.parents.join(', ') : 'None';
     $('detail-children').innerText = data.children.length > 0 ? data.children.join(', ') : 'None';
 
+    renderDerivation(data);
     renderBaseRecipe(data);
     renderStats(data);
     renderScaledInputs(data);
@@ -303,7 +343,7 @@ export function showPlanNotice(ignored) {
         `${count} saved adjustment${count === 1 ? '' : 's'} no longer match${count === 1 ? 'es' : ''} this plan and ${count === 1 ? 'was' : 'were'} removed.`;
     notice.querySelector('ul').replaceChildren(...ignored.map(entry => {
         const li = document.createElement('li');
-        li.textContent = `${entry.kind} on ${entry.node_id.split('__').pop()}: ${entry.reason}`;
+        li.textContent = `${entry.kind} on ${itemOf(entry.node_id.split('__').pop())}: ${entry.reason}`;
         li.title = entry.node_id;
         return li;
     }));

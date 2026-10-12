@@ -372,3 +372,24 @@ details[open] summary::after {
     color: var(--text-secondary);
     margin-bottom: 0.2rem;
 }
+
+/* Derivation path in the node details */
+.derivation {
+    margin: 0.25rem 0 0.25rem 1.25rem;
+    padding: 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.derivation li {
+    margin-bottom: 0.15rem;
+}
+
+.derivation .item {
+    color: var(--text-primary);
+}
+
+.derivation li:last-child .item {
+    color: var(--accent);
+    font-weight: 600;
+}
