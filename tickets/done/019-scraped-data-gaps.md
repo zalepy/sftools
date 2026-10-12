@@ -16,7 +16,7 @@
 >
 > Left over: the buildings scraper still fails on non-production buildings (Radar Tower, generators, The HUB, …) because their pages have no recipe sections. That isn't needed by the planner, so it's not tracked.
 
-Found while writing the data validation tests (013). The tests list the known exceptions in `RECIPES_WITHOUT_OUTPUT` and `UNKNOWN_INGREDIENTS` (`tests/test_game_data.py`); remove them once each one is fixed.
+Found while writing the data validation tests (013). The tests list the known exceptions in `RECIPES_WITHOUT_OUTPUT` and `UNKNOWN_INGREDIENTS` (`tests/unit/test_game_data.py`); remove them once each one is fixed.
 
 ## Missing recipes
 - **Particle Accelerator and Quantum Encoder recipes are missing.** These items have no recipe at all: Diamonds (base recipe), Plutonium Pellet, Nuclear Pasta, Dark Matter Crystal, Ficsonium, Ficsonium Fuel Rod, Superposition Oscillator, Neural-Quantum Processor, AI Expansion Server, Alien Power Matrix.
@@ -38,4 +38,4 @@ Found while writing the data validation tests (013). The tests list the known ex
 - [ ] Fix the Excited Photonic Matter output and add the creature `* Remains` items
 - [ ] Check the Uranium Ore (Bauxite) rates
 - [ ] Per-recipe power for variable-power buildings
-- [ ] Run `tests/test_game_data.py` against fresh scraper output before committing it
+- [ ] Run `tests/unit/test_game_data.py` against fresh scraper output before committing it

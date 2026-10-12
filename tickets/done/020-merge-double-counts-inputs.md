@@ -9,7 +9,7 @@
 > - `test_reported_bug_copper_ingots` had locked in the inflation ("THIS IS THE N:M INFLATION": both Wire nodes asserted at 21). It now asserts the split (21 x 4/5.5 and 21 x 1.5/5.5).
 > - **What merging is for** (from the user, 2026-10-12): the nodes are built together in the game. It consolidates fractional building counts, allows one scale factor (overclock) for the whole set, and reduces clutter.
 > - Merging nodes with different recipes stays allowed. The UI shows a brief non-blocking message (top-left of the graph, about 4 s) naming both recipes and the one the merged node runs.
-> - **Tests:** `tests/test_merges.py` checks that every item is made exactly as fast as it is consumed (with `round_up=False`). It covers same-recipe merges, a merged node running another recipe, a missing input on the absorbed branch, merged roots, chained merges at every level, and up to 40 pairwise merges per plan in three plans.
+> - **Tests:** `tests/unit/test_merges.py` checks that every item is made exactly as fast as it is consumed (with `round_up=False`). It covers same-recipe merges, a merged node running another recipe, a missing input on the absorbed branch, merged roots, chained merges at every level, and up to 40 pairwise merges per plan in three plans.
 
 ## Problem
 Found 2026-10-12 while adding the derivation view. When node B is merged into node A, `apply_merge` moves B's input nodes (B's children) under A, but A keeps its own input nodes as well. In `FactoryGraph.recalculate`, each input node sums its parents' scaled inputs for its item. Both A's Screws node and B's Screws node now have A as a parent, so **each** takes A's *full* Screws demand, and every input is produced twice.

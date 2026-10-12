@@ -32,4 +32,4 @@ The scrapers are designed to handle the distinction between "Products" (which ha
   - Example: `Iron Ore (pure) at Miner Mk.1`.
 - **Unit Handling**: Superscript characters like `³` are normalized to `3` (e.g., `120m3`). The app loader reads only the leading number, so `120m3` is 120.
 
-After scraping, run `uv run pytest tests/test_game_data.py` before committing the new data.
+After scraping, run `uv run pytest tests/unit/test_game_data.py` before committing the new data.

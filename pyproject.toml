@@ -15,6 +15,7 @@ dependencies = [
 dev = [
     "httpx2>=2.13.1",
     "pytest>=8",
+    "websockets>=17.2",
 ]
 scrape = [
     "requests>=2.32",
@@ -25,4 +26,6 @@ requires = ["uv_build>=0.8,<0.12"]
 build-backend = "uv_build"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+# Unit tests by default; integration tests: uv run pytest tests/integration (see tests/README.md)
+testpaths = ["tests/unit"]
+addopts = "--import-mode=importlib"

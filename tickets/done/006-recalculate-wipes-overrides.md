@@ -4,7 +4,7 @@
 
 > **Update (2026-10-11):** The stateless API (010) always applies overrides last in `build_plan`, so users no longer lose them. `FactoryGraph.recalculate(None)` still clears them; fix it when the engine is next touched.
 
-> **Fixed (2026-10-11):** `FactoryGraph.recalculate(overrides=None)` now keeps the current overrides; pass `{}` to clear them. Merges and recipe switches no longer wipe them. Tests: `tests/test_graph_state.py`.
+> **Fixed (2026-10-11):** `FactoryGraph.recalculate(overrides=None)` now keeps the current overrides; pass `{}` to clear them. Merges and recipe switches no longer wipe them. Tests: `tests/unit/test_graph_state.py`.
 
 ## Problem
 `FactoryGraph.recalculate(overrides=None)` resets every node's `user_scale` to `None`.

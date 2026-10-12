@@ -31,7 +31,9 @@ sftools is a production planner for Satisfactory. A user enters target items and
 | `src/sftools/web/static/js/` | ES modules: `main.js` (entry, plan actions), `api.js`, `state.js` (plan + localStorage), `graph.js` (Cytoscape), `panel.js` (sidebar) |
 | `src/sftools/data/` | Scraped game data and the default node color palette |
 | `scripts/scrape/` | Scrapers that regenerate `src/sftools/data/` |
-| `tests/` | pytest suite (engine, graph and API) |
+| `tests/unit/` | Fast tests: engine, graph, game data, API (in-process) |
+| `tests/integration/` | Browser tests: real app + headless Chrome over the DevTools protocol |
+| `tests/e2e/` | For tests against live environments (none yet) |
 | `tickets/` | Known issues and planned work |
 
 Dependency direction: `api → engine → domain`. `domain` imports nothing from the other packages.
@@ -82,7 +84,7 @@ Node IDs are item paths (`root_node_ids`, `child_node_id` in `engine/calculator.
 
 A node's ID never depends on its own recipe, only on its ancestors' recipes. Switching a node's recipe therefore gives its inputs new IDs: adjustments below the switch reset, and the old ones apply again when the node is switched back. Merges, overrides and recipe switches refer to nodes by these IDs, so they stay valid as long as nothing above them changes (see `tickets/done/016`).
 
-Names can't contain `__`, `>` or `#`; `tests/test_graph_state.py` covers the scheme.
+Names can't contain `__`, `>` or `#`; `tests/unit/test_graph_state.py` covers the scheme.
 
 ## API
 

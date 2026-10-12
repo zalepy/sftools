@@ -671,6 +671,7 @@ dependencies = [
 dev = [
     { name = "httpx2" },
     { name = "pytest" },
+    { name = "websockets" },
 ]
 scrape = [
     { name = "requests" },
@@ -687,6 +688,7 @@ requires-dist = [
 dev = [
     { name = "httpx2", specifier = ">=2.13.1" },
     { name = "pytest", specifier = ">=8" },
+    { name = "websockets", specifier = ">=17.2" },
 ]
 scrape = [{ name = "requests", specifier = ">=2.32" }]
 

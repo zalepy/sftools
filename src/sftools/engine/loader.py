@@ -99,7 +99,7 @@ def recipe_type_for(recipe_name: str, building_name: str) -> RecipeType:
 def build_recipe(recipe_name: str, details: Dict, items: Dict[str, Item], buildings: Dict[str, Building]) -> Recipe:
     """
     output1 is the recipe's main product and output2 its by-product, as in the game data.
-    Ingredients or outputs that refer to unknown items are dropped; tests/test_game_data.py checks there are none.
+    Ingredients or outputs that refer to unknown items are dropped; tests/unit/test_game_data.py checks there are none.
     """
     def item_and_rate(prefix):
         return items.get(details.get(f'{prefix}_name')), get_float_or_none(details, f'{prefix}_rate')
