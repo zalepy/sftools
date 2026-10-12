@@ -57,11 +57,11 @@ The browser owns the **plan** and sends all of it on every change:
 
 `build_plan` replays the plan in a fixed order:
 1. **Expand demands** (`calculate_demands`): breadth-first expansion into a tree of `ProductionNode`s, using `default_recipe_for(item)` for each item (see [ALGO.md](ALGO.md)). A node produces one item, which can be either the recipe's main product (`output1` in the data) or its by-product. **Splits** apply here, as nodes are created (`split_parts`): a node split into k parts becomes k nodes with an equal share of its demand, each expanded into its own inputs. Nodes created by a recipe switch (step 2) are split the same way.
-2. **Recipe switches**, parents first. A child's ID extends its parent's ID, so sorting by ID length is enough. A switch is skipped if its node doesn't exist, is dormant (cut off by an upstream switch), or the recipe can't be resolved.
+2. **Recipe switches**, parents first. A child's ID extends its parent's ID, so sorting by ID length is enough. A switch keeps the inputs both recipes use (their nodes, and the adjustments on them, are rescaled), drops the inputs the new recipe doesn't use, with everything under them (they become dormant), and builds the new inputs as in step 1. A switch is skipped if its node doesn't exist or was dropped, or the recipe can't be resolved.
 3. **Merges**: `FactoryGraph.apply_merge` marks the source as absorbed by the target. The merged node is one shared set of buildings; each branch keeps its own inputs, sized to its share of the merged node's demand.
 4. **Overrides + propagation**: `FactoryGraph.recalculate` runs Kahn's algorithm (see [ALGO.md](ALGO.md)).
 
-Entries that no longer match the graph (typically from an older saved plan) are skipped and returned in `ignored` with a reason; the UI removes them from the saved plan and shows a notice. Entries for dormant nodes or inactive branches (under an upstream recipe that was switched away from) are kept without a report, because they apply again if that recipe is switched back.
+Entries that no longer match the graph (typically from an older saved plan) are skipped and returned in `ignored` with a reason; the UI removes them from the saved plan and shows a notice. Entries on dropped inputs (an input the recipe running above it doesn't use, or anything under one) are returned with `"dropped": true`, and the UI removes them without a notice: when the input comes back, it starts as a fresh branch. A merge group runs its target's recipe, so the absorbed nodes' inputs that it doesn't use are dropped too. When a merge target is dropped, the rest of its group stays merged: those entries carry `replacement`, the new target.
 
 The plan is saved in localStorage (`sf_planner_state`) and can be exported to or imported from a JSON file. User changes to node colors are kept in localStorage (`sf_planner_colors`) on top of the default palette from `GET /api/colors`.
 
@@ -73,7 +73,7 @@ Why stateless: on a shared deployment, a single server-side graph would be share
 - **`ProductionNode`**: one recipe run in some number of buildings. It stores base (1×) rates; scaled output, inputs and power are derived from `building_scale`, which is `user_scale` if set and otherwise `original_building_scale`. Base power comes from `Building.power_for(recipe)`; for buildings whose draw depends on the recipe (Particle Accelerator, Quantum Encoder, Converter) it is the midpoint of the listed range. `parent_demands` records how much each parent (or `"External Demand"` for a root) asks for.
 - **`FactoryGraph`** keeps *every* node created for the plan:
   - **Merged** nodes have `absorbed_by` set. Their links move to the target (for the UI view), and `get_ui_data` hides them and lists them in the target's `constituent_ids`. `recalculate` works from the unmerged structure: a group's demand is the sum of its members', and each member's input nodes get that member's share of the group's inputs (see [ALGO.md](ALGO.md)).
-  - **Dormant** nodes belong to a recipe that was switched away from. They stay in the graph but are excluded from calculation and the UI.
+  - **Dormant** nodes are dropped inputs: the recipe running above them doesn't use them. They stay in the graph but are excluded from calculation and the UI.
   - `link(parent, child)` records each link in the unmerged structure as it is made, and `_rebuild_structure` restores that structure and then replays the merges (unmerge). In stateless mode an unmerge is simply a plan without that merge.
   - `recalculate(overrides)` replaces all overrides when given a dict (`{}` clears them) and keeps the current ones when given `None`.
 
@@ -82,12 +82,11 @@ Node IDs are item paths (`root_node_ids`, `child_node_id` in `engine/calculator.
 
 - **Roots** are keyed by item: `Smart Plating`. A second demand row for the same item gets `Smart Plating#2`.
 - **Children** extend the parent's ID with their item: `Smart Plating__Reinforced Iron Plate__Screws`.
-- When the parent runs a recipe other than its default, that recipe is part of the child's ID: `Smart Plating__Reinforced Iron Plate__Alternate: Bolted Iron Plate>Screws`.
 - **Parts of a split node**: part 1 keeps the node's ID, so its override, recipe and merges stay with it. The other parts get `~2`, `~3`, ...: `Smart Plating__Reinforced Iron Plate~2`, whose inputs are `Smart Plating__Reinforced Iron Plate~2__Screws` and so on. Each part is an ordinary node with its own override and recipe, and can be merged. A merged node can't be split (the UI asks to unmerge first). When parts are removed, the UI drops the entries that belonged to them.
 
-A node's ID never depends on its own recipe, only on its ancestors' recipes. Switching a node's recipe therefore gives its inputs new IDs: adjustments below the switch reset, and the old ones apply again when the node is switched back. Merges, overrides and recipe switches refer to nodes by these IDs, so they stay valid as long as nothing above them changes (see `tickets/done/016`).
+IDs don't depend on recipes. When a node switches recipe, the inputs both recipes use keep their IDs and adjustments; see `tickets/done/022`. Merges, overrides, splits and recipe switches refer to nodes by these IDs, so they stay valid as long as the items above them don't change (see `tickets/done/016`).
 
-Names can't contain `__`, `>`, `#` or `~`; `tests/unit/test_graph_state.py` covers the scheme.
+Names can't contain `__`, `#` or `~`; `tests/unit/test_graph_state.py` covers the scheme.
 
 ## API
 

@@ -35,7 +35,9 @@ async function requestPlan({
     });
     if (ignored.length) {
         dropIgnoredEntries(ignored, { merges, overrides, recipes, splits });
-        panel.showPlanNotice(ignored);
+        // Entries on inputs a recipe no longer uses go quietly: that is what the switch (or merge) asked for
+        const stale = ignored.filter(entry => !entry.dropped);
+        if (stale.length) panel.showPlanNotice(stale);
     }
     return nodes;
 }

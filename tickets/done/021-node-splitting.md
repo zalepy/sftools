@@ -14,7 +14,7 @@ Split one `ProductionNode` into two or more nodes, e.g. to build them in differe
 - **Each part is an ordinary node:** its own override (the "clock speed" use), its own recipe switch, and it can be merged. Dragging one part onto another merges them, which puts them back on one set of buildings.
 - **Merged parents:** in `FactoryGraph.recalculate`, the parts of a split input divide their parent's share of the group's need equally.
 - **Merged nodes can't be split:** which branch's demand would go to which part? The panel disables Split and says to unmerge first.
-- **Stale entries:** a split with fewer than 2 parts, or for a node not in the plan, is reported in `ignored` with kind `"split"`. Splits on inactive branches are kept silently, like the other entries.
+- **Stale entries:** a split with fewer than 2 parts, or for a node not in the plan, is reported in `ignored` with kind `"split"`. Splits on inactive branches are kept silently, like the other entries. (Superseded by 022: entries on dropped inputs are now discarded.)
 - **Fewer parts / Unsplit:** the UI drops the overrides, recipes, merges and splits that belonged to removed parts (the part's ID, its inputs `__…` and its own parts `~…`).
 - **UI:** "Split Into Parts" (number + Split; Set Parts on a split node) and "Unsplit Node" in the node panel; split nodes are labelled `[part/count]` on the graph. Nodes carry `split: {of, part, count}` (or `null`).
 

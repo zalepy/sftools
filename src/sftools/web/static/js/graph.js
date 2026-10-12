@@ -169,7 +169,8 @@ export function renderGraph(nodesData) {
     nodesData.forEach(node => {
         const indicator = indicatorImage(node);
         const part = node.split ? ` [${node.split.part}/${node.split.count}]` : '';
-        const label = `${node.output_item}${part}\n${parseFloat(node.throughput).toFixed(2)}/m\n(${parseFloat(node.building_scale).toFixed(2)}x ${node.building})`;
+        const alternate = node.is_alternate ? ' (A)' : '';
+        const label = `${node.output_item}${alternate}${part}\n${parseFloat(node.throughput).toFixed(2)}/m\n(${parseFloat(node.building_scale).toFixed(2)}x ${node.building})`;
         elements.push({
             group: 'nodes',
             data: {

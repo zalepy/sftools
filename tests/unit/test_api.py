@@ -121,30 +121,51 @@ def test_stale_entries_are_reported_not_rejected(client):
     assert next(n for n in body["nodes"] if n["id"] == rip)["building_scale"] == 2
 
 
-def test_entries_on_inactive_branches_are_kept_silently(client):
-    """A switch below a recipe that was switched away from must survive, to apply again on switching back."""
-    demands = [{"item": "Reinforced Iron Plate", "rate": 5}]
-    root = calculate(client, demands=demands).json()["nodes"][0]
-    default_screws = next(c for c in root["children"] if "Screws" in c)
+SP_SCREWS = "Smart Plating__Reinforced Iron Plate__Screws"
+ROTOR_ROD = "Smart Plating__Rotor__Iron Rod"
+ROTOR_SCREWS_ROD = "Smart Plating__Rotor__Screws__Iron Rod"
+CAST = {SP_SCREWS: "Alternate: Cast Screws"}
 
-    # Under the Bolted recipe: switch its Screws node to Cast Screws
-    bolted = calculate(client, demands=demands, recipes={root["id"]: "Alternate: Bolted Iron Plate"}).json()["nodes"]
-    bolted_root = next(n for n in bolted if n["id"] == root["id"])
-    bolted_screws = next(c for c in bolted_root["children"] if "Screws" in c)
-    assert bolted_screws != default_screws
 
-    # Back on the default recipe, the Bolted-branch switch is not stale
-    body = calculate(client, demands=demands, recipes={bolted_screws: "Alternate: Cast Screws"}).json()
-    assert body["ignored"] == []
+def rods(nodes):
+    return {n["id"]: n for n in nodes_by_item(nodes, "Iron Rod")}
 
-    # Under Bolted, a switch for the default branch's (now dormant) Screws node is not stale either
-    body = calculate(client, demands=demands, recipes={
-        root["id"]: "Alternate: Bolted Iron Plate",
-        default_screws: "Alternate: Cast Screws",
-        bolted_screws: "Alternate: Cast Screws",
-    }).json()
-    assert body["ignored"] == []
-    assert next(n for n in body["nodes"] if n["id"] == bolted_screws)["recipe_name"] == "Alternate: Cast Screws"
+
+def test_switch_drops_a_merged_input_and_keeps_the_rest_of_the_merge(client):
+    """Merged Iron Rod, then Screws switched to Cast Screws: only the Screws branch's share goes."""
+    demands = [{"item": "Smart Plating", "rate": 2}]
+    unmerged = rods(calculate(client, demands=demands).json()["nodes"])
+    rotor_rod_alone = unmerged[ROTOR_ROD]["throughput"]
+
+    body = calculate(client, demands=demands, merges={f"{SP_SCREWS}__Iron Rod": ROTOR_ROD}, recipes=CAST).json()
+    assert body["ignored"] == [{"kind": "merge", "node_id": f"{SP_SCREWS}__Iron Rod",
+                                "reason": "input not used by the current recipe", "dropped": True, "replacement": None}]
+    rod = rods(body["nodes"])[ROTOR_ROD]
+    assert rod["throughput"] == pytest.approx(rotor_rod_alone)  # the Screws branch's share is gone
+    assert rod["constituent_ids"] == []
+    assert f"{SP_SCREWS}__Iron Rod" not in rods(body["nodes"])
+
+
+def test_dropped_merge_target_leaves_the_others_merged(client):
+    demands = [{"item": "Smart Plating", "rate": 2}]
+    target = f"{SP_SCREWS}__Iron Rod"
+    body = calculate(client, demands=demands, recipes=CAST,
+                     merges={ROTOR_ROD: target, ROTOR_SCREWS_ROD: target}).json()
+    assert sorted((e["node_id"], e["dropped"], e["replacement"]) for e in body["ignored"]) == [
+        (ROTOR_ROD, True, None), (ROTOR_SCREWS_ROD, True, ROTOR_ROD)]
+    assert rods(body["nodes"])[ROTOR_ROD]["constituent_ids"] == [ROTOR_SCREWS_ROD]
+
+
+def test_entries_from_older_plans_are_not_marked_dropped(client):
+    body = calculate(client, demands=[{"item": "Smart Plating", "rate": 2}],
+                     overrides={f"Smart Plating__Reinforced Iron Plate__Alternate: Bolted Iron Plate>Screws": 2}).json()
+    assert [(e["kind"], e["dropped"]) for e in body["ignored"]] == [("override", False)]
+
+
+def test_alternate_recipes_are_marked(client):
+    nodes = calculate(client, recipes=CAST).json()["nodes"]
+    marked = {n["id"] for n in nodes if n["is_alternate"]}
+    assert marked == {SP_SCREWS}
 
 
 def test_static_assets_are_served(client):
@@ -164,7 +185,7 @@ def test_nodes_carry_their_derivation(client):
     """Each node lists the chain from its demand down to itself, with the recipe each step runs."""
     rip = "Smart Plating__Reinforced Iron Plate"
     nodes = calculate(client, recipes={rip: "Alternate: Bolted Iron Plate"}).json()["nodes"]
-    screws = next(n for n in nodes if n["id"] == f"{rip}__Alternate: Bolted Iron Plate>Screws")
+    screws = next(n for n in nodes if n["id"] == f"{rip}__Screws")
     assert [(s["item"], s["recipe"]) for s in screws["derivation"]] == [
         ("Smart Plating", "Smart Plating"),
         ("Reinforced Iron Plate", "Alternate: Bolted Iron Plate"),
@@ -195,4 +216,5 @@ def test_splits_are_replayed(client):
 def test_split_with_too_few_parts_is_reported(client):
     rip = "Smart Plating__Reinforced Iron Plate"
     body = calculate(client, splits={rip: 1}).json()
-    assert body["ignored"] == [{"kind": "split", "node_id": rip, "reason": "needs at least 2 parts, got 1"}]
+    assert body["ignored"] == [{"kind": "split", "node_id": rip, "reason": "needs at least 2 parts, got 1",
+                                "dropped": False, "replacement": None}]

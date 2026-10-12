@@ -13,6 +13,21 @@ def plan(**changes):
     return {**TWO_ROOTS, **changes}
 
 
+def label(node_id):
+    return f"document.getElementById('cy')._cyreg.cy.getElementById({json.dumps(node_id)}).data('label')"
+
+
+def switch_recipe(page, node_id, recipe):
+    page.select_node(node_id)
+    page.wait_until("!document.getElementById('recipe-select').disabled")
+    page.js(f"""(() => {{
+        const select = document.getElementById('recipe-select');
+        select.value = {json.dumps(recipe)};
+        select.dispatchEvent(new Event('change'));
+    }})()""")
+    page.wait_until(f"document.getElementById('detail-recipe').textContent === {json.dumps(recipe)}")
+
+
 def test_page_loads(page):
     page.open(page.base_url)
     assert page.js("document.querySelectorAll('[onclick],[onsubmit],[onchange]').length") == 0
@@ -67,7 +82,9 @@ def test_recipe_switch(page):
     })()""")
     page.wait_until("document.getElementById('detail-recipe').textContent === 'Alternate: Bolted Iron Plate'")
     assert page.saved_plan()["recipes"] == {RIP_SP: "Alternate: Bolted Iron Plate"}
-    assert f"{RIP_SP}__Alternate: Bolted Iron Plate>Screws" in page.node_ids()
+    assert f"{RIP_SP}__Screws" in page.node_ids()  # Bolted uses Screws too: same node
+    assert page.js(label(RIP_SP)).startswith("Reinforced Iron Plate (A)\n")
+    assert page.js(label(RIP_MF)).startswith("Reinforced Iron Plate\n")
 
 
 def test_override_apply_and_clear(page):
@@ -200,3 +217,31 @@ def test_selecting_a_node_keeps_its_color(page):
     page.js(f"void {node}.select()")
     assert page.js(f"{node}.style('background-color')") == before
     assert page.js(f"{node}.style('border-color')") == "rgb(244,63,94)"  # selected, even with an override
+
+
+SP_SCREWS = f"{RIP_SP}__Screws"
+ROTOR_ROD = "Smart Plating__Rotor__Iron Rod"
+
+
+def test_switching_a_merged_node_leaves_no_old_inputs(page):
+    page.open(page.base_url, plan(merges={f"{RIP_MF}__Screws": SP_SCREWS}))
+    switch_recipe(page, SP_SCREWS, "Alternate: Cast Screws")
+    ids = page.node_ids()
+    assert f"{SP_SCREWS}__Iron Ingot" in ids
+    assert not [i for i in ids if i.startswith((SP_SCREWS, f"{RIP_MF}__Screws")) and i.endswith("Iron Rod")]
+    assert page.js(label(SP_SCREWS)).startswith("Screws (A)")
+    assert page.js("document.getElementById('plan-notice').hidden")
+
+
+def test_switching_away_and_back_starts_a_fresh_branch(page):
+    """A merged Iron Rod keeps its other demand; the Screws branch's Iron Rod comes back unmerged."""
+    sp_rod = f"{SP_SCREWS}__Iron Rod"
+    page.open(page.base_url, plan(merges={sp_rod: ROTOR_ROD}, overrides={f"{sp_rod}__Iron Ingot": 2}))
+    switch_recipe(page, SP_SCREWS, "Alternate: Cast Screws")
+    assert page.saved_plan()["merges"] == {}
+    assert page.saved_plan()["overrides"] == {}
+    assert page.js("document.getElementById('plan-notice').hidden")  # dropped quietly
+
+    switch_recipe(page, SP_SCREWS, "Screws")
+    assert sp_rod in page.node_ids()  # back, on its own
+    assert page.saved_plan()["merges"] == {}

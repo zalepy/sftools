@@ -2,6 +2,7 @@ from collections import Counter
 from typing import Dict, List, Optional, Set, Tuple
 import math
 import re
+from sftools.domain.enums.recipe_type import RecipeType
 from sftools.domain.models.production_node import ProductionNode
 
 class FactoryGraph:
@@ -144,6 +145,15 @@ class FactoryGraph:
         node.is_dormant = dormant
         for child in node.children:
             self.set_subtree_dormancy(child.id, dormant)
+
+    def drop_subtree(self, node_id: str):
+        """Makes a node and everything under it in the unmerged structure dormant."""
+        node = self.get_node(node_id)
+        if node is None or node.is_dormant:
+            return
+        node.is_dormant = True
+        for child in self._original_children(node):
+            self.drop_subtree(child.id)
 
     def recalculate(self, overrides: Dict[str, float] = None, round_up: bool = False):
         """
@@ -381,6 +391,7 @@ class FactoryGraph:
             "base_inputs": node.base_inputs,
             "base_power": node.base_power,
             "is_dormant": node.is_dormant,
+            "is_alternate": node.recipe is not None and node.recipe.type == RecipeType.ALTERNATE,
             "derivation": self.derivation(node),
             "split": self.split_info(node.id),
         }

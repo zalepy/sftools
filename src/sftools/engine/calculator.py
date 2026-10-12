@@ -48,14 +48,11 @@ def root_node_ids(item_names: List[str]) -> List[str]:
     return ids
 
 
-def child_node_id(parent: ProductionNode, item_name: str, items_map: Dict) -> str:
+def child_node_id(parent: ProductionNode, item_name: str, items_map: Dict = None) -> str:
     """
-    '<parent id>__<item>'. When the parent runs a recipe other than its default, the recipe is part
-    of the child's ID ('<parent id>__<recipe>><item>'), so each recipe gets its own input nodes:
-    adjustments made under one recipe stay with it and come back when the parent is switched back.
+    '<parent id>__<item>', whatever recipe the parent runs: when the parent switches recipe, the inputs
+    both recipes use keep their nodes (and the adjustments made on them).
     """
-    if parent.recipe is not None and parent.recipe is not default_recipe_for(items_map[parent.output_item_name]):
-        return f"{parent.id}__{parent.recipe.name}>{item_name}"
     return f"{parent.id}__{item_name}"
 
 
@@ -260,24 +257,43 @@ def switch_recipe_in_graph(graph: FactoryGraph, node_id: str, new_recipe: Recipe
     graph.recalculate(round_up=round_up)
 
 
-def _on_inactive_branch(graph: FactoryGraph, node_id: str, items_map: Dict) -> bool:
+ACTIVE, DROPPED, MISSING = "active", "dropped", "missing"
+
+
+def _entry_state(graph: FactoryGraph, node_id: str) -> str:
     """
-    A missing node whose closest existing ancestor now runs a different recipe than the one in the ID
-    (see child_node_id) was created under that ancestor's other recipe: the entry is not stale, it
-    applies again if the user switches the ancestor back.
+    ACTIVE: the node runs. DROPPED: the node, or the closest ancestor that exists, is dormant: it is an
+    input (or under an input) that the recipe now running above it doesn't use. MISSING: anything else,
+    usually an entry from an older saved plan.
     """
+    node = graph.get_node(node_id)
+    if node is not None:
+        return DROPPED if node.is_dormant else ACTIVE
     end = len(node_id)
     while (end := node_id.rfind('__', 0, end)) != -1:
         ancestor = graph.get_node(node_id[:end])
-        if ancestor is None:
+        if ancestor is not None:
+            return DROPPED if ancestor.is_dormant else MISSING
+    return MISSING
+
+
+def _drop_unused_inputs_of_merged(graph: FactoryGraph) -> bool:
+    """
+    A merge group runs its target's recipe. Inputs of the absorbed nodes that this recipe doesn't use
+    are dropped, with everything under them. Returns whether anything was dropped.
+    """
+    active = {node_id: node for node_id, node in graph.all_nodes.items() if not node.is_dormant}
+    dropped = False
+    for node in active.values():
+        if not node.absorbed_by:
             continue
-        segment = node_id[end + 2:].split('__', 1)[0]
-        recipe_name, marker, _ = segment.rpartition('>')
-        if not marker:
-            default = default_recipe_for(items_map[ancestor.output_item_name])
-            recipe_name = default.name if default else None
-        return ancestor.recipe is not None and ancestor.recipe.name != recipe_name
-    return False
+        rep = graph._representative(node, active)
+        needed = {item.name for item, _ in rep.recipe.ingredients} if rep.recipe else set()
+        for child in graph._original_children(node):
+            if not child.is_dormant and child.output_item_name not in needed:
+                graph.drop_subtree(child.id)
+                dropped = True
+    return dropped
 
 
 def build_plan(
@@ -296,9 +312,15 @@ def build_plan(
     Splits apply as nodes are created (see split_parts), so the parts of a split node, and their
     inputs, exist before any other entry refers to them.
 
+    A recipe switch keeps the inputs both recipes use, drops the inputs the new recipe doesn't use
+    (with everything under them) and builds the new ones. A merge group runs its target's recipe, so
+    the absorbed nodes' inputs that it doesn't use are dropped the same way.
+
     Entries that can't apply are skipped and listed in `graph.ignored` as
-    {"kind": "recipe" | "merge" | "override" | "split", "node_id", "reason"}. Entries for dormant nodes or
-    inactive branches are skipped silently, since they apply again if an upstream recipe is switched back.
+    {"kind": "recipe" | "merge" | "override" | "split", "node_id", "reason"}. Entries on dropped
+    inputs also have "dropped": True: they belonged to a branch the current recipes no longer use, and
+    a new branch starts fresh. When a merge target is dropped, the nodes merged into it stay merged
+    with each other: those entries carry "replacement", their new target.
     """
     ignored = []
     splits = dict(splits or {})
@@ -310,17 +332,21 @@ def build_plan(
     root_demands = [Demand(name, items_map[name], rate, DemandType.PRODUCE) for name, rate in demands]
     graph = calculate_demands(items_map, root_demands, round_up=round_up, splits=splits)
 
-    def missing(node_id: str) -> bool:
-        return graph.get_node(node_id) is None and not _on_inactive_branch(graph, node_id, items_map)
+    def report(kind: str, node_id: str, state: str, **extra):
+        if state == DROPPED:
+            ignored.append({"kind": kind, "node_id": node_id, "reason": "input not used by the current recipe",
+                            "dropped": True, **extra})
+        else:
+            ignored.append({"kind": kind, "node_id": node_id, "reason": "node not in plan", **extra})
 
     # Parents first: a child's ID extends its parent's ID, so shorter IDs are switched first.
     for node_id, recipe_name in sorted((recipes or {}).items(), key=lambda kv: len(kv[0])):
+        state = _entry_state(graph, node_id)
+        if state != ACTIVE:
+            report("recipe", node_id, state)
+            continue
         node = graph.get_node(node_id)
         recipe = recipes_map.get(recipe_name)
-        if node is None:
-            if missing(node_id):
-                ignored.append({"kind": "recipe", "node_id": node_id, "reason": "node not in plan"})
-            continue
         if recipe is None:
             ignored.append({"kind": "recipe", "node_id": node_id, "reason": f"unknown recipe {recipe_name!r}"})
             continue
@@ -328,25 +354,55 @@ def build_plan(
             ignored.append({"kind": "recipe", "node_id": node_id,
                             "reason": f"{recipe_name!r} does not produce {node.output_item_name}"})
             continue
-        if node.is_dormant or node.recipe is recipe:
-            continue
-        switch_recipe_in_graph(graph, node_id, recipe, items_map, round_up=round_up, splits=splits)
+        if node.recipe is not recipe:
+            switch_recipe_in_graph(graph, node_id, recipe, items_map, round_up=round_up, splits=splits)
+
+    # Merging can drop inputs (of the absorbed nodes), which can drop nodes other merges refer to:
+    # apply the merges again until nothing more is dropped.
+    while True:
+        merge_ignored = []
+        graph.merges = {}
+        graph._reset_structure()
+        by_target: Dict[str, List[str]] = {}
+        for source_id, target_id in (merges or {}).items():
+            states = {n: _entry_state(graph, n) for n in (source_id, target_id)}
+            stale = [n for n, state in states.items() if state == MISSING]
+            if stale:
+                merge_ignored.append({"kind": "merge", "node_id": source_id,
+                                      "reason": f"node not in plan: {', '.join(stale)}"})
+            elif states[source_id] == DROPPED:
+                merge_ignored.append({"kind": "merge", "node_id": source_id,
+                                      "reason": "input not used by the current recipe", "dropped": True})
+            else:
+                by_target.setdefault(target_id, []).append(source_id)
+        for target_id, sources in by_target.items():
+            if _entry_state(graph, target_id) == DROPPED:
+                # The rest of the group stays merged, into its first remaining node
+                new_target, *others = sources
+                merge_ignored.append({"kind": "merge", "node_id": new_target,
+                                      "reason": "merge target not used by the current recipe", "dropped": True})
+                for source_id in others:
+                    merge_ignored.append({"kind": "merge", "node_id": source_id,
+                                          "reason": "merge target not used by the current recipe", "dropped": True,
+                                          "replacement": new_target})
+                    graph.apply_merge(source_id, new_target)
+            else:
+                for source_id in sources:
+                    graph.apply_merge(source_id, target_id)
+        if not _drop_unused_inputs_of_merged(graph):
+            break
+    ignored.extend(merge_ignored)
 
     for node_id in list(splits):
-        if missing(node_id):
-            ignored.append({"kind": "split", "node_id": node_id, "reason": "node not in plan"})
+        state = _entry_state(graph, node_id)
+        if state != ACTIVE:
+            report("split", node_id, state)
             del splits[node_id]
 
-    for source_id, target_id in (merges or {}).items():
-        stale = [n for n in (source_id, target_id) if missing(n)]
-        if stale:
-            ignored.append({"kind": "merge", "node_id": source_id, "reason": f"node not in plan: {', '.join(stale)}"})
-            continue
-        graph.apply_merge(source_id, target_id)
-
     for node_id in overrides or {}:
-        if missing(node_id):
-            ignored.append({"kind": "override", "node_id": node_id, "reason": "node not in plan"})
+        state = _entry_state(graph, node_id)
+        if state != ACTIVE:
+            report("override", node_id, state)
 
     graph.recalculate(overrides or {}, round_up=round_up)
     graph.ignored = ignored

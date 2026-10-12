@@ -107,22 +107,35 @@ def test_same_item_demanded_twice_keeps_both(data):
     assert roots == pytest.approx({"Smart Plating": 2, "Smart Plating#2": 3})
 
 
-def test_recipe_switch_gives_inputs_new_ids(data):
-    """Adjustments below a node are reset by switching its recipe, and come back on switching back."""
+def test_recipe_switch_keeps_shared_inputs_and_drops_the_others(data):
+    """Bolted Iron Plate uses Iron Plate and Screws, like the default recipe: both keep their nodes and overrides."""
     rip = "Smart Plating__Reinforced Iron Plate"
-    screws = f"{rip}__Screws"
     plan = dict(items_map=data.items, recipes_map=data.recipes, demands=[("Smart Plating", 2)], round_up=False)
 
-    graph = build_plan(**plan, recipes={rip: "Alternate: Bolted Iron Plate"}, overrides={screws: 7})
-    bolted_screws = f"{rip}__Alternate: Bolted Iron Plate>Screws"
-    assert graph.get_node(bolted_screws).user_scale is None
-    assert graph.get_node(screws).is_dormant
+    graph = build_plan(**plan, recipes={rip: "Alternate: Bolted Iron Plate"}, overrides={f"{rip}__Screws": 7})
+    assert graph.get_node(f"{rip}__Screws").building_scale == 7
     assert graph.ignored == []
 
-    # The override on the default recipe's Screws applies again without the switch
-    graph = build_plan(**plan, overrides={screws: 7, bolted_screws: 4})
-    assert graph.get_node(screws).building_scale == 7
-    assert graph.ignored == []  # the Bolted-branch override is kept for when Bolted is chosen again
+    # Cast Screws uses Iron Ingot instead of Iron Rod: the Iron Rod branch and its adjustments go
+    screws = f"{rip}__Screws"
+    graph = build_plan(**plan, recipes={screws: "Alternate: Cast Screws"},
+                       overrides={f"{screws}__Iron Rod": 3, f"{screws}__Iron Rod__Iron Ingot": 2, screws: 4})
+    assert graph.get_node(f"{screws}__Iron Rod").is_dormant
+    assert not graph.get_node(f"{screws}__Iron Ingot").is_dormant
+    assert graph.get_node(screws).building_scale == 4
+    assert sorted((e["node_id"], e["dropped"]) for e in graph.ignored) == [
+        (f"{screws}__Iron Rod", True), (f"{screws}__Iron Rod__Iron Ingot", True)]
+
+
+def test_inputs_of_a_switched_node_are_rescaled(data):
+    """2 Reinforced Iron Plate/min: the Screws node keeps its ID and makes what the running recipe needs."""
+    rip = "Smart Plating__Reinforced Iron Plate"
+    plan = dict(items_map=data.items, recipes_map=data.recipes, demands=[("Smart Plating", 2)], round_up=False)
+    for recipe_name in ("Reinforced Iron Plate", "Alternate: Bolted Iron Plate"):
+        recipe = data.recipes[recipe_name]
+        screws_per_plate = dict((item.name, rate) for item, rate in recipe.ingredients)["Screws"] / recipe.output_rate
+        graph = build_plan(**plan, recipes={rip: recipe_name})
+        assert graph.get_node(f"{rip}__Screws").scaled_output == pytest.approx(2 * screws_per_plate), recipe_name
 
 
 def test_old_style_ids_are_reported(data):

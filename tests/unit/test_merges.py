@@ -75,7 +75,7 @@ def test_merged_node_running_another_recipe(data):
     """The merged node runs Bolted; the absorbed branch's inputs still supply its share of the same items."""
     graph = plan(data, merges={RIP_MF: RIP_SP}, recipes={RIP_SP: "Alternate: Bolted Iron Plate"})
     assert_balanced(graph)
-    bolted_screws = graph.get_node(f"{RIP_SP}__Alternate: Bolted Iron Plate>Screws")
+    bolted_screws = graph.get_node(f"{RIP_SP}__Screws")
     other_screws = graph.get_node(f"{RIP_MF}__Screws")
     assert other_screws.scaled_output == pytest.approx(1.5 * bolted_screws.scaled_output)  # 3 : 2
 
@@ -86,7 +86,10 @@ def test_absorbed_branch_without_an_input_leaves_it_to_the_others(data):
     assert_balanced(graph)
     rubber = [n for n in running(graph) if n.output_item_name == "Rubber"]
     assert len(rubber) == 1
-    assert graph.get_node(f"{RIP_MF}__Screws").scaled_output == 0  # Adhered uses no Screws
+    # Adhered uses no Screws: the absorbed branch's Screws are dropped, with everything under them
+    assert graph.get_node(f"{RIP_MF}__Screws").is_dormant
+    assert graph.get_node(f"{RIP_MF}__Screws__Iron Rod").is_dormant
+    assert graph.get_node(f"{RIP_SP}__Screws").is_dormant
 
 
 def test_merging_roots_of_the_same_item(data):
@@ -129,3 +132,18 @@ def test_any_pairwise_merge_stays_balanced(data, demands):
     assert pairs
     for source, target in pairs:
         assert_balanced(plan(data, demands=demands, merges={source: target}))
+
+
+def test_switching_a_merged_node_drops_the_inputs_it_no_longer_uses(data):
+    """Merged Screws switched to Cast Screws: no Iron Rod is left behind under the absorbed branch."""
+    sp, mf = f"{RIP_SP}__Screws", f"{RIP_MF}__Screws"
+    graph = plan(data, merges={mf: sp}, recipes={sp: "Alternate: Cast Screws"})
+    assert_balanced(graph)
+    assert graph.get_node(f"{mf}__Iron Rod").is_dormant
+    assert graph.get_node(f"{sp}__Iron Rod").is_dormant
+    assert not [n for n in running(graph) if n.id.startswith((sp, mf)) and n.output_item_name == "Iron Rod"]
+    # The group's Iron Ingot comes from the target's own new input, sized for both branches
+    cast = data.recipes["Alternate: Cast Screws"]
+    ingots_per_screw = cast.ingredients[0][1] / cast.output_rate
+    assert graph.get_node(f"{sp}__Iron Ingot").scaled_output == pytest.approx(
+        graph.get_node(sp).scaled_output * ingots_per_screw)
