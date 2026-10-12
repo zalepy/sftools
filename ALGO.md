@@ -25,25 +25,26 @@ The `FactoryGraph` class serves as the stateful orchestrator for the production 
 
 ### 2. Stateful Merging
 - **`apply_merge(source, target)`**: Non-destructively merges two nodes.
-    - It transfers `External Demand` and all parent/child links to the target.
-    - It marks the source node as `absorbed_by` the target.
-    - The source node is effectively "orphaned" but preserved in the master graph.
+    - It marks the source node as `absorbed_by` the target and moves its parent/child links to the target (used for the UI view).
+    - Each node keeps its own external demand; the group's demand is computed in `recalculate`.
+    - The source node is preserved in the master graph.
+    - **Meaning:** the merged nodes are built together in the game, as one shared set of buildings. Each branch keeps its own inputs, sized to that branch's share (see below). Merging is used to:
+        - consolidate fractional counts (two lines at x.5 buildings each become a whole number),
+        - set one scale factor (overclock) for the whole set,
+        - reduce clutter in a big graph.
+    - Merging nodes that run different recipes is allowed (the merged node runs the target's recipe). The UI shows a brief message when it happens.
 - **`remove_merge(source_id)`**: Rebuilds the graph structure from the captured initial topology plus the remaining active merges. This allows for instant "unmerging" without a full backend recalculation.
 
 ## Propagation Algorithm (Recalculation)
 
-The `recalculate` method updates the throughput and building counts across the graph whenever an override is changed or nodes are merged.
+The `recalculate` method updates the throughput and building counts across the graph whenever an override is changed or nodes are merged. It works on the *unmerged* structure (each node's original parent and children), with merge groups on top:
 
-1.  **Initialize In-Degrees**: Count parent relationships for each node based on the *current* manipulated structure.
-2.  **Identify Roots**: Find nodes with zero in-degree (Top-level demands or orphaned nodes).
-3.  **Root Scale Reset**: 
-    - For each root node, update its scale based ONLY on its `External Demand`. 
-    - Nodes orphaned by merges (no parents) naturally drop to 0 scale during this step.
-4.  **Topological Sort (Kahn's Algorithm)**:
-    - Iterate through the graph top-down.
-    - For each node, its effective `building_scale` determines its current `scaled_inputs`.
-    - Sum the required input rates from **all** parents and update the child's `original_building_scale`.
-    - Decrement children's in-degrees and add to the queue when they reach zero.
-5.  **Handling Overrides**:
-    - If a node has a `user_scale` override, that value is used for `building_scale` and drives all downstream requirements.
-    - Overrides for merged groups are applied to the "Representative" (target) node.
+1.  **Groups**: every running node belongs to a group, either its merge target (following chains of merges) or itself. Absorbed nodes don't run on their own (scale 0).
+2.  **Order**: groups are processed top-down (Kahn's algorithm) over the edges `group(original parent) -> group(node)`.
+3.  **Demand per member**: for each member of a group, its demand is
+    - its external demand (root nodes), plus
+    - its share of what its original parent's group needs of its item. The parent group's need for an item is split between the input nodes for that item under the group's members, in proportion to each member's share of the group's demand. Members without an input node for the item (e.g. the group runs a different recipe) leave their share to the members that have one.
+4.  **Scale**: a group's demand is the sum of its members' demands. Its target's `original_building_scale` is that demand / output rate (rounded up per building when `round_up` is on).
+5.  **Overrides**: if a node has a `user_scale`, that value is used for `building_scale` and drives the inputs below it. Overrides for merged groups are applied to the target node, and the input split keeps the members' demand shares.
+
+So with 2/min Smart Plating and 2/min Modular Frame, merging their two Reinforced Iron Plate nodes gives one plate line at 5/min (2 + 3). The Smart Plating branch's Screws node supplies 2/5 of that line's Screws, and the Modular Frame branch's supplies 3/5. Every item is made exactly as fast as it is consumed (`tests/test_merges.py`).

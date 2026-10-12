@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Tuple
 import math
 from sftools.domain.models.production_node import ProductionNode
 
@@ -83,15 +83,9 @@ class FactoryGraph:
         if source.is_dormant or target.is_dormant:
             return
 
-        # Record merge
+        # Record merge. Each node keeps its own external demand; recalculate adds up the group's.
         self.merges[source_id] = target_id
         source.absorbed_by = target_id
-
-        # Transfer External Demand
-        source_ext = source.parent_demands.get("External Demand", 0)
-        if source_ext > 0:
-            target.parent_demands["External Demand"] = target.parent_demands.get("External Demand", 0) + source_ext
-            source.parent_demands["External Demand"] = 0
         
         # Execute link transfer
         self._execute_merge_links(source, target)
@@ -150,96 +144,134 @@ class FactoryGraph:
 
     def recalculate(self, overrides: Dict[str, float] = None, round_up: bool = False):
         """
-        Propagates scales through the graph.
-        Handles merges by treating the absorption target as the primary node.
+        Propagates demand top-down and sets every node's scale.
+
+        A merge group (a target and the nodes absorbed into it) runs as one set of buildings for the
+        sum of its members' demands. Each member keeps its own input nodes, from the unmerged
+        structure: for each input item, the group's need is split between the members' input nodes
+        in proportion to each member's share of the group's demand. Members without an input node for
+        an item (e.g. the group runs a different recipe) leave their share to the members that have one.
         """
         # 1. Apply overrides: None keeps the current ones, a dict replaces them all ({} clears them)
         if overrides is not None:
             for node_id, node in self.all_nodes.items():
                 node.user_scale = overrides.get(node_id)
 
-        # 2. Topological Sort
-        nodes_map = self.all_nodes
-        in_degree = {node_id: 0 for node_id, n in nodes_map.items() if not n.is_dormant}
-        for node_id, node in nodes_map.items():
-            if node.is_dormant:
-                continue
-            for child in node.children:
-                if child.id in in_degree:
-                    in_degree[child.id] += 1
-        
-        # Initialize queue with nodes that have no active parents
-        queue = []
-        for node_id, degree in in_degree.items():
-            if degree == 0:
-                node = nodes_map[node_id]
-                queue.append(node)
-                
-                # Update root scale based on External Demand
-                external = node.parent_demands.get("External Demand", 0)
-                if node.base_output_rate > 0:
-                    base_scale = external / node.base_output_rate
-                    if round_up:
-                        node.original_building_scale = math.ceil(base_scale - 0.00001)
-                        if node.original_building_scale == 0 and base_scale > 0:
-                            node.original_building_scale = 1
-                    else:
-                        node.original_building_scale = base_scale
-                    
-                    node.ideal_building_scale = base_scale
-                else:
-                    # e.g. nodes with 0 output rate (sinks) or raw items without recipes
-                    # If they are just roots without parents now, their scale should be 0 
-                    # unless they are the actual designated root demands.
-                    node.original_building_scale = 0
-                    node.ideal_building_scale = 0
+        active = {node_id: node for node_id, node in self.all_nodes.items() if not node.is_dormant}
+        for node in active.values():
+            self._external(node)  # record it before parent_demands is rebuilt below
+        rep_of ={node_id: self._representative(node, active).id for node_id, node in active.items()}
+        members: Dict[str, List[ProductionNode]] = {}
+        for node_id, node in active.items():
+            members.setdefault(rep_of[node_id], []).append(node)
+
+        # Absorbed nodes don't run on their own
+        for node_id, node in active.items():
+            if rep_of[node_id] != node_id:
+                node.original_building_scale = 0
+                node.ideal_building_scale = 0
+                node.parent_demands = {}
+
+        # 2. Order groups top-down: an edge for every unmerged parent -> child link
+        group_parents: Dict[str, Set[str]] = {rep_id: set() for rep_id in members}
+        group_children: Dict[str, Set[str]] = {rep_id: set() for rep_id in members}
+        for node_id, node in active.items():
+            parent = self._original_parent(node)
+            if parent is not None and parent.id in active and rep_of[parent.id] != rep_of[node_id]:
+                group_parents[rep_of[node_id]].add(rep_of[parent.id])
+                group_children[rep_of[parent.id]].add(rep_of[node_id])
+
+        in_degree = {rep_id: len(parents) for rep_id, parents in group_parents.items()}
+        queue = [rep_id for rep_id, degree in in_degree.items() if degree == 0]
+        demand: Dict[str, float] = {}  # per node (member), from its own parent or the user
+        group_demand: Dict[str, float] = {}
+
+        def share(rep_id: str, member: ProductionNode) -> float:
+            total = group_demand[rep_id]
+            return demand[member.id] / total if total > 0 else 1 / len(members[rep_id])
+
+        def member_demand(member: ProductionNode) -> Tuple[Optional[str], float]:
+            """(parent group id or None, rate) demanded of this one node by its own parent."""
+            parent = self._original_parent(member)
+            if parent is None or parent.id not in active:
+                return None, 0.0
+            parent_rep = self.all_nodes[rep_of[parent.id]]
+            need = sum(inp["rate"] for inp in parent_rep.scaled_inputs if inp["item"] == member.output_item_name)
+            if need <= 0:
+                return parent_rep.id, 0.0
+            # Input nodes for this item under any member of the parent group, weighted by their parent's share
+            suppliers = [
+                child
+                for parent_member in members[parent_rep.id]
+                for child in self._original_children(parent_member)
+                if child.id in active and child.output_item_name == member.output_item_name
+            ]
+            weights = {child.id: share(parent_rep.id, self._original_parent(child)) for child in suppliers}
+            total = sum(weights.values())
+            fraction = weights[member.id] / total if total > 0 else 1 / len(suppliers)
+            return parent_rep.id, need * fraction
 
         while queue:
-            current = queue.pop(0)
-            
-            # Current node's scale is final. Update its children's needs.
-            for child in current.children:
-                if child.id not in nodes_map or child.is_dormant:
-                    continue
-                
-                # Re-sum required rates for child from all its parents
-                sum_required_rate = 0.0
-                
-                # External Demand preservation
-                external = child.parent_demands.get("External Demand", 0)
-                child.parent_demands = {} 
-                if external > 0:
-                    child.parent_demands["External Demand"] = external
-                    sum_required_rate += external
+            rep_id = queue.pop(0)
+            rep = self.all_nodes[rep_id]
 
-                for parent in child.parents:
-                    if parent.id not in nodes_map or parent.is_dormant:
-                        continue
-                    # Use parent's effective scale
-                    # If parent is absorbed, it shouldn't have children in our manipulated graph?
-                    # Wait, apply_merge MOVES the children to the target.
-                    # So 'current' in this loop will be the target node.
-                    
-                    for inp in parent.scaled_inputs:
-                        if inp["item"] == child.output_item_name:
-                            rate = inp["rate"]
-                            sum_required_rate += rate
-                            child.parent_demands[parent.id] = child.parent_demands.get(parent.id, 0) + rate
-                
-                if child.base_output_rate > 0:
-                    base_scale = sum_required_rate / child.base_output_rate
-                    if round_up:
-                        child.original_building_scale = math.ceil(base_scale - 0.00001)
-                        if child.original_building_scale == 0 and base_scale > 0:
-                            child.original_building_scale = 1
-                    else:
-                        child.original_building_scale = base_scale
-                    
-                    child.ideal_building_scale = base_scale
-                
-                in_degree[child.id] -= 1
-                if in_degree[child.id] == 0:
-                    queue.append(child)
+            rep.parent_demands = {}
+            total = 0.0
+            for member in members[rep_id]:
+                external = self._external(member)
+                parent_id, rate = member_demand(member)
+                demand[member.id] = external + rate
+                total += external + rate
+                if external > 0:
+                    rep.parent_demands["External Demand"] = rep.parent_demands.get("External Demand", 0) + external
+                if parent_id is not None and rate > 0:
+                    rep.parent_demands[parent_id] = rep.parent_demands.get(parent_id, 0) + rate
+            group_demand[rep_id] = total
+            self._set_scale(rep, total, round_up)
+
+            for child_id in group_children[rep_id]:
+                in_degree[child_id] -= 1
+                if in_degree[child_id] == 0:
+                    queue.append(child_id)
+
+    @staticmethod
+    def _set_scale(node: ProductionNode, required_rate: float, round_up: bool):
+        if node.base_output_rate <= 0:
+            node.original_building_scale = 0
+            node.ideal_building_scale = 0
+            return
+        base_scale = required_rate / node.base_output_rate
+        if round_up:
+            node.original_building_scale = math.ceil(base_scale - 0.00001)
+            if node.original_building_scale == 0 and base_scale > 0:
+                node.original_building_scale = 1
+        else:
+            node.original_building_scale = base_scale
+        node.ideal_building_scale = base_scale
+
+    def _representative(self, node: ProductionNode, active: Dict[str, ProductionNode]) -> ProductionNode:
+        """The merge target a node runs as (following chains of merges), or the node itself."""
+        seen = {node.id}
+        while node.absorbed_by and node.absorbed_by in active and node.absorbed_by not in seen:
+            node = active[node.absorbed_by]
+            seen.add(node.id)
+        return node
+
+    def _original_parent(self, node: ProductionNode) -> Optional[ProductionNode]:
+        """The node's parent in the unmerged structure (the tree as built, plus recipe switches)."""
+        parent_ids = self._initial_structure.get(node.id, {}).get("parents", [])
+        return self.all_nodes.get(parent_ids[0]) if parent_ids else None
+
+    def _original_children(self, node: ProductionNode) -> List[ProductionNode]:
+        child_ids = self._initial_structure.get(node.id, {}).get("children", [])
+        return [self.all_nodes[child_id] for child_id in child_ids if child_id in self.all_nodes]
+
+    @staticmethod
+    def _external(node: ProductionNode) -> float:
+        """Rate the user asked of this node directly. Graphs wired by hand only set parent_demands."""
+        if node.external_demand is None:
+            node.external_demand = node.parent_demands.get("External Demand", 0)
+        return node.external_demand
 
     def get_ui_data(self) -> List[Dict]:
         """

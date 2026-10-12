@@ -332,6 +332,18 @@ export function readColorInputs() {
     return colors;
 }
 
+// --- Toast: a short, non-blocking message ---
+
+let toastTimer = null;
+
+export function showToast(text, ms = 4000) {
+    const toast = $('toast');
+    toast.textContent = text;
+    toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.hidden = true; }, ms);
+}
+
 // --- Plan notice (entries the server ignored) ---
 
 let noticeTimer = null;

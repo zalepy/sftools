@@ -214,28 +214,28 @@ def test_reported_bug_copper_ingots(empty_graph, mock_building):
     assert stM.building_scale == 6.0
     
     # User Step 2: Override Stator M to 7
-    # Note: 7 Stators * 3 Wire/Stator = 21 Wire
-    # BUT, Wire is NOT merged yet. wM and wW each see parent ST_M.
-    # W_M will see ST_M outputting 21.0. W_W will see ST_M outputting 21.0.
-    # THIS IS THE N:M INFLATION.
-    empty_graph.recalculate(overrides={"ST_M": 7.0}, round_up=True)
+    # 7 Stators * 3 Wire/Stator = 21 Wire. Wire is NOT merged yet: each branch's Wire node
+    # supplies its branch's share of the merged Stators (4 of 5.5 and 1.5 of 5.5), not all 21
+    # (tickets/done/020; this used to assert 21 for both, the N:M inflation).
+    empty_graph.recalculate(overrides={"ST_M": 7.0}, round_up=False)
     assert stM.building_scale == 7.0
-    assert wM.building_scale == 21.0
-    assert wW.building_scale == 21.0
-    
+    assert wM.building_scale == pytest.approx(21.0 * 4 / 5.5)
+    assert wW.building_scale == pytest.approx(21.0 * 1.5 / 5.5)
+    assert wM.building_scale + wW.building_scale == pytest.approx(21.0)
+
     # User Step: Merge Wires
     empty_graph.apply_merge("W_W", "W_M")
     # Add a third wire node to match the "three nodes" in user report
     wC = ProductionNode("W_C", "Wire", mock_building, 0, "Wire", 1.0, 5.0)
     empty_graph.add_node(wC)
     empty_graph.apply_merge("W_C", "W_M")
-    
+
     # User Step 3: Override Wire node scaler to 19.3334
     empty_graph.recalculate(overrides={"ST_M": 7.0, "W_M": 19.3334}, round_up=True)
-    
-    # CI needed = 19.3334 * 1.5 = 29.0001 -> Rounds to 30
+
+    # CI needed = 19.3334 * 1.5 = 29.0001, split between the two branches' CI nodes
     assert wM.building_scale == 19.3334
-    assert ciM.original_building_scale == 30.0
+    assert ciM.ideal_building_scale + ciW.ideal_building_scale == pytest.approx(29.0001)
     
     # User Step 4: Override CI node to 29
     # Merge CI nodes first

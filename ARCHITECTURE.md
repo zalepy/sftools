@@ -55,7 +55,7 @@ The browser owns the **plan** and sends all of it on every change:
 `build_plan` replays the plan in a fixed order:
 1. **Expand demands** (`calculate_demands`): breadth-first expansion into a tree of `ProductionNode`s, using `default_recipe_for(item)` for each item (see [ALGO.md](ALGO.md)). A node produces one item, which can be either the recipe's main product (`output1` in the data) or its by-product.
 2. **Recipe switches**, parents first. A child's ID extends its parent's ID, so sorting by ID length is enough. A switch is skipped if its node doesn't exist, is dormant (cut off by an upstream switch), or the recipe can't be resolved.
-3. **Merges**: `FactoryGraph.apply_merge` moves the source's links and external demand to the target.
+3. **Merges**: `FactoryGraph.apply_merge` marks the source as absorbed by the target. The merged node is one shared set of buildings; each branch keeps its own inputs, sized to its share of the merged node's demand.
 4. **Overrides + propagation**: `FactoryGraph.recalculate` runs Kahn's algorithm (see [ALGO.md](ALGO.md)).
 
 Entries that no longer match the graph (typically from an older saved plan) are skipped and returned in `ignored` with a reason; the UI removes them from the saved plan and shows a notice. Entries for dormant nodes or inactive branches (under an upstream recipe that was switched away from) are kept without a report, because they apply again if that recipe is switched back.
@@ -68,7 +68,7 @@ Why stateless: on a shared deployment, a single server-side graph would be share
 
 - **`ProductionNode`**: one recipe run in some number of buildings. It stores base (1×) rates; scaled output, inputs and power are derived from `building_scale`, which is `user_scale` if set and otherwise `original_building_scale`. Base power comes from `Building.power_for(recipe)`; for buildings whose draw depends on the recipe (Particle Accelerator, Quantum Encoder, Converter) it is the midpoint of the listed range. `parent_demands` records how much each parent (or `"External Demand"` for a root) asks for.
 - **`FactoryGraph`** keeps *every* node created for the plan:
-  - **Merged** nodes have `absorbed_by` set. Their links move to the target, and `get_ui_data` hides them and lists them in the target's `constituent_ids`.
+  - **Merged** nodes have `absorbed_by` set. Their links move to the target (for the UI view), and `get_ui_data` hides them and lists them in the target's `constituent_ids`. `recalculate` works from the unmerged structure: a group's demand is the sum of its members', and each member's input nodes get that member's share of the group's inputs (see [ALGO.md](ALGO.md)).
   - **Dormant** nodes belong to a recipe that was switched away from. They stay in the graph but are excluded from calculation and the UI.
   - `link(parent, child)` records each link in the unmerged structure as it is made, and `_rebuild_structure` restores that structure and then replays the merges (unmerge). In stateless mode an unmerge is simply a plan without that merge.
   - `recalculate(overrides)` replaces all overrides when given a dict (`{}` clears them) and keeps the current ones when given `None`.
