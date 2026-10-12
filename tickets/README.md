@@ -6,10 +6,13 @@
 |---|-------|------|-----|--------|
 | [015](015-external-merge-unmerge-bug.md) | External-demand merge/unmerge bug | bug | P1 | Watch |
 | [018](018-ui-feature-backlog.md) | UI/feature backlog | feature | P3 | Open |
-| [023](023-last-building-clock-speed.md) | "Last building" clock speed | feature | P2 | Open |
+| [023](023-last-building-clock-speed.md) | Clock speeds per node (replaces building overrides) | feature | P2 | Open |
 | [024](024-byproducts-as-supply.md) | By-products count as supply | feature | P2 | Open |
+| [026](026-undo-redo.md) | Undo and redo of plan changes | feature | P2 | Open |
+| [027](027-optimize-branch.md) | "Optimize branch" with preview | feature | P3 | Open |
+| [028](028-belts-and-pipes.md) | Belt and pipe capacity | feature | P3 | Open |
 
-Suggested next: 023, then 024. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
+Suggested next: 023, 026, then 027 (agreed order); 024 and 028 when wanted. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
 
 ## Done
 
