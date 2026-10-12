@@ -3,6 +3,8 @@
 import { state } from './state.js';
 
 const DEFAULT_NODE_COLOR = '#334155';
+const LIGHT_TEXT = '#f8fafc';
+const DARK_TEXT = '#0f172a';
 const MERGE_DISTANCE = 60;
 const EPSILON = 0.0001;
 
@@ -24,7 +26,7 @@ const cy = cytoscape({
                 'border-width': 2,
                 'border-color': '#f59e0b',
                 'label': 'data(label)',
-                'color': '#f8fafc',
+                'color': 'data(textColor)',
                 'text-valign': 'center',
                 'text-halign': 'center',
                 'text-wrap': 'wrap',
@@ -65,6 +67,22 @@ const cy = cytoscape({
             style: {
                 'border-color': '#22d3ee',
                 'border-style': 'dashed'
+            }
+        },
+        {
+            // Demanded by the user (a demand row), alone or in a merge group
+            selector: '.external',
+            style: {
+                'border-width': 3,
+                'border-color': '#a855f7'
+            }
+        },
+        {
+            // Supplied from outside the plan
+            selector: '.supplied',
+            style: {
+                'border-width': 3,
+                'border-color': '#38bdf8'
             }
         },
         {
@@ -142,6 +160,26 @@ function colorFor(item) {
     return state.colors[item] || DEFAULT_NODE_COLOR;
 }
 
+// WCAG relative luminance of a #rrggbb color
+function luminance(hex) {
+    const channels = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+    const [r, g, b] = channels.map(c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** Light or dark text, whichever contrasts more with the background. */
+export function textColorOn(background) {
+    if (!/^#[0-9a-f]{6}$/i.test(background)) return LIGHT_TEXT;
+    const bg = luminance(background);
+    const contrast = text => (Math.max(bg, text) + 0.05) / (Math.min(bg, text) + 0.05);
+    return contrast(luminance(DARK_TEXT)) > contrast(luminance(LIGHT_TEXT)) ? DARK_TEXT : LIGHT_TEXT;
+}
+
+/** Whether the user demands this node (or a node merged into it) directly. */
+export function isExternalDemand(node) {
+    return ((node.parent_demands || {})['External Demand'] || 0) > 0;
+}
+
 // Small dot in the top-right corner: blue = a whole building or more spare, green = surplus, red = shortage
 function indicatorImage(node) {
     const surplus = parseFloat(node.building_scale) - parseFloat(node.ideal_building_scale);
@@ -191,17 +229,25 @@ export function renderGraph(nodesData) {
         const clocks = clocksText(node, '×');
         const shards = node.power_shards ? ` · ${node.power_shards} shards` : '';
         const clockLine = clocks || shards ? `\n${clocks}${shards}` : '';
-        const label = `${node.output_item}${alternate}${part}\n${parseFloat(node.throughput).toFixed(2)}/m\n(${buildingsText(node)}× ${node.building})${clockLine}`;
+        const made = node.is_supplied ? 'supplied from outside' : `${buildingsText(node)}× ${node.building}`;
+        const label = `${node.output_item}${alternate}${part}\n${parseFloat(node.throughput).toFixed(2)}/m\n(${made})${clockLine}`;
+        const color = colorFor(node.output_item);
+        const classes = [
+            state.clocks[node.id] && 'clocked',
+            isExternalDemand(node) && 'external',
+            node.is_supplied && 'supplied'
+        ].filter(Boolean);
         elements.push({
             group: 'nodes',
             data: {
                 id: node.id,
                 label,
                 raw: node,
-                backgroundColor: colorFor(node.output_item),
+                backgroundColor: color,
+                textColor: textColorOn(color),
                 ...(indicator && { backgroundImage: indicator })
             },
-            classes: state.clocks[node.id] ? 'clocked' : ''
+            classes
         });
     });
 
@@ -232,7 +278,8 @@ export function renderGraph(nodesData) {
 
 export function refreshNodeColors() {
     cy.nodes().forEach(node => {
-        node.style('background-color', colorFor(node.data('raw').output_item));
+        const color = colorFor(node.data('raw').output_item);
+        node.data({ backgroundColor: color, textColor: textColorOn(color) });
     });
 }
 

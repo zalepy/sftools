@@ -164,7 +164,8 @@ function renderStats(data) {
     const surplus = buildingScale - idealScale;
 
     const clocks = clocksText(data);
-    $('detail-buildings').innerText = clocks ? `${buildingsText(data)} (${clocks})` : buildingsText(data);
+    $('detail-buildings').innerText = data.is_supplied ? 'None (supplied from outside)'
+        : clocks ? `${buildingsText(data)} (${clocks})` : buildingsText(data);
     $('detail-shards').innerText = data.power_shards || 0;
     $('detail-output-rate').innerText = parseFloat(data.throughput).toFixed(2) + '/min';
     $('detail-power').innerText = parseFloat(data.power).toFixed(2) + ' MW';
@@ -183,7 +184,7 @@ function renderStats(data) {
 
     // Clock at which this many buildings would make exactly what's needed
     const buildings = parseFloat(data.buildings) || buildingScale;
-    $('detail-clock').innerText = ((idealScale / buildings) * 100).toFixed(1) + '%';
+    $('detail-clock').innerText = data.is_supplied ? '-' : ((idealScale / buildings) * 100).toFixed(1) + '%';
 }
 
 // Each input, broken down by which consumer of this node's output it is for
@@ -233,6 +234,9 @@ function renderScaledInputs(data) {
     });
 }
 
+// Recipe name the server reads as "supplied from outside the plan" (calculator.OUTSIDE_SUPPLY)
+const OUTSIDE_SUPPLY = 'Supplied from outside';
+
 async function populateRecipeSelector(itemName, currentRecipeName) {
     const selector = $('recipe-select');
     selector.replaceChildren(new Option('Loading...', ''));
@@ -245,7 +249,8 @@ async function populateRecipeSelector(itemName, currentRecipeName) {
             r.name,
             false,
             r.name === currentRecipeName
-        )));
+        )), new Option(`${OUTSIDE_SUPPLY} (no buildings or inputs)`, OUTSIDE_SUPPLY, false,
+            currentRecipeName === OUTSIDE_SUPPLY));
         selector.disabled = false;
     } catch (e) {
         console.error("Failed to fetch recipes", e);
@@ -275,6 +280,8 @@ export function showNodeDetails(data) {
     const last = groups.find(g => g.count !== undefined);
     $('clock-all').value = rest && rest.clock !== 1 ? +(rest.clock * 100).toFixed(4) : '';
     $('clock-last').value = last ? +(last.clock * 100).toFixed(4) : '';
+    // No buildings to clock on a node supplied from outside
+    $('clock-controls').style.display = data.is_supplied ? 'none' : '';
 
     // Unmerge is offered on merge targets
     const isMergeTarget = Object.values(state.merges).includes(data.id);

@@ -207,8 +207,13 @@ class FactoryGraph:
         With round_up, whole buildings: the fixed clock groups (e.g. the last building at 60%) plus as many
         buildings at the node's clock as the rest of the demand needs, rounded up. The count is never set
         directly; it follows the demand and the clocks (ticket 023). Without round_up, the exact fractional
-        scale (used by tests to check that every item balances).
+        scale (used by tests to check that every item balances). A node supplied from outside has no
+        buildings: its scale is just the rate it supplies.
         """
+        if node.is_supplied:
+            node.ideal_building_scale = node.original_building_scale = required_rate / node.base_output_rate
+            node.set_clocks(None)
+            return
         if node.base_output_rate <= 0:
             node.original_building_scale = 0
             node.ideal_building_scale = 0
@@ -358,6 +363,7 @@ class FactoryGraph:
             "base_power": node.base_power,
             "is_dormant": node.is_dormant,
             "is_alternate": node.recipe is not None and node.recipe.type == RecipeType.ALTERNATE,
+            "is_supplied": node.is_supplied,
             "derivation": self.derivation(node),
             "split": self.split_info(node.id),
         }

@@ -346,3 +346,33 @@ def test_undo_with_the_keyboard_and_a_new_change_drops_redo(page):
     page.wait_until(f"{SAVED}.clocks['Iron Rod'] !== undefined")
     assert undo_state(page) == [False, True]
     assert page.saved_plan()["clocks"]["Iron Rod"] == [{"clock": 2}]
+
+
+def node_style(node_id, prop):
+    return f"document.getElementById('cy')._cyreg.cy.getElementById({json.dumps(node_id)}).style('{prop}')"
+
+
+def test_supplied_from_outside(page):
+    page.open(page.base_url, plan())
+    switch_recipe(page, RIP_SP, "Supplied from outside")
+    assert page.saved_plan()["recipes"] == {RIP_SP: "Supplied from outside"}
+    assert page.js(label(RIP_SP)) == "Reinforced Iron Plate\n2.00/m\n(supplied from outside)"
+    assert not any(node_id.startswith(RIP_SP + "__") for node_id in page.node_ids())
+    assert page.js(node_style(RIP_SP, "border-color")) == "rgb(56,189,248)"  # sky blue
+    assert page.js("document.getElementById('clock-controls').style.display") == "none"
+    assert page.js("document.getElementById('detail-buildings').textContent") == "None (supplied from outside)"
+
+    page.select_node(RIP_MF)
+    assert page.js("document.getElementById('clock-controls').style.display") == ""
+
+
+def test_demanded_nodes_have_a_purple_border(page):
+    page.open(page.base_url, plan())
+    assert page.js(node_style("Smart Plating", "border-color")) == "rgb(168,85,247)"
+    assert page.js(node_style(RIP_SP, "border-color")) == "rgb(245,158,11)"
+
+
+def test_text_is_dark_on_bright_node_colors(page):
+    page.open(page.base_url, plan(items=["Plastic"], rates=[20]))
+    assert page.js(node_style("Plastic", "color")) == "rgb(15,23,42)"  # on #93c5fd
+    assert page.js(node_style("Plastic__Crude Oil", "color")) == "rgb(248,250,252)"  # on the default slate
