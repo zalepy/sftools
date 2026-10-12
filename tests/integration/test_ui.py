@@ -191,3 +191,12 @@ def test_edges_show_what_each_supplier_provides(page):
         .map(e => [e.source().id(), e.data('label')])""")
     assert dict(labels)[f"{RIP_SP}__Screws"] == "24.00/m"
     assert dict(labels)[f"{RIP_MF}__Screws"] == "36.00/m"
+
+
+def test_selecting_a_node_keeps_its_color(page):
+    page.open(page.base_url, plan(overrides={RIP_SP: 2}))
+    node = f"document.getElementById('cy')._cyreg.cy.getElementById({json.dumps(RIP_SP)})"
+    before = page.js(f"{node}.style('background-color')")
+    page.js(f"void {node}.select()")
+    assert page.js(f"{node}.style('background-color')") == before
+    assert page.js(f"{node}.style('border-color')") == "rgb(244,63,94)"  # selected, even with an override

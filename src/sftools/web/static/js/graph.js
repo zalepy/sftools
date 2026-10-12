@@ -61,18 +61,18 @@ const cy = cytoscape({
             }
         },
         {
-            selector: ':selected',
-            style: {
-                'border-width': 4,
-                'border-color': '#f43f5e',
-                'background-color': '#475569'
-            }
-        },
-        {
             selector: '.overridden',
             style: {
                 'border-color': '#22d3ee',
                 'border-style': 'dashed'
+            }
+        },
+        {
+            // Last, so it shows on overridden nodes too; the node keeps its item color
+            selector: ':selected',
+            style: {
+                'border-width': 4,
+                'border-color': '#f43f5e'
             }
         }
     ],
