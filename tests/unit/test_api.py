@@ -220,3 +220,31 @@ def test_split_with_too_few_parts_is_reported(client):
     body = calculate(client, splits={rip: 1}).json()
     assert body["ignored"] == [{"kind": "split", "node_id": rip, "reason": "needs at least 2 parts, got 1",
                                 "dropped": False, "replacement": None}]
+
+
+SUPPLIED = "Supplied from outside"
+
+
+def test_node_supplied_from_outside(client):
+    """The node keeps its rate; its inputs, buildings, power and clocks go, quietly."""
+    rip = "Smart Plating__Reinforced Iron Plate"
+    body = calculate(client, recipes={rip: SUPPLIED}, clocks={rip: [{"clock": 0.5}]}).json()
+    nodes = {n["id"]: n for n in body["nodes"]}
+    supplied = nodes[rip]
+    assert supplied["is_supplied"] and supplied["building"] == "Outside the plan"
+    assert supplied["throughput"] == pytest.approx(2.0)  # what Smart Plating needs
+    assert supplied["power"] == 0 and supplied["clocks"] == [] and supplied["scaled_inputs"] == []
+    assert not any(node_id.startswith(rip + "__") for node_id in nodes)
+    assert body["ignored"] == [{"kind": "clock", "node_id": rip, "reason": "supplied from outside: no buildings",
+                                "dropped": True, "replacement": None}]
+    assert not nodes["Smart Plating"]["is_supplied"]
+
+
+def test_merge_into_a_supplied_node_is_supplied_too(client):
+    nodes = calculate(client).json()["nodes"]
+    target, source = sorted(n["id"] for n in nodes_by_item(nodes, "Reinforced Iron Plate"))
+    merged = calculate(client, recipes={target: SUPPLIED}, merges={source: target}).json()["nodes"]
+    rip = nodes_by_item(merged, "Reinforced Iron Plate")
+    assert [n["id"] for n in rip] == [target] and rip[0]["is_supplied"]
+    assert rip[0]["throughput"] == pytest.approx(2 + 3)  # 2 for Smart Plating, 3 for Modular Frame
+    assert not any(n["id"].startswith(source + "__") for n in merged)  # the absorbed node's inputs go too

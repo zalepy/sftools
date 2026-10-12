@@ -5,7 +5,6 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [015](015-external-merge-unmerge-bug.md) | External-demand merge/unmerge bug | bug | P1 | Watch |
-| [018](018-ui-feature-backlog.md) | UI/feature backlog | feature | P3 | Open |
 | [024](024-byproducts-as-supply.md) | By-products count as supply | feature | P2 | Open |
 | [027](027-optimize-branch.md) | "Optimize branch" with preview | feature | P3 | Parked |
 | [028](028-belts-and-pipes.md) | Belt and pipe capacity | feature | P3 | Open |
@@ -34,6 +33,7 @@ Moved to [done/](done/).
 | [014](done/014-recipe-model-refactor.md) | Recipe model lists refactor | refactor | P3 | Done |
 | [016](done/016-node-id-stability.md) | Node ID stability | debt | P3 | Done |
 | [017](done/017-frontend-split.md) | Split index.html | refactor | P3 | Done |
+| [018](done/018-ui-feature-backlog.md) | UI/feature backlog | feature | P3 | Done |
 | [019](done/019-scraped-data-gaps.md) | Gaps in the scraped game data | data | P2 | Done |
 | [020](done/020-merge-double-counts-inputs.md) | Merging two nodes double-counts their inputs | bug | P0 | Done |
 | [021](done/021-node-splitting.md) | Node splitting | feature | P3 | Done |
