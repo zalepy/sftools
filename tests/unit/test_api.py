@@ -179,3 +179,20 @@ def test_merged_node_lists_constituent_derivations(client):
     merged = calculate(client, merges={source: target}).json()["nodes"]
     rip = nodes_by_item(merged, "Reinforced Iron Plate")[0]
     assert [step["item"] for step in rip["constituent_derivations"][0]] == [source.split("__")[0], "Reinforced Iron Plate"]
+
+
+def test_splits_are_replayed(client):
+    rip = "Smart Plating__Reinforced Iron Plate"
+    body = calculate(client, splits={rip: 2}, overrides={f"{rip}~2": 0.5}).json()
+    assert body["ignored"] == []
+    parts = {n["id"]: n for n in nodes_by_item(body["nodes"], "Reinforced Iron Plate") if n["id"].startswith(rip)}
+    assert sorted(parts) == [rip, f"{rip}~2"]
+    assert parts[f"{rip}~2"]["split"] == {"of": rip, "part": 2, "count": 2}
+    assert parts[f"{rip}~2"]["building_scale"] == 0.5
+    assert parts[rip]["split"]["part"] == 1
+
+
+def test_split_with_too_few_parts_is_reported(client):
+    rip = "Smart Plating__Reinforced Iron Plate"
+    body = calculate(client, splits={rip: 1}).json()
+    assert body["ignored"] == [{"kind": "split", "node_id": rip, "reason": "needs at least 2 parts, got 1"}]

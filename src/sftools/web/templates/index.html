@@ -179,6 +179,16 @@
 
                     <button type="button" id="apply-override-btn">Apply Override</button>
                     <button type="button" id="unmerge-btn" class="secondary" style="margin-top: 0.5rem; display: none;">Unmerge Node</button>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="split-count">Split Into Parts</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="number" id="split-count" min="2" step="1" value="2">
+                            <button type="button" id="split-btn" class="secondary" style="width: auto; white-space: nowrap;">Split</button>
+                        </div>
+                        <div class="hint" id="split-hint"></div>
+                    </div>
+                    <button type="button" id="unsplit-btn" class="secondary" style="display: none;">Unsplit Node</button>
                 </section>
             </div>
 

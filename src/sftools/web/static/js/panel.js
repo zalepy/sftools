@@ -280,9 +280,29 @@ export function showNodeDetails(data) {
     const isMergeTarget = Object.values(state.merges).includes(data.id);
     $('unmerge-btn').style.display = isMergeTarget ? 'block' : 'none';
 
+    renderSplit(data);
     populateRecipeSelector(data.output_item, data.recipe_name || data.name);
 
     $('node-details').style.display = 'block';
+}
+
+// Merged nodes can't be split: which branch's demand would go to which part?
+function renderSplit(data) {
+    const merged = data.is_merged;
+    $('split-count').value = data.split ? data.split.count : 2;
+    $('split-count').disabled = merged;
+    $('split-btn').disabled = merged;
+    $('split-btn').textContent = data.split ? 'Set Parts' : 'Split';
+    $('split-hint').textContent = merged
+        ? 'Unmerge first to split this node.'
+        : data.split
+            ? `Part ${data.split.part} of ${data.split.count}. Each part has its own inputs, override and recipe.`
+            : 'Equal parts, each with its own inputs, override and recipe.';
+    $('unsplit-btn').style.display = data.split ? 'block' : 'none';
+}
+
+export function getSplitCount() {
+    return parseInt($('split-count').value, 10);
 }
 
 export function hideNodeDetails() {

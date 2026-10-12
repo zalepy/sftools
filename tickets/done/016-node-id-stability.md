@@ -1,6 +1,6 @@
 # 016 — Path-based node IDs are long and fragile
 
-**Type:** tech debt · **Priority:** P3 · **Related:** SPLIT_PLAN.md · **Status:** Done
+**Type:** tech debt · **Priority:** P3 · **Related:** 021 · **Status:** Done
 
 > **Done (2026-10-12):** Item-path IDs; see ARCHITECTURE.md, "Node identity".
 > - **Why the parent recipe was in the ID:** it was added with recipe switching (`09f1c94`, the "isolated scheme"). Switching a node's recipe gives its inputs new IDs, so adjustments below a switch reset and return on switching back. **Kept on purpose.**
@@ -9,7 +9,7 @@
 > - **Old saved plans:** old-style IDs are no longer matched. They're reported in `ignored` and dropped once (with the notice); there is no migration (decision 2026-10-12).
 > - **UI:** labels for a consumer now read "<item> (in <item it feeds>)".
 > - **Tests:** `tests/unit/test_graph_state.py` (ID shape, duplicate roots, reset below a switch, old IDs reported).
-> - **For splits** (SPLIT_PLAN.md): use an instance suffix in the same `#n` style.
+> - **For splits** (021): use an instance suffix in the same `#n` style. (021 uses `~n`, since `#n` already marks repeated demand rows.)
 
 - IDs look like `root_0__Recipe__[r]Recipe__Recipe…` and grow with depth.
 - Any upstream change (a recipe switch, a different root order) invalidates the saved merges and overrides below it.

@@ -115,6 +115,11 @@ button.secondary {
     color: var(--text-primary);
 }
 
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .demand-row {
     display: flex;
     gap: 0.5rem;

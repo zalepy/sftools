@@ -18,20 +18,23 @@ function save() {
 }
 
 /**
- * Sends the plan (with optional candidate merges/overrides/recipes) and returns the graph nodes.
+ * Sends the plan (with optional candidate merges/overrides/recipes/splits) and returns the graph nodes.
  * Entries the server ignored are dropped from the candidate objects; callers keep them on success.
  */
-async function requestPlan({ merges = state.merges, overrides = state.overrides, recipes = state.recipes } = {}) {
+async function requestPlan({
+    merges = state.merges, overrides = state.overrides, recipes = state.recipes, splits = state.splits
+} = {}) {
     const { items, rates } = panel.getDemands();
     const { nodes, ignored } = await api.calculate({
         demands: items.map((item, i) => ({ item, rate: rates[i] })),
         roundUp: panel.getRoundUp(),
         recipes,
         merges,
-        overrides
+        overrides,
+        splits
     });
     if (ignored.length) {
-        dropIgnoredEntries(ignored, { merges, overrides, recipes });
+        dropIgnoredEntries(ignored, { merges, overrides, recipes, splits });
         panel.showPlanNotice(ignored);
     }
     return nodes;
@@ -142,6 +145,52 @@ async function unmergeSelectedNode() {
     }
 }
 
+/**
+ * Splits the selected node into `count` equal parts, or changes the number of parts of the split it
+ * belongs to. Parts are '<id>~2', '<id>~3', ... (part 1 keeps the ID); see split_parts on the server.
+ */
+async function splitSelectedNode(count) {
+    const data = getNodeData(state.selectedNodeId);
+    if (!data || !(count >= 2)) return;
+    const nodeId = data.split ? data.split.of : data.id;
+    await changeSplit(nodeId, count, data.id);
+}
+
+async function unsplitSelectedNode() {
+    const data = getNodeData(state.selectedNodeId);
+    if (!data || !data.split) return;
+    await changeSplit(data.split.of, 1, data.split.of);
+}
+
+// Entries for an ID or anything derived from it: its inputs ('__') and its own parts ('~')
+function isUnder(id, nodeId) {
+    return id === nodeId || id.startsWith(nodeId + '__') || id.startsWith(nodeId + '~');
+}
+
+async function changeSplit(nodeId, count, selectAfter) {
+    const oldCount = state.splits[nodeId] || 1;
+    const removed = [];
+    for (let part = count + 1; part <= oldCount; part++) removed.push(`${nodeId}~${part}`);
+    const keep = id => !removed.some(partId => isUnder(id, partId));
+    const filter = entries => Object.fromEntries(Object.entries(entries).filter(([id]) => keep(id)));
+
+    const splits = filter(state.splits);
+    if (count >= 2) splits[nodeId] = count; else delete splits[nodeId];
+    const overrides = filter(state.overrides);
+    const recipes = filter(state.recipes);
+    const merges = Object.fromEntries(Object.entries(state.merges).filter(([id, target]) => keep(id) && keep(target)));
+
+    try {
+        renderGraph(await requestPlan({ splits, overrides, recipes, merges }));
+        Object.assign(state, { splits, overrides, recipes, merges });
+        save();
+        if (getNodeData(selectAfter)) reselectNode(selectAfter); else panel.hideNodeDetails();
+    } catch (e) {
+        console.error("Split failed", e);
+        alert(`Split failed: ${e.message}`);
+    }
+}
+
 // --- Plan-wide actions ---
 
 function clearOverrides() {
@@ -232,6 +281,8 @@ $('override-scale').addEventListener('keydown', e => {
     if (e.key === 'Enter') applyOverride();
 });
 $('unmerge-btn').addEventListener('click', unmergeSelectedNode);
+$('split-btn').addEventListener('click', () => splitSelectedNode(panel.getSplitCount()));
+$('unsplit-btn').addEventListener('click', unsplitSelectedNode);
 $('recipe-select').addEventListener('change', e => switchRecipe(e.target.value));
 $('save-colors-btn').addEventListener('click', saveColorChanges);
 $('fit-view-btn').addEventListener('click', fitView);

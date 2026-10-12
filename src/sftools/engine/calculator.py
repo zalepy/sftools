@@ -59,16 +59,28 @@ def child_node_id(parent: ProductionNode, item_name: str, items_map: Dict) -> st
     return f"{parent.id}__{item_name}"
 
 
-def calculate_demands(items_map, root_demands_list: List[Demand], scale_overrides: Dict[str, float] = None, round_up: bool = True) -> FactoryGraph:
+def split_parts(node_id: str, rate: float, splits: Optional[Dict[str, int]]) -> List[Tuple[str, float]]:
+    """
+    (node id, rate) for each part of a node: a node split into k parts is k nodes with an equal share
+    of its demand. Part 1 keeps the node's ID, so its adjustments stay; the others are '<id>~2', '<id>~3', ...
+    """
+    count = (splits or {}).get(node_id, 1)
+    if count < 2:
+        return [(node_id, rate)]
+    return [(node_id if part == 1 else f"{node_id}~{part}", rate / count) for part in range(1, count + 1)]
+
+
+def calculate_demands(items_map, root_demands_list: List[Demand], scale_overrides: Dict[str, float] = None, round_up: bool = True,
+                      splits: Optional[Dict[str, int]] = None) -> FactoryGraph:
     if scale_overrides is None:
         scale_overrides = {}
 
     graph = FactoryGraph()
-    
+
     # Queue: (Demand, NodeId, ParentNode, items produced by the ancestors)
     # ParentNode is None for roots
     queue: List[Tuple[Demand, str, Optional[ProductionNode], frozenset]] = []
-    
+
     root_ids = root_node_ids([d.item.name for d in root_demands_list])
     for d, root_id in zip(root_demands_list, root_ids):
         queue.append((d, root_id, None, frozenset()))
@@ -78,7 +90,7 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
 
     while queue and processed_count < max_nodes:
         current_demand, node_id, parent_node, ancestors = queue.pop(0)
-        
+
         if current_demand.type == DemandType.SINK:
             # Sinks are terminal for this logic, we don't produce them
             continue
@@ -89,51 +101,48 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
         item = items_map.get(current_demand.item.name)
         if not item or not item.recipes:
             continue
-            
+
         recipe = default_recipe_for(item)
         if recipe is None:
             continue
 
-        # Calculate Base Scaler from demand rate
-        target_rate = current_demand.rate
-        base_scaler = target_rate / recipe.rate_of(item.name)
-        
-        # Apply rounding (only for initial generation when no override exists)
-        if node_id in scale_overrides:
-            # Use the scale override directly - this is the building multiplier
-            scaler = scale_overrides[node_id]
-        elif round_up:
-            # Round up to next integer for buildings
-            scaler = math.ceil(base_scaler - 0.00001) # epsilon for float precision
-            if scaler == 0 and base_scaler > 0: scaler = 1 # Safety
-        else:
-            scaler = base_scaler
+        for part_id, target_rate in split_parts(node_id, current_demand.rate, splits):
+            # Calculate Base Scaler from demand rate
+            base_scaler = target_rate / recipe.rate_of(item.name)
 
-        # Create Node
-        node = recipe.generate_production_node(node_id, scaler, item.name)
-        node.ideal_building_scale = base_scaler
-        
-        # Track where demand came from
-        if parent_node:
-            node.parent_demands[parent_node.id] = target_rate
-        else:
-            node.parent_demands["External Demand"] = target_rate
-            node.external_demand = target_rate
+            # Apply rounding (only for initial generation when no override exists)
+            if part_id in scale_overrides:
+                # Use the scale override directly - this is the building multiplier
+                scaler = scale_overrides[part_id]
+            elif round_up:
+                # Round up to next integer for buildings
+                scaler = math.ceil(base_scaler - 0.00001) # epsilon for float precision
+                if scaler == 0 and base_scaler > 0: scaler = 1 # Safety
+            else:
+                scaler = base_scaler
 
-        graph.add_node(node)
+            # Create Node
+            node = recipe.generate_production_node(part_id, scaler, item.name)
+            node.ideal_building_scale = base_scaler
 
-        # Link Graph
-        if parent_node:
-            graph.link(parent_node, node)
-        
-        # Generate Sub-Demands for the recipe
-        sub_demands = recipe.generate_demands(scaler, item.name)
-        
-        # Enqueue Sub-Demands
-        for sd in sub_demands:
-            queue.append((sd, child_node_id(node, sd.item.name, items_map), node, ancestors | {item.name}))
-            
-        processed_count += 1
+            # Track where demand came from
+            if parent_node:
+                node.parent_demands[parent_node.id] = target_rate
+            else:
+                node.parent_demands["External Demand"] = target_rate
+                node.external_demand = target_rate
+
+            graph.add_node(node)
+
+            # Link Graph
+            if parent_node:
+                graph.link(parent_node, node)
+
+            # Enqueue Sub-Demands for the recipe
+            for sd in recipe.generate_demands(scaler, item.name):
+                queue.append((sd, child_node_id(node, sd.item.name, items_map), node, ancestors | {item.name}))
+
+            processed_count += 1
 
     return graph
 
@@ -148,7 +157,8 @@ def _ancestor_items(node: ProductionNode) -> frozenset:
     return frozenset(items)
 
 
-def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_map: Dict, round_up: bool = True):
+def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_map: Dict, round_up: bool = True,
+                       splits: Optional[Dict[str, int]] = None):
     """
     Expands a new subtree from an existing node that just had its recipe changed.
     Checks for existing dormant nodes before creating new ones.
@@ -170,7 +180,7 @@ def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_m
 
     while queue and processed_count < max_nodes:
         current_demand, node_id, p_node, ancestors = queue.pop(0)
-        
+
         if current_demand.type == DemandType.SINK:
             continue
         if current_demand.item.name in ancestors:
@@ -179,41 +189,41 @@ def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_m
         item = items_map.get(current_demand.item.name)
         if not item or not item.recipes:
             continue
-            
+
         recipe = default_recipe_for(item)
         if recipe is None:
             continue
 
-        # Check if node already exists
-        existing_node = graph.get_node(node_id)
-        if existing_node:
-            # Re-activate it and its subtree
-            graph.set_subtree_dormancy(node_id, False)
-            # Update demand from parent
-            existing_node.parent_demands[p_node.id] = current_demand.rate
-            # Ensure link exists (though it should if it was a child before)
-            graph.link(p_node, existing_node)
-            continue
+        for part_id, target_rate in split_parts(node_id, current_demand.rate, splits):
+            # Check if node already exists
+            existing_node = graph.get_node(part_id)
+            if existing_node:
+                # Re-activate it and its subtree
+                graph.set_subtree_dormancy(part_id, False)
+                # Update demand from parent
+                existing_node.parent_demands[p_node.id] = target_rate
+                # Ensure link exists (though it should if it was a child before)
+                graph.link(p_node, existing_node)
+                continue
 
-        # Create New Node
-        target_rate = current_demand.rate
-        base_scaler = target_rate / recipe.rate_of(item.name)
-        scaler = math.ceil(base_scaler - 0.00001) if round_up else base_scaler
-        if round_up and scaler == 0 and base_scaler > 0: scaler = 1
+            # Create New Node
+            base_scaler = target_rate / recipe.rate_of(item.name)
+            scaler = math.ceil(base_scaler - 0.00001) if round_up else base_scaler
+            if round_up and scaler == 0 and base_scaler > 0: scaler = 1
 
-        node = recipe.generate_production_node(node_id, scaler, item.name)
-        node.recipe = recipe
-        node.ideal_building_scale = base_scaler
-        node.parent_demands[p_node.id] = target_rate
-        
-        graph.add_node(node)
-        graph.link(p_node, node)
+            node = recipe.generate_production_node(part_id, scaler, item.name)
+            node.recipe = recipe
+            node.ideal_building_scale = base_scaler
+            node.parent_demands[p_node.id] = target_rate
 
-        # Recurse
-        for sd in recipe.generate_demands(scaler, item.name):
-            queue.append((sd, child_node_id(node, sd.item.name, items_map), node, ancestors | {item.name}))
-            
-        processed_count += 1
+            graph.add_node(node)
+            graph.link(p_node, node)
+
+            # Recurse
+            for sd in recipe.generate_demands(scaler, item.name):
+                queue.append((sd, child_node_id(node, sd.item.name, items_map), node, ancestors | {item.name}))
+
+            processed_count += 1
 
 
 def recalculate_graph(graph: FactoryGraph, overrides: Optional[Dict[str, float]] = None, round_up: bool = False):
@@ -224,9 +234,10 @@ def recalculate_graph(graph: FactoryGraph, overrides: Optional[Dict[str, float]]
     graph.recalculate(overrides, round_up)
     return graph
 
-def switch_recipe_in_graph(graph: FactoryGraph, node_id: str, new_recipe: Recipe, items_map: Dict, round_up: bool = True):
+def switch_recipe_in_graph(graph: FactoryGraph, node_id: str, new_recipe: Recipe, items_map: Dict, round_up: bool = True,
+                           splits: Optional[Dict[str, int]] = None):
     """
-    Switches the recipe for a node, proactively deactivating its current subtree 
+    Switches the recipe for a node, proactively deactivating its current subtree
     and activating/expanding the new one.
     """
     node = graph.get_node(node_id)
@@ -243,7 +254,7 @@ def switch_recipe_in_graph(graph: FactoryGraph, node_id: str, new_recipe: Recipe
     node.is_dormant = False # Ensure it's active
 
     # 3. Activate/Expand New Subtree
-    expand_new_subtree(graph, node, items_map, round_up)
+    expand_new_subtree(graph, node, items_map, round_up, splits)
 
     # 4. Recalculate everything
     graph.recalculate(round_up=round_up)
@@ -277,18 +288,27 @@ def build_plan(
     recipes: Optional[Dict[str, str]] = None,
     merges: Optional[Dict[str, str]] = None,
     overrides: Optional[Dict[str, float]] = None,
+    splits: Optional[Dict[str, int]] = None,
 ) -> FactoryGraph:
     """
     Builds a FactoryGraph from the full plan description.
-    The API is stateless: every request replays demands -> recipe switches -> merges -> overrides.
+    The API is stateless: every request replays demands (with splits) -> recipe switches -> merges -> overrides.
+    Splits apply as nodes are created (see split_parts), so the parts of a split node, and their
+    inputs, exist before any other entry refers to them.
 
     Entries that can't apply are skipped and listed in `graph.ignored` as
-    {"kind": "recipe" | "merge" | "override", "node_id", "reason"}. Entries for dormant nodes or
+    {"kind": "recipe" | "merge" | "override" | "split", "node_id", "reason"}. Entries for dormant nodes or
     inactive branches are skipped silently, since they apply again if an upstream recipe is switched back.
     """
-    root_demands = [Demand(name, items_map[name], rate, DemandType.PRODUCE) for name, rate in demands]
-    graph = calculate_demands(items_map, root_demands, round_up=round_up)
     ignored = []
+    splits = dict(splits or {})
+    for node_id, count in list(splits.items()):
+        if count < 2:
+            ignored.append({"kind": "split", "node_id": node_id, "reason": f"needs at least 2 parts, got {count}"})
+            del splits[node_id]
+
+    root_demands = [Demand(name, items_map[name], rate, DemandType.PRODUCE) for name, rate in demands]
+    graph = calculate_demands(items_map, root_demands, round_up=round_up, splits=splits)
 
     def missing(node_id: str) -> bool:
         return graph.get_node(node_id) is None and not _on_inactive_branch(graph, node_id, items_map)
@@ -310,7 +330,12 @@ def build_plan(
             continue
         if node.is_dormant or node.recipe is recipe:
             continue
-        switch_recipe_in_graph(graph, node_id, recipe, items_map, round_up=round_up)
+        switch_recipe_in_graph(graph, node_id, recipe, items_map, round_up=round_up, splits=splits)
+
+    for node_id in list(splits):
+        if missing(node_id):
+            ignored.append({"kind": "split", "node_id": node_id, "reason": "node not in plan"})
+            del splits[node_id]
 
     for source_id, target_id in (merges or {}).items():
         stale = [n for n in (source_id, target_id) if missing(n)]
@@ -325,4 +350,5 @@ def build_plan(
 
     graph.recalculate(overrides or {}, round_up=round_up)
     graph.ignored = ignored
+    graph.splits = splits
     return graph

@@ -1,5 +1,7 @@
+from collections import Counter
 from typing import Dict, List, Optional, Set, Tuple
 import math
+import re
 from sftools.domain.models.production_node import ProductionNode
 
 class FactoryGraph:
@@ -13,6 +15,7 @@ class FactoryGraph:
         self.recipe_overrides: Dict[str, str] = {} # node_path -> recipe_name
         self._initial_structure: Dict[str, Dict[str, List[str]]] = {}
         self.ignored: List[Dict] = []  # plan entries build_plan could not apply
+        self.splits: Dict[str, int] = {}  # node_id -> number of parts (see calculator.split_parts)
 
     def add_node(self, node: ProductionNode):
         self.all_nodes[node.id] = node
@@ -206,7 +209,12 @@ class FactoryGraph:
                 for child in self._original_children(parent_member)
                 if child.id in active and child.output_item_name == member.output_item_name
             ]
-            weights = {child.id: share(parent_rep.id, self._original_parent(child)) for child in suppliers}
+            # A split input is several nodes under one parent: they divide that parent's share
+            parts = Counter(self._original_parent(child).id for child in suppliers)
+            weights = {
+                child.id: share(parent_rep.id, self._original_parent(child)) / parts[self._original_parent(child).id]
+                for child in suppliers
+            }
             total = sum(weights.values())
             fraction = weights[member.id] / total if total > 0 else 1 / len(suppliers)
             return parent_rep.id, need * fraction
@@ -357,6 +365,15 @@ class FactoryGraph:
                 return steps
             end += 2
 
+    def split_info(self, node_id: str) -> Optional[Dict]:
+        """{"of": split node id, "part": n, "count": k} for a part of a split node, else None."""
+        if node_id in self.splits:
+            return {"of": node_id, "part": 1, "count": self.splits[node_id]}
+        match = re.fullmatch(r"(.*)~(\d+)", node_id)
+        if match and match[1] in self.splits:
+            return {"of": match[1], "part": int(match[2]), "count": self.splits[match[1]]}
+        return None
+
     def _serialize_node(self, node: ProductionNode) -> Dict:
         return {
             "id": node.id,
@@ -378,5 +395,6 @@ class FactoryGraph:
             "base_inputs": node.base_inputs,
             "base_power": node.base_power,
             "is_dormant": node.is_dormant,
-            "derivation": self.derivation(node)
+            "derivation": self.derivation(node),
+            "split": self.split_info(node.id),
         }
