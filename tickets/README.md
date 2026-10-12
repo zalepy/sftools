@@ -6,8 +6,11 @@
 |---|-------|------|-----|--------|
 | [015](015-external-merge-unmerge-bug.md) | External-demand merge/unmerge bug | bug | P1 | Watch |
 | [018](018-ui-feature-backlog.md) | UI/feature backlog | feature | P3 | Open |
+| [023](023-last-building-clock-speed.md) | "Last building" clock speed | feature | P2 | Open |
+| [024](024-byproducts-as-supply.md) | By-products count as supply | feature | P2 | Open |
+| [025](025-exact-recipe-rates.md) | Recipe rates rounded to two decimals | data bug | P2 | Open |
 
-Suggested next: the P3 items, as needed. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
+Suggested next: 025 (small, data only), then 023 and 024. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
 
 ## Done
 
