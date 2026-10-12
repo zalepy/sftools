@@ -4,7 +4,7 @@ import {
     state, snapshot, applySaved, savePlan, loadSavedPlan, downloadPlan, readPlanFile,
     loadSavedColors, saveColors, dropIgnoredEntries
 } from './state.js';
-import { renderGraph, refreshNodeColors, hasNodes, fitView, onNodeSelected, reselectNode, onMergeDrop } from './graph.js';
+import { renderGraph, refreshNodeColors, hasNodes, fitView, getNodeData, onNodeSelected, reselectNode, onMergeDrop } from './graph.js';
 import * as panel from './panel.js';
 
 const $ = id => document.getElementById(id);
@@ -103,11 +103,19 @@ async function mergeNodes(sourceId, targetId) {
     const overrides = { ...state.overrides };
     delete overrides[sourceId];
 
+    // Allowed, but worth a heads-up: the merged node runs the target's recipe
+    const source = getNodeData(sourceId);
+    const target = getNodeData(targetId);
+    const recipesDiffer = source && target && source.recipe_name !== target.recipe_name;
+
     try {
         renderGraph(await requestPlan({ merges, overrides }));
         state.merges = merges;
         state.overrides = overrides;
         save();
+        if (recipesDiffer) {
+            panel.showToast(`Merged nodes with different recipes: ${source.recipe_name} into ${target.recipe_name}. The merged node runs ${target.recipe_name}.`);
+        }
     } catch (e) {
         console.error("Merge failed", e);
         alert(`Merge failed: ${e.message}`);

@@ -118,6 +118,7 @@ def calculate_demands(items_map, root_demands_list: List[Demand], scale_override
             node.parent_demands[parent_node.id] = target_rate
         else:
             node.parent_demands["External Demand"] = target_rate
+            node.external_demand = target_rate
 
         graph.add_node(node)
 

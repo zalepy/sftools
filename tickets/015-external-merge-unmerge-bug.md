@@ -6,6 +6,8 @@
 
 > **Update (2026-10-11):** With the stateless API, unmerge replays the plan without that merge, so the unmerge half of this bug may be gone. Merging still moves external demand onto the target. Re-test on master.
 
+> **Update (2026-10-12):** Two likely causes are gone. Merges no longer move external demand onto the target (each node keeps its own), and a merge no longer double-counts inputs (020), which matches "picked up extra scaled demand". Keep watching.
+
 From `scratch.txt`:
 - Merging an external node with a non-external node marks the result as external. It should stay non-external.
 - Repro: merge two non-external nodes (A←B), then merge external node E into them, then unmerge:

@@ -39,6 +39,7 @@ class ProductionNode:
         self._parents = set()
         self._children = set()
         self._parent_demands = {} # parent_id -> rate
+        self._external_demand = None # rate demanded directly by the user (root nodes)
 
         # Stateful attributes
         self._absorbed_by = None # ID of the node this node is merged into
@@ -56,6 +57,14 @@ class ProductionNode:
     @absorbed_by.setter
     def absorbed_by(self, value: str):
         self._absorbed_by = value
+
+    @property
+    def external_demand(self):
+        return self._external_demand
+
+    @external_demand.setter
+    def external_demand(self, value: float):
+        self._external_demand = value
 
     @property
     def parent_demands(self):

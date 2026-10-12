@@ -4,12 +4,11 @@
 
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
-| [020](020-merge-double-counts-inputs.md) | Merging two nodes double-counts their inputs | bug | P0 | Open |
 | [014](014-recipe-model-refactor.md) | Recipe model lists refactor | refactor | P3 | Open |
 | [015](015-external-merge-unmerge-bug.md) | External-demand merge/unmerge bug | bug | P1 | Watch |
 | [018](018-ui-feature-backlog.md) | UI/feature backlog | feature | P3 | Open |
 
-Suggested next: 020 (wrong totals after a merge). Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
+Suggested next: the P3 items, as needed. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
 
 ## Done
 
@@ -33,3 +32,4 @@ Moved to [done/](done/).
 | [016](done/016-node-id-stability.md) | Node ID stability | debt | P3 | Done |
 | [017](done/017-frontend-split.md) | Split index.html | refactor | P3 | Done |
 | [019](done/019-scraped-data-gaps.md) | Gaps in the scraped game data | data | P2 | Done |
+| [020](done/020-merge-double-counts-inputs.md) | Merging two nodes double-counts their inputs | bug | P0 | Done |
