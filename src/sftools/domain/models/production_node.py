@@ -1,5 +1,11 @@
-from typing import List, Dict
+import math
+from typing import List, Dict, Optional, Tuple
 from sftools.domain.models.building import Building
+
+# Power draw at clock c is c ** k times the 100% draw (satisfactory.wiki.gg, "Clock speed": 1.321928 = log2 2.5
+# since Update 7; 1.6 before). Worth confirming in game.
+CLOCK_POWER_EXPONENT = 1.321928
+SHARD_STEP = 0.5  # each power shard allows 50 more percentage points above 100%
 
 
 class ProductionNode:
@@ -40,6 +46,7 @@ class ProductionNode:
         self._children = set()
         self._parent_demands = {} # parent_id -> rate
         self._external_demand = None # rate demanded directly by the user (root nodes)
+        self._building_clocks: Optional[List[Tuple[int, float]]] = None  # (count, clock) groups, see set_clocks
 
         # Stateful attributes
         self._absorbed_by = None # ID of the node this node is merged into
@@ -84,7 +91,35 @@ class ProductionNode:
 
     @property
     def building_scale(self):
-        return self._user_scale if self._user_scale is not None else self._original_building_scale
+        """Building-equivalents at 100%: the sum of each building's clock (fractional without round-up)."""
+        if self._user_scale is not None:
+            return self._user_scale
+        if self._building_clocks is not None:
+            return sum(count * clock for count, clock in self._building_clocks)
+        return self._original_building_scale
+
+    def set_clocks(self, groups: Optional[List[Tuple[int, float]]]):
+        """Whole buildings as (count, clock) groups, or None for a fractional scale (original_building_scale)."""
+        self._building_clocks = [(count, clock) for count, clock in groups if count > 0] if groups is not None else None
+
+    @property
+    def building_clocks(self) -> Optional[List[Tuple[int, float]]]:
+        if self._user_scale is not None:
+            return None
+        return self._building_clocks
+
+    @property
+    def buildings(self) -> float:
+        """Number of buildings: whole when clocks are set, otherwise the (possibly fractional) scale."""
+        if self.building_clocks is not None:
+            return sum(count for count, _ in self.building_clocks)
+        return self.building_scale
+
+    @property
+    def power_shards(self) -> int:
+        if self.building_clocks is None:
+            return 0
+        return sum(count * max(0, math.ceil((clock - 1) / SHARD_STEP - 1e-9)) for count, clock in self.building_clocks)
 
     @property
     def original_building_scale(self):
@@ -139,7 +174,9 @@ class ProductionNode:
 
     @property
     def scaled_power(self):
-        """Scaled power consumption/generation based on building_scale."""
+        """Power of all buildings: each draws base power x clock ** CLOCK_POWER_EXPONENT."""
+        if self.building_clocks is not None:
+            return self._base_power * sum(count * clock ** CLOCK_POWER_EXPONENT for count, clock in self.building_clocks)
         return self._base_power * self.building_scale
 
     @property

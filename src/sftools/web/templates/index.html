@@ -21,10 +21,6 @@
                 title="Hide side panel">&#x276E;</button>
             <h1>Satisfactory Planner</h1>
         </div>
-        <div class="toggle-switch">
-            <input type="checkbox" id="round-up-toggle" checked>
-            <label for="round-up-toggle" style="margin:0; cursor:pointer;">Round Up Buildings</label>
-        </div>
     </header>
 
     <div class="main-container">
@@ -57,7 +53,7 @@
                         </div>
                         <div
                             style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                            <button type="button" id="clear-overrides-btn" class="secondary">Clear Overrides</button>
+                            <button type="button" id="clear-clocks-btn" class="secondary">Clear Clock Speeds</button>
                             <button type="button" id="clear-merges-btn" class="secondary">Clear Merges</button>
                         </div>
                     </form>
@@ -111,8 +107,8 @@
                         <h4 style="margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">Performance
                             & Stats</h4>
                         <div class="stat-row">
-                            <span class="stat-label">Current Scale:</span>
-                            <span class="stat-value" id="detail-scale">-</span>
+                            <span class="stat-label">Buildings:</span>
+                            <span class="stat-value" id="detail-buildings">-</span>
                         </div>
                         <div class="stat-row">
                             <span class="stat-label">Output Rate:</span>
@@ -129,6 +125,10 @@
                         <div class="stat-row">
                             <span class="stat-label">Power:</span>
                             <span class="stat-value" id="detail-power">-</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Power Shards:</span>
+                            <span class="stat-value" id="detail-shards">-</span>
                         </div>
                     </div>
 
@@ -171,15 +171,16 @@
                     </details>
 
                     <div class="form-group" style="margin-top: 1rem;">
-                        <label>Override Scale Factor</label>
+                        <label>Clock Speed (%)</label>
                         <div style="display: flex; gap: 0.5rem;">
-                            <input type="number" id="override-scale" step="any" placeholder="Default">
-                            <button type="button" id="clear-override-btn" class="secondary" style="width: auto;">Clear</button>
+                            <input type="number" id="clock-all" min="1" max="250" step="any" placeholder="All: 100" title="Clock of all buildings">
+                            <input type="number" id="clock-last" min="1" max="250" step="any" placeholder="Last: same" title="Clock of the last building">
+                            <button type="button" id="clear-clocks-node-btn" class="secondary" style="width: auto;">Clear</button>
                         </div>
-                        <div class="hint">Number of buildings (can be fractional). Changes cascade to child nodes.</div>
+                        <div class="hint">All buildings, and optionally the last one. The number of buildings follows the demand and these clocks; changes cascade to the inputs.</div>
                     </div>
 
-                    <button type="button" id="apply-override-btn">Apply Override</button>
+                    <button type="button" id="apply-clocks-btn">Apply Clock Speeds</button>
                     <button type="button" id="unmerge-btn" class="secondary" style="margin-top: 0.5rem; display: none;">Unmerge Node</button>
 
                     <div class="form-group" style="margin-top: 1rem;">

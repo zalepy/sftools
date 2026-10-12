@@ -7,11 +7,11 @@ async function errorFrom(response) {
 }
 
 /** Returns {nodes, ignored}; throws with the server's message on an error status. */
-export async function calculate({ demands, roundUp, recipes, merges, overrides, splits }) {
+export async function calculate({ demands, recipes, merges, overrides, splits, clocks }) {
     const response = await fetch('/api/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ demands, round_up: roundUp, recipes, merges, overrides, splits })
+        body: JSON.stringify({ demands, round_up: true, recipes, merges, overrides, splits, clocks })
     });
     if (!response.ok) throw await errorFrom(response);
     const data = await response.json();

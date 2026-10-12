@@ -296,6 +296,37 @@ def _drop_unused_inputs_of_merged(graph: FactoryGraph) -> bool:
     return dropped
 
 
+MIN_CLOCK, MAX_CLOCK = 0.01, 2.5
+OVERRIDES_RETIRED = "building counts are no longer set directly; set clock speeds instead"
+
+
+def parse_clock_groups(groups) -> Tuple[float, List[Tuple[int, float]]]:
+    """
+    A node's clocks, e.g. [{"clock": 1.0}, {"count": 1, "clock": 0.6}]: exactly one group without a count
+    (the clock of as many buildings as the demand needs) and any number of fixed groups, such as the
+    last building. Returns (rest clock, [(count, clock), ...]); raises ValueError with the reason.
+    """
+    if not isinstance(groups, list) or not groups:
+        raise ValueError("expected a list of clock groups")
+    rest, fixed = [], []
+    for group in groups:
+        if not isinstance(group, dict) or not isinstance(group.get("clock"), (int, float)):
+            raise ValueError("each group needs a clock")
+        clock = float(group["clock"])
+        if not MIN_CLOCK <= clock <= MAX_CLOCK:
+            raise ValueError(f"clock {clock:.0%} is outside {MIN_CLOCK:.0%}-{MAX_CLOCK:.0%}")
+        count = group.get("count")
+        if count is None:
+            rest.append(clock)
+        elif isinstance(count, int) and not isinstance(count, bool) and count >= 1:
+            fixed.append((count, clock))
+        else:
+            raise ValueError("a group's count must be a whole number of at least 1")
+    if len(rest) != 1:
+        raise ValueError("exactly one group must have no count")
+    return rest[0], fixed
+
+
 def build_plan(
     items_map: Dict,
     recipes_map: Dict[str, Recipe],
@@ -305,10 +336,13 @@ def build_plan(
     merges: Optional[Dict[str, str]] = None,
     overrides: Optional[Dict[str, float]] = None,
     splits: Optional[Dict[str, int]] = None,
+    clocks: Optional[Dict[str, list]] = None,
 ) -> FactoryGraph:
     """
     Builds a FactoryGraph from the full plan description.
-    The API is stateless: every request replays demands (with splits) -> recipe switches -> merges -> overrides.
+    The API is stateless: every request replays demands (with splits) -> recipe switches -> merges -> clocks.
+    Building counts follow the demand and the clocks (see parse_clock_groups, FactoryGraph._set_scale);
+    `overrides` (building counts set directly) are retired and reported in `ignored`.
     Splits apply as nodes are created (see split_parts), so the parts of a split node, and their
     inputs, exist before any other entry refers to them.
 
@@ -317,7 +351,7 @@ def build_plan(
     the absorbed nodes' inputs that it doesn't use are dropped the same way.
 
     Entries that can't apply are skipped and listed in `graph.ignored` as
-    {"kind": "recipe" | "merge" | "override" | "split", "node_id", "reason"}. Entries on dropped
+    {"kind": "recipe" | "merge" | "override" | "split" | "clock", "node_id", "reason"}. Entries on dropped
     inputs also have "dropped": True: they belonged to a branch the current recipes no longer use, and
     a new branch starts fresh. When a merge target is dropped, the nodes merged into it stay merged
     with each other: those entries carry "replacement", their new target.
@@ -400,11 +434,22 @@ def build_plan(
             del splits[node_id]
 
     for node_id in overrides or {}:
+        ignored.append({"kind": "override", "node_id": node_id, "reason": OVERRIDES_RETIRED})
+
+    graph.clocks = {}
+    for node_id, groups in (clocks or {}).items():
+        try:
+            parsed = parse_clock_groups(groups)
+        except ValueError as ex:
+            ignored.append({"kind": "clock", "node_id": node_id, "reason": str(ex)})
+            continue
         state = _entry_state(graph, node_id)
         if state != ACTIVE:
-            report("override", node_id, state)
+            report("clock", node_id, state)
+            continue
+        graph.clocks[node_id] = parsed
 
-    graph.recalculate(overrides or {}, round_up=round_up)
+    graph.recalculate({}, round_up=round_up)
     graph.ignored = ignored
     graph.splits = splits
     return graph

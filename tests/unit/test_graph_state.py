@@ -108,21 +108,22 @@ def test_same_item_demanded_twice_keeps_both(data):
 
 
 def test_recipe_switch_keeps_shared_inputs_and_drops_the_others(data):
-    """Bolted Iron Plate uses Iron Plate and Screws, like the default recipe: both keep their nodes and overrides."""
+    """Bolted Iron Plate uses Iron Plate and Screws, like the default recipe: both keep their nodes and clocks."""
     rip = "Smart Plating__Reinforced Iron Plate"
-    plan = dict(items_map=data.items, recipes_map=data.recipes, demands=[("Smart Plating", 2)], round_up=False)
+    plan = dict(items_map=data.items, recipes_map=data.recipes, demands=[("Smart Plating", 2)], round_up=True)
+    slow = [{"clock": 0.25}]
 
-    graph = build_plan(**plan, recipes={rip: "Alternate: Bolted Iron Plate"}, overrides={f"{rip}__Screws": 7})
-    assert graph.get_node(f"{rip}__Screws").building_scale == 7
+    graph = build_plan(**plan, recipes={rip: "Alternate: Bolted Iron Plate"}, clocks={f"{rip}__Screws": slow})
+    assert graph.get_node(f"{rip}__Screws").building_clocks[0][1] == 0.25
     assert graph.ignored == []
 
     # Cast Screws uses Iron Ingot instead of Iron Rod: the Iron Rod branch and its adjustments go
     screws = f"{rip}__Screws"
     graph = build_plan(**plan, recipes={screws: "Alternate: Cast Screws"},
-                       overrides={f"{screws}__Iron Rod": 3, f"{screws}__Iron Rod__Iron Ingot": 2, screws: 4})
+                       clocks={f"{screws}__Iron Rod": slow, f"{screws}__Iron Rod__Iron Ingot": slow, screws: slow})
     assert graph.get_node(f"{screws}__Iron Rod").is_dormant
     assert not graph.get_node(f"{screws}__Iron Ingot").is_dormant
-    assert graph.get_node(screws).building_scale == 4
+    assert graph.get_node(screws).building_clocks[0][1] == 0.25
     assert sorted((e["node_id"], e["dropped"]) for e in graph.ignored) == [
         (f"{screws}__Iron Rod", True), (f"{screws}__Iron Rod__Iron Ingot", True)]
 

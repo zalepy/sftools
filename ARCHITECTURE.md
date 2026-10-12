@@ -47,10 +47,9 @@ The browser owns the **plan** and sends all of it on every change:
 ```json
 {
   "demands":   [{"item": "Smart Plating", "rate": 2}],
-  "round_up":  true,
   "recipes":   {"<node_id>": "<recipe name>"},
   "merges":    {"<source node_id>": "<target node_id>"},
-  "overrides": {"<node_id>": 3},
+  "clocks":    {"<node_id>": [{"clock": 1.0}, {"count": 1, "clock": 2.0}]},
   "splits":    {"<node_id>": 2}
 }
 ```
@@ -59,7 +58,7 @@ The browser owns the **plan** and sends all of it on every change:
 1. **Expand demands** (`calculate_demands`): breadth-first expansion into a tree of `ProductionNode`s, using `default_recipe_for(item)` for each item (see [ALGO.md](ALGO.md)). A node produces one item, which can be either the recipe's main product (`output1` in the data) or its by-product. **Splits** apply here, as nodes are created (`split_parts`): a node split into k parts becomes k nodes with an equal share of its demand, each expanded into its own inputs. Nodes created by a recipe switch (step 2) are split the same way.
 2. **Recipe switches**, parents first. A child's ID extends its parent's ID, so sorting by ID length is enough. A switch keeps the inputs both recipes use (their nodes, and the adjustments on them, are rescaled), drops the inputs the new recipe doesn't use, with everything under them (they become dormant), and builds the new inputs as in step 1. A switch is skipped if its node doesn't exist or was dropped, or the recipe can't be resolved.
 3. **Merges**: `FactoryGraph.apply_merge` marks the source as absorbed by the target. The merged node is one shared set of buildings; each branch keeps its own inputs, sized to its share of the merged node's demand.
-4. **Overrides + propagation**: `FactoryGraph.recalculate` runs Kahn's algorithm (see [ALGO.md](ALGO.md)).
+4. **Clocks + propagation**: `FactoryGraph.recalculate` runs Kahn's algorithm (see [ALGO.md](ALGO.md)). Each node's buildings come from its demand and its clocks (`parse_clock_groups`, `FactoryGraph._set_scale`): one group without a count runs as many buildings as the rest of the demand needs, plus fixed groups such as the last building. Building counts are never set directly (ticket 023). The request's `overrides` (fixed building counts from older plans) are reported in `ignored`, and `round_up: false` gives the exact fractional scale the unit tests use to check balances; the UI always rounds.
 
 Entries that no longer match the graph (typically from an older saved plan) are skipped and returned in `ignored` with a reason; the UI removes them from the saved plan and shows a notice. Entries on dropped inputs (an input the recipe running above it doesn't use, or anything under one) are returned with `"dropped": true`, and the UI removes them without a notice: when the input comes back, it starts as a fresh branch. A merge group runs its target's recipe, so the absorbed nodes' inputs that it doesn't use are dropped too. When a merge target is dropped, the rest of its group stays merged: those entries carry `replacement`, the new target.
 
@@ -75,16 +74,16 @@ Why stateless: on a shared deployment, a single server-side graph would be share
   - **Merged** nodes have `absorbed_by` set. Their links move to the target (for the UI view), and `get_ui_data` hides them and lists them in the target's `constituent_ids`. `recalculate` works from the unmerged structure: a group's demand is the sum of its members', and each member's input nodes get that member's share of the group's inputs (see [ALGO.md](ALGO.md)).
   - **Dormant** nodes are dropped inputs: the recipe running above them doesn't use them. They stay in the graph but are excluded from calculation and the UI.
   - `link(parent, child)` records each link in the unmerged structure as it is made, and `_rebuild_structure` restores that structure and then replays the merges (unmerge). In stateless mode an unmerge is simply a plan without that merge.
-  - `recalculate(overrides)` replaces all overrides when given a dict (`{}` clears them) and keeps the current ones when given `None`.
+  - `recalculate(overrides)` replaces all fixed scales (`ProductionNode.user_scale`) when given a dict (`{}` clears them) and keeps the current ones when given `None`. Plans no longer set them (clocks replaced them); low-level tests still use them.
 
 ### Node identity
 Node IDs are item paths (`root_node_ids`, `child_node_id` in `engine/calculator.py`):
 
 - **Roots** are keyed by item: `Smart Plating`. A second demand row for the same item gets `Smart Plating#2`.
 - **Children** extend the parent's ID with their item: `Smart Plating__Reinforced Iron Plate__Screws`.
-- **Parts of a split node**: part 1 keeps the node's ID, so its override, recipe and merges stay with it. The other parts get `~2`, `~3`, ...: `Smart Plating__Reinforced Iron Plate~2`, whose inputs are `Smart Plating__Reinforced Iron Plate~2__Screws` and so on. Each part is an ordinary node with its own override and recipe, and can be merged. A merged node can't be split (the UI asks to unmerge first). When parts are removed, the UI drops the entries that belonged to them.
+- **Parts of a split node**: part 1 keeps the node's ID, so its clocks, recipe and merges stay with it. The other parts get `~2`, `~3`, ...: `Smart Plating__Reinforced Iron Plate~2`, whose inputs are `Smart Plating__Reinforced Iron Plate~2__Screws` and so on. Each part is an ordinary node with its own override and recipe, and can be merged. A merged node can't be split (the UI asks to unmerge first). When parts are removed, the UI drops the entries that belonged to them.
 
-IDs don't depend on recipes. When a node switches recipe, the inputs both recipes use keep their IDs and adjustments; see `tickets/done/022`. Merges, overrides, splits and recipe switches refer to nodes by these IDs, so they stay valid as long as the items above them don't change (see `tickets/done/016`).
+IDs don't depend on recipes. When a node switches recipe, the inputs both recipes use keep their IDs and adjustments; see `tickets/done/022`. Merges, clocks, splits and recipe switches refer to nodes by these IDs, so they stay valid as long as the items above them don't change (see `tickets/done/016`).
 
 Names can't contain `__`, `#` or `~`; `tests/unit/test_graph_state.py` covers the scheme.
 

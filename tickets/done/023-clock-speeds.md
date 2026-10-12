@@ -1,8 +1,10 @@
 # 023 — Clock speeds per node (replaces building overrides)
 
-**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** 018, 026, 027, 028
+**Type:** feature · **Priority:** P2 · **Status:** Done · **Related:** 018, 026, 027, 028
 
 > **Redesigned (2026-10-12)** in a design session with the user. The first version computed the last building's clock automatically; the user wants no automatic adjustment, ever.
+
+> **Done (2026-10-12).** As designed below. Plan entry `clocks`; buildings, clock groups and shards on each node; label shows `(9× Constructor)` with a fourth line such as `8×100% + 1×200% · 2 shards` when any clock differs from 100%. Power exponent 1.321928 (satisfactory.wiki.gg, "Clock speed", since Update 7), still worth confirming in game. Plan-level overrides are retired; the engine keeps `ProductionNode.user_scale` as a fixed-scale primitive for low-level tests (a possible later cleanup). Tests: `tests/unit/test_clocks.py`; browser tests for applying and clearing clocks, saved overrides dropped with a notice, and no round-up toggle.
 
 ## Principles (from the user)
 - **The tool never adjusts on its own.** Changes happen only when the user sets something, or explicitly runs an optimization (027).

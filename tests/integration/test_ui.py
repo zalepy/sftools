@@ -5,8 +5,9 @@ import pytest
 
 RIP_SP = "Smart Plating__Reinforced Iron Plate"
 RIP_MF = "Modular Frame__Reinforced Iron Plate"
-TWO_ROOTS = {"items": ["Smart Plating", "Modular Frame"], "rates": [2, 2], "roundUp": True,
-             "overrides": {}, "merges": {}, "recipes": {}}
+TWO_ROOTS = {"items": ["Smart Plating", "Modular Frame"], "rates": [2, 2],
+             "clocks": {}, "merges": {}, "recipes": {}}
+SAVED = "JSON.parse(localStorage.getItem('sf_planner_state'))"
 
 
 def plan(**changes):
@@ -87,16 +88,31 @@ def test_recipe_switch(page):
     assert page.js(label(RIP_MF)).startswith("Reinforced Iron Plate\n")
 
 
-def test_override_apply_and_clear(page):
-    page.open(page.base_url, plan())
-    page.select_node(RIP_SP)
-    page.js("document.getElementById('override-scale').value = '3'; document.getElementById('apply-override-btn').click()")
-    page.wait_until(f"JSON.parse(localStorage.getItem('sf_planner_state')).overrides[{json.dumps(RIP_SP)}] === 3")
-    page.select_node(RIP_SP)
-    assert page.js("document.getElementById('detail-scale').textContent") == "3.00x"
+def test_clocks_apply_and_clear(page):
+    """144 Iron Rod: 10 x 100% by default; with the last building at 200%, 9 buildings."""
+    page.open(page.base_url, plan(items=["Iron Rod"], rates=[144]))
+    assert page.js("document.getElementById('round-up-toggle')") is None
+    assert page.js("document.getElementById('override-scale')") is None
+    assert "(10× Constructor)" in page.js(label("Iron Rod"))
 
-    page.js("document.getElementById('clear-override-btn').click()")
-    page.wait_until("Object.keys(JSON.parse(localStorage.getItem('sf_planner_state')).overrides).length === 0")
+    page.select_node("Iron Rod")
+    page.js("document.getElementById('clock-last').value = '200'; document.getElementById('apply-clocks-btn').click()")
+    page.wait_until(f"{SAVED}.clocks['Iron Rod'] !== undefined")
+    assert page.saved_plan()["clocks"] == {"Iron Rod": [{"clock": 1}, {"count": 1, "clock": 2}]}
+    assert page.js(label("Iron Rod")).endswith("(9× Constructor)\n8×100% + 1×200% · 2 shards")
+    assert page.js("document.getElementById('detail-buildings').textContent") == "9 (8 × 100% + 1 × 200%)"
+    assert page.js("document.getElementById('clock-last').value") == "200"
+
+    page.js("document.getElementById('clear-clocks-node-btn').click()")
+    page.wait_until(f"Object.keys({SAVED}.clocks).length === 0")
+    assert page.js(label("Iron Rod")).endswith("(10× Constructor)")
+
+
+def test_saved_building_overrides_are_dropped_with_a_notice(page):
+    page.open(page.base_url, plan(overrides={RIP_SP: 3}))
+    page.wait_until("!document.getElementById('plan-notice').hidden")
+    assert "clock speeds" in page.js("document.querySelector('#plan-notice ul').textContent")
+    assert "overrides" not in page.saved_plan()
 
 
 def test_merge_by_drag_and_unmerge(page):
@@ -124,10 +140,10 @@ def test_merging_different_recipes_shows_a_brief_warning(page):
 
 
 def test_stale_saved_entries_are_dropped_with_a_notice(page):
-    page.open(page.base_url, plan(overrides={"root__Gone": 2}))
+    page.open(page.base_url, plan(clocks={"root__Gone": [{"clock": 2}]}))
     page.wait_until("!document.getElementById('plan-notice').hidden")
     assert "no longer match" in page.js("document.querySelector('#plan-notice .plan-notice-text').textContent")
-    assert page.saved_plan()["overrides"] == {}
+    assert page.saved_plan()["clocks"] == {}
     page.js("document.querySelector('#plan-notice .close').click()")
     assert page.js("document.getElementById('plan-notice').hidden")
 
@@ -153,15 +169,15 @@ def test_split_set_parts_and_unsplit(page):
     assert page.js(f"document.getElementById('cy')._cyreg.cy.getElementById({json.dumps(RIP_SP + '~3')}).data('label')"
                    ).startswith("Reinforced Iron Plate [3/3]")
 
-    # A part has its own override; reducing the number of parts drops what belonged to removed parts
+    # A part has its own clocks; reducing the number of parts drops what belonged to removed parts
     page.select_node(f"{RIP_SP}~3")
     assert "Part 3 of 3" in page.js("document.getElementById('split-hint').textContent")
-    page.js("document.getElementById('override-scale').value = '2'; document.getElementById('apply-override-btn').click()")
-    page.wait_until(f"JSON.parse(localStorage.getItem('sf_planner_state')).overrides[{json.dumps(RIP_SP + '~3')}] === 2")
+    page.js("document.getElementById('clock-all').value = '50'; document.getElementById('apply-clocks-btn').click()")
+    page.wait_until(f"{SAVED}.clocks[{json.dumps(RIP_SP + '~3')}] !== undefined")
     page.select_node(f"{RIP_SP}~2")
     page.js("document.getElementById('split-count').value = '2'; document.getElementById('split-btn').click()")
     page.wait_until(f"JSON.parse(localStorage.getItem('sf_planner_state')).splits[{json.dumps(RIP_SP)}] === 2")
-    assert page.saved_plan()["overrides"] == {}
+    assert page.saved_plan()["clocks"] == {}
     assert f"{RIP_SP}~3" not in page.node_ids()
     assert page.js("document.getElementById('detail-id').textContent") == f"{RIP_SP}~2"
 
@@ -211,12 +227,12 @@ def test_edges_show_what_each_supplier_provides(page):
 
 
 def test_selecting_a_node_keeps_its_color(page):
-    page.open(page.base_url, plan(overrides={RIP_SP: 2}))
+    page.open(page.base_url, plan(clocks={RIP_SP: [{"clock": 0.5}]}))
     node = f"document.getElementById('cy')._cyreg.cy.getElementById({json.dumps(RIP_SP)})"
     before = page.js(f"{node}.style('background-color')")
     page.js(f"void {node}.select()")
     assert page.js(f"{node}.style('background-color')") == before
-    assert page.js(f"{node}.style('border-color')") == "rgb(244,63,94)"  # selected, even with an override
+    assert page.js(f"{node}.style('border-color')") == "rgb(244,63,94)"  # selected, even with clocks set
 
 
 SP_SCREWS = f"{RIP_SP}__Screws"
@@ -236,10 +252,10 @@ def test_switching_a_merged_node_leaves_no_old_inputs(page):
 def test_switching_away_and_back_starts_a_fresh_branch(page):
     """A merged Iron Rod keeps its other demand; the Screws branch's Iron Rod comes back unmerged."""
     sp_rod = f"{SP_SCREWS}__Iron Rod"
-    page.open(page.base_url, plan(merges={sp_rod: ROTOR_ROD}, overrides={f"{sp_rod}__Iron Ingot": 2}))
+    page.open(page.base_url, plan(merges={sp_rod: ROTOR_ROD}, clocks={f"{sp_rod}__Iron Ingot": [{"clock": 0.5}]}))
     switch_recipe(page, SP_SCREWS, "Alternate: Cast Screws")
     assert page.saved_plan()["merges"] == {}
-    assert page.saved_plan()["overrides"] == {}
+    assert page.saved_plan()["clocks"] == {}
     assert page.js("document.getElementById('plan-notice').hidden")  # dropped quietly
 
     switch_recipe(page, SP_SCREWS, "Screws")
