@@ -59,6 +59,37 @@ def test_rates_are_sane(game):
             assert rate is not None and 0 < rate <= MAX_RATE, (recipe.name, item.name, rate)
 
 
+def test_rates_are_exact(game):
+    """Tickets 025: the scraped tables round to two decimals (1.875 -> 1.88); the loader recomputes from cycle times."""
+    _, recipes = game
+    turbo_motor = recipes["Turbo Motor"]
+    assert turbo_motor.output_rate == 1.875
+    supercomputer = recipes["Supercomputer"]
+    assert dict((i.name, r) for i, r in supercomputer.ingredients)["High-Speed Connector"] == 5.625
+    assert supercomputer.output_rate == 1.875
+    electric = recipes["Alternate: Turbo Electric Motor"]  # 64 s cycle: 7 Motors -> 6.5625/min
+    assert dict((i.name, r) for i, r in electric.ingredients)["Motor"] == 6.5625
+    assert recipes["Alternate: Crystal Computer"].output_rate == pytest.approx(10 / 3)
+    assert recipes["Iron Ore (pure) at Miner Mk.3"].output_rate == 480
+
+
+def test_exact_rates_stay_within_the_scraped_rounding(game, raw_items):
+    """Recomputing never moves a rate by more than the two-decimal rounding of the source."""
+    _, recipes = game
+    scraped = {name: details for entry in raw_items for name, details in (entry.get("recipes") or {}).items()}
+    for name, recipe in recipes.items():
+        details = scraped[name]
+
+        def listed(prefixes):  # by position: an item can be both input and output (Water in Distilled Silica)
+            return [(details[f"{p}_name"], parse_number(details[f"{p}_rate"])) for p in prefixes if details.get(f"{p}_name")]
+
+        for loaded, scraped_entries in ((recipe.ingredients, listed([f"ingredient{i}" for i in range(1, 5)])),
+                                        (recipe.outputs(), listed(["output1", "output2"]))):
+            assert [item.name for item, _ in loaded] == [item for item, _ in scraped_entries], name
+            for (item, rate), (_, listed_rate) in zip(loaded, scraped_entries):
+                assert rate == pytest.approx(listed_rate, abs=0.0051), (name, item.name)
+
+
 def test_fluid_rates_are_not_corrupted(game):
     """'120m3' used to parse as 1203 (tickets/done/003)."""
     _, recipes = game

@@ -96,14 +96,51 @@ def recipe_type_for(recipe_name: str, building_name: str) -> RecipeType:
     return RecipeType.BASIC
 
 
+RATE_PRECISION = 0.0051  # the scraped tables round rates to two decimals
+ENTRY_PREFIXES = [f'ingredient{i}' for i in range(1, 5)] + ['output1', 'output2']
+
+
+def cycle_seconds(details: Dict) -> Optional[float]:
+    """
+    The recipe's cycle time, from its rates and its amounts per cycle (`*_stack`):
+    rate = amount * 60 / cycle for every input and output. The scraped rates are rounded to two
+    decimals (1.875 shows as 1.88), so this is the simplest cycle time, with the fewest decimals,
+    that gives every listed rate back to within that rounding. None if the data doesn't say.
+    """
+    entries = []
+    for prefix in ENTRY_PREFIXES:
+        if not details.get(f'{prefix}_name'):
+            continue
+        rate, amount = get_float_or_none(details, f'{prefix}_rate'), get_float_or_none(details, f'{prefix}_stack')
+        if not rate or not amount:
+            return None
+        entries.append((rate, amount))
+    if not entries:
+        return None
+    rate, amount = max(entries, key=lambda e: e[1])  # the largest amount has the smallest relative rounding error
+    estimate = 60 * amount / rate
+    for decimals in range(4):
+        cycle = round(estimate, decimals)
+        if cycle > 0 and all(abs(60 * a / cycle - r) <= RATE_PRECISION for r, a in entries):
+            return cycle
+    return None
+
+
 def build_recipe(recipe_name: str, details: Dict, items: Dict[str, Item], buildings: Dict[str, Building]) -> Recipe:
     """
     output1 is the recipe's main product and output2 its by-product, as in the game data.
+    Rates are recomputed from the cycle time where possible (see cycle_seconds), so they are exact.
     Ingredients or by-products that refer to unknown items are dropped, and an unknown main product
     is kept as None; tests/unit/test_game_data.py checks there are none.
     """
+    cycle = cycle_seconds(details)
+
     def item_and_rate(prefix):
-        return items.get(details.get(f'{prefix}_name')), get_float_or_none(details, f'{prefix}_rate')
+        rate = get_float_or_none(details, f'{prefix}_rate')
+        amount = get_float_or_none(details, f'{prefix}_stack')
+        if cycle and amount:
+            rate = round(60 * amount / cycle, 9)  # drops float noise such as 25.000000000000004
+        return items.get(details.get(f'{prefix}_name')), rate
 
     def known(prefixes):
         return [(item, rate) for item, rate in map(item_and_rate, prefixes) if item is not None]

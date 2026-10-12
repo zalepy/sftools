@@ -8,9 +8,8 @@
 | [018](018-ui-feature-backlog.md) | UI/feature backlog | feature | P3 | Open |
 | [023](023-last-building-clock-speed.md) | "Last building" clock speed | feature | P2 | Open |
 | [024](024-byproducts-as-supply.md) | By-products count as supply | feature | P2 | Open |
-| [025](025-exact-recipe-rates.md) | Recipe rates rounded to two decimals | data bug | P2 | Open |
 
-Suggested next: 025 (small, data only), then 023 and 024. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
+Suggested next: 023, then 024. Smaller ideas live in [TODO.md](../TODO.md). 015 is waiting to show up in normal use.
 
 ## Done
 
@@ -38,3 +37,4 @@ Moved to [done/](done/).
 | [020](done/020-merge-double-counts-inputs.md) | Merging two nodes double-counts their inputs | bug | P0 | Done |
 | [021](done/021-node-splitting.md) | Node splitting | feature | P3 | Done |
 | [022](done/022-recipe-switch-inputs.md) | Recipe switch: keep shared inputs, drop unused branches | feature | P2 | Done |
+| [025](done/025-exact-recipe-rates.md) | Recipe rates rounded to two decimals | data bug | P2 | Done |
