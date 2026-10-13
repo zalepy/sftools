@@ -16,6 +16,11 @@ Live (UAT): https://sftools.onrender.com/
 * **Supplied from outside**: the last entry in a node's recipe list marks that one node as supplied from outside, whatever its rate. It keeps its rate and loses its buildings, inputs and clocks.
 * **Undo/redo**: the ↶ ↷ buttons in the header, or Ctrl+Z and Ctrl+Y (Ctrl+Shift+Z), step through the plan's changes: merges, splits, recipe switches, clocks, demand edits and imports. Up to 50 steps, kept until the page is reloaded.
 * **Save/load**: the plan is stored in your browser and can be exported to or imported from JSON.
+* **Logistics mode** (`/logistics`, link at the top right): the same planner, also planning belts, pipes, splitters and mergers. Its plans are its own (saved and exported separately; each mode refuses the other's files), and it has no splits.
+  * **Settings**: the highest belt and pipe tiers unlocked, and smart/programmable splitters.
+  * Each node has a small **logistics node** on each side: inputs on the left, outputs on the right, showing its number of splitters and mergers (red when something's short, dashed when you edited it). The graph's edges are belts between them, labelled with the tier they need, e.g. "36.00/m · Mk.3"; an edge that needs more than one belt of the highest tier is amber ("· 2× Mk.6").
+  * Click a logistics node for a summary, then **Zoom In** to see and edit it: its buildings, entries or exits (one per edge), splitters, mergers and belts, with the rate on every belt. Drag from one node to another to lay a belt; add splitters, mergers, smart splitters (overflow) and buffers; select and delete; Reset goes back to the suggested layout. Changes that don't fit (a port already used, a belt between different items, a loop) are refused.
+  * **Suggested layouts**: outputs grouped by destination (whole buildings per exit, the rest merged and split, surplus backing up); inputs as a manifold. A change to the plan that alters an edited logistics node's buildings or edges resets it to the suggested layout, with a short notice; undo brings yours back.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for how it works, [ALGO.md](ALGO.md) for the calculation, [tickets/](tickets/README.md) for known issues and planned work, and [TODO.md](TODO.md) for smaller ideas.
 

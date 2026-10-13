@@ -15,7 +15,10 @@ export async function calculate(plan) {
     });
     if (!response.ok) throw await errorFrom(response);
     const data = await response.json();
-    return { nodes: data.nodes, ignored: data.ignored || [], byproducts: data.byproducts || {} };
+    return {
+        nodes: data.nodes, ignored: data.ignored || [], byproducts: data.byproducts || {},
+        logisticsResets: data.logistics_resets || []
+    };
 }
 
 export async function fetchRecipes(itemName) {

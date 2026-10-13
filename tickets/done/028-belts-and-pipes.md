@@ -1,6 +1,8 @@
 # 028 — Belt and pipe capacity
 
-**Type:** feature · **Priority:** P3 · **Status:** Open · **Depends on:** [033](033-logistics-mode.md) · **Related:** 023, 027
+**Type:** feature · **Priority:** P3 · **Status:** Done · **Depends on:** [033](033-logistics-mode.md) · **Related:** 023, 027
+
+> **Done (2026-10-13)** in logistics mode (033): tiers per plan (the settings), each edge labelled with the belts or pipes it needs and amber when it needs more than one of the highest tier, building ports and belt capacity checked inside each logistics node. How a node's buildings divide their input is now planned, not just counted, in the zoomed-in view. Still open: a "fits belt Mk N" goal for 027.
 
 ## Problem
 Belt logistics affect planning but aren't covered. A line can exceed what its belt tier carries, and some splits are awkward to build balanced: a split into 5, for example, doesn't come from plain 2- and 3-way splitters. These shape decisions such as clocking a node down to fit a belt.

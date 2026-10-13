@@ -340,6 +340,34 @@ export function getSplitCount() {
     return parseInt($('split-count').value, 10);
 }
 
+// --- Selected logistics node (logistics mode) ---
+
+/** A production node by name, as in the input breakdown: e.g. "Screws (in Rotor)". */
+export function nodeLabel(nodeId) {
+    return parentLabel(nodeId);
+}
+
+/** Summary of one side's logistics: splitters and mergers, belts, what backs up, warnings; and Zoom In. */
+export function showLogisticsDetails(node, side) {
+    const data = node && node.logistics && node.logistics[side];
+    if (!data) return hideLogisticsDetails();
+    $('logistics-title').innerText = `${side === 'out' ? 'Output' : 'Input'} logistics: ${parentLabel(node.id)}`;
+    $('logistics-complexity').innerText = data.complexity;
+    $('logistics-belts').innerText = data.belts.length;
+    $('logistics-backed-up').innerText = data.backed_up > EPSILON ? `${data.backed_up.toFixed(2)}/min (buildings idle)` : 'nothing';
+    $('logistics-edited').innerText = data.edited ? 'edited' : 'suggested';
+    $('logistics-warnings').replaceChildren(...data.warnings.map(text => Object.assign(document.createElement('li'), { textContent: text })));
+    const zoom = $('logistics-zoom-btn');
+    zoom.dataset.node = node.id;
+    zoom.dataset.side = side;
+    $('logistics-details').style.display = 'block';
+}
+
+export function hideLogisticsDetails() {
+    const section = $('logistics-details');
+    if (section) section.style.display = 'none';
+}
+
 // --- Selected by-product (an edge from its maker) ---
 
 /** The maker's by-products: what's made, used and sunk, and a button to use them or send them to the Sink. */

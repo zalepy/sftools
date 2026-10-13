@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Satisfactory Demand Planner</title>
+    <title>{% if mode == 'logistics' %}Satisfactory Planner: Logistics{% else %}Satisfactory Demand Planner{% endif %}</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23f59e0b'/%3E%3C/svg%3E">
     <!-- Cytoscape.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="/static/app.css?v={{ asset_version }}">
 </head>
 
-<body>
+<body data-mode="{{ mode }}">
     <header>
         <div style="display: flex; align-items: center; gap: 1rem;">
             <button type="button" id="panel-toggle" class="icon-btn" aria-controls="sidebar" aria-expanded="true"
@@ -23,8 +23,13 @@
                 <button type="button" id="undo-btn" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>&#x21B6;</button>
                 <button type="button" id="redo-btn" class="icon-btn" title="Redo (Ctrl+Y)" aria-label="Redo" disabled>&#x21B7;</button>
             </div>
-            <h1>Satisfactory Planner</h1>
+            <h1>Satisfactory Planner{% if mode == 'logistics' %} <span class="mode-name">Logistics</span>{% endif %}</h1>
         </div>
+        {% if mode == 'logistics' %}
+        <a class="mode-link" href="/" title="The planner without belts; its plans are separate">&larr; Simple mode</a>
+        {% else %}
+        <a class="mode-link" href="/logistics" title="Plan belts, splitters and mergers too; its plans are separate">Logistics mode &rarr;</a>
+        {% endif %}
     </header>
 
     <div class="main-container">
@@ -80,6 +85,55 @@
                             {% endfor %}
                     </datalist>
                 </section>
+
+                {% if mode == 'logistics' %}
+                <section id="logistics-settings">
+                    <h3>Logistics</h3>
+                    <div class="hint" style="margin-bottom: 0.5rem;">What you have unlocked. Belts and pipes are planned with these.</div>
+                    <div class="settings-row">
+                        <label for="belt-tier">Belts up to</label>
+                        <select id="belt-tier">
+                            <option value="1">Mk.1 (60/min)</option>
+                            <option value="2">Mk.2 (120/min)</option>
+                            <option value="3">Mk.3 (270/min)</option>
+                            <option value="4">Mk.4 (480/min)</option>
+                            <option value="5">Mk.5 (780/min)</option>
+                            <option value="6" selected>Mk.6 (1200/min)</option>
+                        </select>
+                    </div>
+                    <div class="settings-row">
+                        <label for="pipe-tier">Pipes up to</label>
+                        <select id="pipe-tier">
+                            <option value="1">Mk.1 (300 m³/min)</option>
+                            <option value="2" selected>Mk.2 (600 m³/min)</option>
+                        </select>
+                    </div>
+                    <label class="settings-check"><input type="checkbox" id="smart-splitters" checked> Smart and programmable splitters</label>
+                </section>
+
+                <!-- Logistics side details (a selected logistics node) -->
+                <section id="logistics-details">
+                    <h3 id="logistics-title">Logistics</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Splitters and mergers:</span>
+                        <span class="stat-value" id="logistics-complexity">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Belts:</span>
+                        <span class="stat-value" id="logistics-belts">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Backs up:</span>
+                        <span class="stat-value" id="logistics-backed-up">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Layout:</span>
+                        <span class="stat-value" id="logistics-edited">-</span>
+                    </div>
+                    <ul class="logistics-warnings" id="logistics-warnings"></ul>
+                    <button type="button" id="logistics-zoom-btn" style="margin-top: 0.5rem;">Zoom In</button>
+                </section>
+                {% endif %}
 
                 <!-- Node Details Panel (Appears on Selection) -->
                 <section id="node-details">
@@ -261,6 +315,27 @@
             <div id="cy"></div>
 
             <div id="toast" class="toast" role="status" hidden></div>
+
+            {% if mode == 'logistics' %}
+            <!-- Zoomed-in logistics node: the whole graph area -->
+            <div id="logistics-view" class="logistics-view" hidden>
+                <div class="logistics-toolbar">
+                    <button type="button" id="lv-back" class="secondary" title="Back to the production plan (Esc)">&larr; Back</button>
+                    <strong id="lv-title">Logistics</strong>
+                    <select id="lv-item" title="Item for new splitters, mergers and buffers"></select>
+                    <button type="button" class="secondary lv-add" data-kind="splitter">+ Splitter</button>
+                    <button type="button" class="secondary lv-add" data-kind="merger">+ Merger</button>
+                    <button type="button" class="secondary lv-add" data-kind="overflow" id="lv-add-overflow">+ Smart Splitter</button>
+                    <button type="button" class="secondary lv-add" data-kind="buffer">+ Buffer</button>
+                    <button type="button" class="secondary" id="lv-overflow" disabled title="Make the selected belt from a smart splitter an overflow output, or a main one">Overflow</button>
+                    <button type="button" class="secondary" id="lv-delete" disabled title="Delete the selected belt or part (Delete)">Delete</button>
+                    <button type="button" class="secondary" id="lv-reset" title="Back to the layout the tool suggests">Reset</button>
+                </div>
+                <div class="hint lv-hint">Drag from one node to another to lay a belt. Click a belt or a part to select it.</div>
+                <ul class="logistics-warnings lv-warnings" id="lv-warnings"></ul>
+                <div id="lcy"></div>
+            </div>
+            {% endif %}
 
             <div id="plan-notice" class="plan-notice" role="status" hidden>
                 <button type="button" class="close" aria-label="Dismiss">✕</button>
