@@ -461,3 +461,24 @@ def test_solving_a_byproduct_loop(page):
     assert "(loop, solved)" in page.js(f"{cy}.edges().filter(e => e.source().id() === {json.dumps(scrap)} && e.target().id() === 'Water').data('label')")
     assert page.js("document.getElementById('byproduct-hint').textContent").startswith("Loop solved")
     assert page.js("document.getElementById('byproduct-solve-btn').textContent") == "Stop Solving"
+
+
+def test_legend_toggles_and_is_remembered(page):
+    page.open(page.base_url, plan())
+    assert page.js("document.getElementById('legend').hidden")
+    page.js("document.getElementById('legend-toggle').click()")
+    assert not page.js("document.getElementById('legend').hidden")
+    assert "Demanded by you" in page.js("document.getElementById('legend').textContent")
+    assert "Logistics node" not in page.js("document.getElementById('legend').textContent")  # logistics mode only
+
+    page.send("Page.reload")
+    page.wait(0.3)
+    page.wait_until("document.readyState === 'complete' && document.querySelectorAll('.color-input').length > 0")
+    assert not page.js("document.getElementById('legend').hidden")
+    page.js("document.getElementById('legend-toggle').click()")
+    assert page.js("document.getElementById('legend').hidden")
+
+    page.open(page.base_url + "logistics")
+    page.js("document.getElementById('legend-toggle').click()")
+    assert "Logistics node" in page.js("document.getElementById('legend').textContent")
+

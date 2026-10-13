@@ -47,3 +47,4 @@ Moved to [done/](done/).
 | [031](done/031-byproducts-as-supply.md) | By-products count as supply | feature | P2 | Done |
 | [032](done/032-solve-byproduct-loops.md) | Solve by-product loops on request | feature | P3 | Done |
 | [033](done/033-logistics-mode.md) | Logistics mode (separate, advanced) | feature | P3 | Done |
+| [035](done/035-legend.md) | Legend | feature | P3 | Done |
