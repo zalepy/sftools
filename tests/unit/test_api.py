@@ -386,3 +386,14 @@ def test_a_demand_covered_by_inbound_production_stays_shown(client):
     assert not any(node_id.startswith("Rotor__") for node_id in nodes)  # nothing to make: no inputs
     assert nodes["inbound:Rotor"]["parent_demands"] == {"Rotor": pytest.approx(4)}  # drawn to the demand node
 
+
+def test_a_rounding_leftover_is_not_sunk(client):
+    """Residual Fuel at 2 x 100% + 1 x 83.333% needs 169.9998 of the 170 Heavy Oil Residue its suppliers
+    make: the 0.0002 left is rounding (the balance is 83 1/3 %), not a by-product for the Sink."""
+    # Plastic (11 Refineries) and Rubber (3) make 110 + 60 Heavy Oil Residue
+    body = calculate(client, demands=[{"item": "Fuel", "rate": 110}, {"item": "Plastic", "rate": 215},
+                                      {"item": "Rubber", "rate": 45}],
+                     recipes={"Fuel": "Residual Fuel"}, clocks={"Fuel": [{"clock": 1}, {"count": 1, "clock": 0.83333}]},
+                     byproducts_default="use").json()
+    assert not any(i["item"] == "Heavy Oil Residue" for i in (sink_of(body) or {"sink": {"inputs": []}})["sink"]["inputs"])
+

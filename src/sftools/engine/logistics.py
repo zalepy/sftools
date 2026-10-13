@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from sftools.domain.enums.item_categories import ItemCategory
+from sftools.domain.models.factory_graph import NEGLIGIBLE
 
 BELTS = [60, 120, 270, 480, 780, 1200]  # items/min, Mk.1-6
 PIPES = [300, 600]  # m³/min, Mk.1-2
@@ -105,7 +106,7 @@ def side_specs(nodes: List[Dict], is_fluid) -> Dict[str, Dict]:
             used = {k: v for k, v in byproduct["used"].items() if v > EPSILON}
             sinks = [(consumer, rate, consumer) for consumer, rate in used.items()]
             left = byproduct["rate"] - sum(used.values())
-            if left > EPSILON:
+            if left >= NEGLIGIBLE:
                 sinks.append(("sink", left, "Sink"))
             out[byproduct["item"]] = {
                 "sources": [(f"b{i}", per_building * clock) for i, clock in enumerate(clocks, 1)],
@@ -519,7 +520,7 @@ def attach_logistics(nodes: List[Dict], is_fluid, settings: Settings, layouts: D
             fluid = is_fluid(byproduct["item"])
             rates = {consumer: rate for consumer, rate in byproduct["used"].items() if rate > EPSILON}
             left = byproduct["rate"] - sum(rates.values())
-            if left > EPSILON:
+            if left >= NEGLIGIBLE:
                 rates["sink"] = left
             byproduct["edge_belts"] = {consumer: belts_needed(rate, fluid, settings) for consumer, rate in rates.items()}
 
