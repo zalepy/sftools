@@ -396,3 +396,23 @@ def test_inbound_production(page):
     page.wait_until(f"{SAVED}.inbound[0].rate === 1")
     assert RIP_SP in page.node_ids()
     assert page.js(label(inbound)).startswith("Reinforced Iron Plate\n1.00 of 1.00/m")
+
+
+def edge_classes(source, target):
+    cy = "document.getElementById('cy')._cyreg.cy"
+    return f"{cy}.edges().filter(e => e.source().id() === {json.dumps(source)} && e.target().id() === {json.dumps(target)}).classes()"
+
+
+def test_byproducts_go_to_the_sink(page):
+    page.open(page.base_url, plan(items=["Aluminum Ingot"], rates=[60]))
+    assert page.js(label("sink")) == "Sink\n220.00/m\n(1× AWESOME Sink)\nfluids can't be sunk!"
+    assert page.js(node_style("sink", "shape")) == "ellipse"
+    assert page.js(node_style("sink", "border-color")) == "rgb(239,68,68)"  # Water can't be sunk
+    assert page.js(edge_classes("Aluminum Ingot__Aluminum Scrap", "sink")) == ["byproduct", "invalid"]
+    assert page.js(edge_classes("Aluminum Ingot__Aluminum Scrap__Alumina Solution", "sink")) == ["byproduct"]
+
+    page.select_node("sink")
+    assert page.js("document.getElementById('detail-surplus-value').textContent") == "Fluids can't be sunk: Water"
+    assert page.js("document.getElementById('detail-power').textContent") == "-30.00 MW"
+    for section in ("details-recipe-collapsible", "split-controls", "clock-controls"):
+        assert page.js(f"document.getElementById('{section}').style.display") == "none"

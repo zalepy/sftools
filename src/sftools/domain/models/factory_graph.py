@@ -2,11 +2,18 @@ from collections import Counter
 from typing import Dict, List, Optional, Set, Tuple
 import math
 import re
+from sftools.domain.enums.item_categories import ItemCategory
 from sftools.domain.enums.recipe_type import RecipeType
 from sftools.domain.models.production_node import ProductionNode
 
 EPSILON = 1e-9
 INBOUND_PREFIX = "inbound:"  # ID of the node showing an item's inbound production, e.g. 'inbound:Iron Ingot'
+SINK_ID = "sink"
+# The AWESOME Sink isn't in the scraped data. 30 MW each (satisfactory.wiki.gg); it takes one belt, so one
+# sink per 1200 items/min (a Mk.6 belt) until belt tiers are planned (ticket 028).
+SINK_POWER = 30
+SINK_INPUT_RATE = 1200
+FLUIDS = {ItemCategory.LIQUIDS, ItemCategory.GAS}  # can't be sunk
 
 
 class FactoryGraph:
@@ -333,8 +340,48 @@ class FactoryGraph:
 
             ui_nodes.append(data)
 
+        sink = self._sink_node([data["id"] for data in ui_nodes])
         ui_nodes.extend(self._inbound_node(item) for item in self.inbound)
+        if sink:
+            ui_nodes.append(sink)
         return ui_nodes
+
+    def _sink_node(self, node_ids: List[str]) -> Optional[Dict]:
+        """
+        The Sink, in the shape of a serialized node, if any shown node makes a by-product: `sink.inputs`
+        lists each by-product ({from, item, rate, fluid}). Fluids can't be sunk; they are listed anyway,
+        so the rest of the plan calculates, and `sink.fluids` flags them (ticket 024).
+        """
+        inputs = []
+        for node_id in node_ids:
+            node = self.all_nodes[node_id]
+            if node.recipe is None:
+                continue
+            for item, rate in node.recipe.other_outputs(node.output_item_name):
+                amount = rate * node.building_scale
+                if amount > EPSILON:
+                    inputs.append({"from": node_id, "item": item.name, "rate": amount,
+                                   "fluid": item.category in FLUIDS})
+        if not inputs:
+            return None
+        by_item: Dict[str, float] = {}
+        for entry in inputs:
+            by_item[entry["item"]] = by_item.get(entry["item"], 0) + entry["rate"]
+        total = sum(by_item.values())
+        solids = sum(entry["rate"] for entry in inputs if not entry["fluid"])
+        count = math.ceil(solids / SINK_INPUT_RATE - EPSILON)
+        return {
+            "id": SINK_ID, "name": "Sink", "recipe_name": "Sink", "building": "AWESOME Sink",
+            "building_scale": count, "original_building_scale": count, "buildings": count,
+            "clocks": [], "power_shards": 0, "ideal_building_scale": count,
+            "throughput": total, "power": -SINK_POWER * count, "output_item": "Sink",
+            "parents": [], "children": [], "parent_demands": {},
+            "scaled_inputs": [{"item": item, "rate": rate} for item, rate in sorted(by_item.items())],
+            "base_output_rate": 0, "base_inputs": [], "base_power": -SINK_POWER,
+            "is_dormant": False, "is_alternate": False, "is_supplied": False,
+            "derivation": [], "split": None, "is_merged": False, "constituent_ids": [], "constituent_derivations": [],
+            "sink": {"inputs": inputs, "fluids": sorted({e["item"] for e in inputs if e["fluid"]})},
+        }
 
     def _inbound_node(self, item: str) -> Dict:
         """An item's inbound production, in the shape of a serialized node: it feeds the nodes that used it."""

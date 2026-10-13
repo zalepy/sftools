@@ -186,6 +186,14 @@ function renderStats(data) {
     $('detail-power').innerText = parseFloat(data.power).toFixed(2) + ' MW';
 
     const surplusEl = $('detail-surplus-value');
+    if (data.sink) {
+        // The Sink has no surplus; it flags what it can't take
+        const fluids = data.sink.fluids;
+        surplusEl.innerText = fluids.length ? `Fluids can't be sunk: ${fluids.join(', ')}` : 'All by-products sunk';
+        surplusEl.style.color = fluids.length ? 'var(--status-shortage)' : 'var(--text-secondary)';
+        $('detail-clock').innerText = '-';
+        return;
+    }
     if (Math.abs(surplus) < EPSILON) {
         surplusEl.innerText = 'Perfect Match';
         surplusEl.style.color = 'var(--text-secondary)';
@@ -297,16 +305,18 @@ export function showNodeDetails(data) {
     $('clock-last').value = last ? +(last.clock * 100).toFixed(4) : '';
     // No buildings to clock on a node supplied from outside
     $('clock-controls').style.display = data.is_supplied ? 'none' : '';
-    // Inbound production is set in the Inbound Production rows, not on the node
-    $('details-recipe-collapsible').style.display = data.inbound ? 'none' : '';
-    $('split-controls').style.display = data.inbound ? 'none' : '';
+    // Inbound production is set in the Inbound Production rows, not on the node; the Sink only receives
+    const fixed = data.inbound || data.sink;
+    $('details-recipe-collapsible').style.display = fixed ? 'none' : '';
+    $('split-controls').style.display = fixed ? 'none' : '';
+    if (data.sink) $('clock-controls').style.display = 'none';
 
     // Unmerge is offered on merge targets
     const isMergeTarget = Object.values(state.merges).includes(data.id);
     $('unmerge-btn').style.display = isMergeTarget ? 'block' : 'none';
 
     renderSplit(data);
-    if (!data.inbound) populateRecipeSelector(data.output_item, data.recipe_name || data.name);
+    if (!fixed) populateRecipeSelector(data.output_item, data.recipe_name || data.name);
 
     $('node-details').style.display = 'block';
 }
