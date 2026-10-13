@@ -5,7 +5,8 @@ import {
     loadSavedColors, saveColors, dropIgnoredEntries
 } from './state.js';
 import {
-    renderGraph, refreshNodeColors, hasNodes, fitView, resizeGraph, getNodeData, onNodeSelected, reselectNode, onMergeDrop
+    renderGraph, refreshNodeColors, hasNodes, fitView, resizeGraph, getNodeData, onNodeSelected, reselectNode, onMergeDrop,
+    onByproductSelected
 } from './graph.js';
 import * as panel from './panel.js';
 import * as history from './history.js';
@@ -49,21 +50,28 @@ const undo = () => showHistoryStep(history.undo());
 const redo = () => showHistoryStep(history.redo());
 
 /**
- * Sends the plan (with optional candidate merges/recipes/splits/clocks) and returns the graph nodes.
- * Entries the server ignored are dropped from the candidate objects; callers keep them on success.
+ * Sends the plan (with optional candidate merges/recipes/splits/clocks/byproducts) and returns the graph
+ * nodes. Entries the server ignored are dropped from the candidate objects; callers keep them on success.
+ * By-product choices are the server's (see resolved_byproduct_choices): Calculate passes
+ * byproductsDefault 'use', so by-products are used unless set otherwise; other changes leave new ones
+ * going to the Sink (ticket 031).
  */
 async function requestPlan({
-    merges = state.merges, recipes = state.recipes, splits = state.splits, clocks = state.clocks
+    merges = state.merges, recipes = state.recipes, splits = state.splits, clocks = state.clocks,
+    byproducts = state.byproducts, byproductsDefault = 'sink'
 } = {}) {
     const { items, rates, inbound } = panel.getDemands();
-    const { nodes, ignored } = await api.calculate({
+    const { nodes, ignored, byproducts: resolved } = await api.calculate({
         demands: items.map((item, i) => ({ item, rate: rates[i] })),
         inbound,
         recipes,
         merges,
         splits,
-        clocks
+        clocks,
+        byproducts,
+        byproducts_default: byproductsDefault
     });
+    state.byproducts = resolved;
     if (ignored.length) {
         dropIgnoredEntries(ignored, { merges, recipes, splits, clocks });
         // Entries on inputs a recipe no longer uses go quietly: that is what the switch (or merge) asked for
@@ -73,10 +81,10 @@ async function requestPlan({
     return nodes;
 }
 
-async function recalculate() {
+async function recalculate(options = {}) {
     if (panel.getDemands().items.length === 0) return;
     try {
-        renderGraph(await requestPlan());
+        renderGraph(await requestPlan(options));
         save();
     } catch (e) {
         console.error("Calculation failed", e);
@@ -162,6 +170,20 @@ async function mergeNodes(sourceId, targetId) {
     } catch (e) {
         console.error("Merge failed", e);
         alert(`Merge failed: ${e.message}`);
+    }
+}
+
+/** Uses a node's by-products as supply, or sends them to the Sink. */
+async function setByproductChoice(makerId, choice) {
+    const byproducts = { ...state.byproducts, [makerId]: choice };
+    try {
+        renderGraph(await requestPlan({ byproducts }));
+        save();
+        if (getNodeData(makerId)) panel.showByproductDetails(getNodeData(makerId));
+        else panel.hideByproductDetails();
+    } catch (e) {
+        console.error("By-product change failed", e);
+        alert(`By-product change failed: ${e.message}`);
     }
 }
 
@@ -303,9 +325,10 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 // --- Wiring ---
 
+// Calculate uses by-products as supply unless set otherwise; nothing else does (ticket 031)
 $('demand-form').addEventListener('submit', e => {
     e.preventDefault();
-    recalculate();
+    recalculate({ byproductsDefault: 'use' });
 });
 $('add-row-btn').addEventListener('click', panel.addRow);
 $('add-inbound-btn').addEventListener('click', panel.addInboundRow);
@@ -343,7 +366,18 @@ $('recipe-select').addEventListener('change', e => switchRecipe(e.target.value))
 $('save-colors-btn').addEventListener('click', saveColorChanges);
 $('fit-view-btn').addEventListener('click', fitView);
 
-onNodeSelected(panel.showNodeDetails);
+onNodeSelected(data => {
+    panel.hideByproductDetails();
+    panel.showNodeDetails(data);
+});
+onByproductSelected(makerId => {
+    panel.hideNodeDetails();
+    panel.showByproductDetails(getNodeData(makerId));
+});
+$('byproduct-toggle-btn').addEventListener('click', e => {
+    const { maker, choice } = e.target.dataset;
+    setByproductChoice(maker, choice);
+});
 panel.initPanelToggle(resizeGraph);
 onMergeDrop(mergeNodes);
 

@@ -6,9 +6,9 @@
 |---|-------|------|-----|--------|
 | [027](027-optimize-branch.md) | "Optimize branch" with preview | feature | P3 | Parked |
 | [028](028-belts-and-pipes.md) | Belt and pipe capacity | feature | P3 | Open |
-| [031](031-byproducts-as-supply.md) | By-products count as supply | feature | P2 | Open |
+| [032](032-solve-byproduct-loops.md) | Solve by-product loops on request | feature | P3 | Open |
 
-027 is parked (breakdown agreed in the ticket). Next: 031; 028 when wanted. Smaller ideas live in [TODO.md](../TODO.md).
+027 is parked (breakdown agreed in the ticket). Next when wanted: 028, 032. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
@@ -44,3 +44,4 @@ Moved to [done/](done/).
 | [026](done/026-undo-redo.md) | Undo and redo of plan changes | feature | P2 | Done |
 | [029](done/029-cleanup-after-clocks.md) | Cleanup: API round-up, fixed scales, legacy engine paths and tests | debt | P2 | Done |
 | [030](done/030-inbound-production.md) | Inbound production | feature | P2 | Done |
+| [031](done/031-byproducts-as-supply.md) | By-products count as supply | feature | P2 | Done |

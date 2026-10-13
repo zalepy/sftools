@@ -113,6 +113,25 @@ const cy = cytoscape({
             }
         },
         {
+            // A by-product used as supply (ticket 031)
+            selector: 'edge.byproduct.used',
+            style: {
+                'line-style': 'dashed',
+                'line-color': '#38bdf8',
+                'target-arrow-color': '#38bdf8',
+                'color': '#7dd3fc'
+            }
+        },
+        {
+            // Using it would close a loop, so it goes to the Sink
+            selector: 'edge.byproduct.loop',
+            style: {
+                'line-color': '#f59e0b',
+                'target-arrow-color': '#f59e0b',
+                'color': '#fcd34d'
+            }
+        },
+        {
             selector: 'edge.byproduct.invalid',
             style: {
                 'line-color': '#ef4444',
@@ -309,14 +328,27 @@ export function renderGraph(nodesData) {
         });
     });
 
-    // By-products, from each maker to the Sink; fluids in red
+    // By-products: from each maker to the nodes it supplies, and what's left to the Sink (fluids in red)
+    nodesData.forEach(node => {
+        (node.byproducts || []).forEach(byproduct => {
+            Object.entries(byproduct.used).forEach(([consumer, rate]) => {
+                if (!nodeMap[consumer]) return;
+                elements.push({
+                    group: 'edges',
+                    data: { source: node.id, target: consumer, label: `${rate.toFixed(2)}/m ${byproduct.item}`, maker: node.id },
+                    classes: ['byproduct', 'used']
+                });
+            });
+        });
+    });
     nodesData.filter(node => node.sink).forEach(sink => {
         sink.sink.inputs.forEach(input => {
             if (!nodeMap[input.from]) return;
+            const loop = input.loop ? ' (loop)' : '';
             elements.push({
                 group: 'edges',
-                data: { source: input.from, target: sink.id, label: `${input.rate.toFixed(2)}/m ${input.item}` },
-                classes: input.fluid ? ['byproduct', 'invalid'] : ['byproduct']
+                data: { source: input.from, target: sink.id, label: `${input.rate.toFixed(2)}/m ${input.item}${loop}`, maker: input.from },
+                classes: ['byproduct', input.fluid && 'invalid', input.loop && 'loop'].filter(Boolean)
             });
         });
     });
@@ -350,6 +382,11 @@ export function getNodeData(nodeId) {
 
 export function onNodeSelected(callback) {
     cy.on('tap', 'node', evt => callback(evt.target.data('raw')));
+}
+
+/** Calls callback(maker node id) when a by-product edge is clicked. */
+export function onByproductSelected(callback) {
+    cy.on('tap', 'edge.byproduct', evt => callback(evt.target.data('maker')));
 }
 
 /** Re-runs the selection callback for a node, e.g. after the graph was re-rendered. */

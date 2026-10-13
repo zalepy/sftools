@@ -14,6 +14,7 @@ SINK_ID = "sink"
 SINK_POWER = 30
 SINK_INPUT_RATE = 1200
 FLUIDS = {ItemCategory.LIQUIDS, ItemCategory.GAS}  # can't be sunk
+USE, SINK = "use", "sink"  # what a node does with its by-products (ticket 031)
 
 
 class FactoryGraph:
@@ -33,6 +34,12 @@ class FactoryGraph:
         self.inbound: Dict[str, float] = {}
         self.inbound_used: Dict[str, Dict[str, float]] = {}  # item -> {consumer id: rate}, set by recalculate
         self.unused: Set[str] = set()  # nodes left with nothing to make (all covered by inbound production)
+        # By-products (ticket 031): node id -> USE or SINK as the plan says; others get the default
+        self.byproduct_choices: Dict[str, str] = {}
+        self.byproduct_default: str = SINK
+        # Set by recalculate: (maker id, item) -> {consumer id: rate}, and the uses left out as loops
+        self.byproduct_used: Dict[Tuple[str, str], Dict[str, float]] = {}
+        self.byproduct_loops: Set[Tuple[str, str]] = set()
 
     def add_node(self, node: ProductionNode):
         self.all_nodes[node.id] = node
@@ -138,6 +145,12 @@ class FactoryGraph:
         down, takes what it needs of its item until the inbound rate is used up, and makes only the rest.
         A group left with nothing to make, and everything under it that then needs nothing, goes into
         `self.unused` and isn't shown.
+
+        By-products a node uses as supply (`byproduct_choice`) cover demand the same way, after inbound
+        production. A maker is ordered before every group of its by-product, as its output depends on its
+        own scale. A use whose ordering would close a loop (a consumer upstream of its own maker, directly
+        or through other by-products) isn't applied: it goes into `self.byproduct_loops`, and the
+        by-product goes to the Sink.
         """
         active = {node_id: node for node_id, node in self.all_nodes.items() if not node.is_dormant}
         for node in active.values():
@@ -164,13 +177,26 @@ class FactoryGraph:
                 group_parents[rep_of[node_id]].add(rep_of[parent.id])
                 group_children[rep_of[parent.id]].add(rep_of[node_id])
 
-        in_degree = {rep_id: len(parents) for rep_id, parents in group_parents.items()}
+        order_children = {rep_id: set(children) for rep_id, children in group_children.items()}
+        uses = self._order_byproduct_uses(members, order_children)
+        in_degree = {rep_id: 0 for rep_id in members}
+        for children in order_children.values():
+            for child_id in children:
+                in_degree[child_id] += 1
         queue = [rep_id for rep_id, degree in in_degree.items() if degree == 0]
         demand: Dict[str, float] = {}  # per node (member), from its own parent or the user
         group_demand: Dict[str, float] = {}
         inbound_left = dict(self.inbound)
         self.inbound_used = {item: {} for item in self.inbound}
         self.unused = set()
+        byproducts_left: Dict[str, List[List]] = {}  # item -> [[maker id, rate left], ...], in the order made
+        self.byproduct_used = {use: {} for use in uses}
+
+        def cover(rep: ProductionNode, need: float, amount: float, used: Dict[str, float]):
+            """Moves `amount` of the group's remaining `need` from its consumers' demand to `used`."""
+            for consumer, rate in list(rep.parent_demands.items()):
+                used[consumer] = used.get(consumer, 0) + rate * amount / need
+                rep.parent_demands[consumer] = rate * (1 - amount / need)
 
         def share(rep_id: str, member: ProductionNode) -> float:
             total = group_demand[rep_id]
@@ -218,23 +244,76 @@ class FactoryGraph:
                 if parent_id is not None and rate > 0:
                     rep.parent_demands[parent_id] = rep.parent_demands.get(parent_id, 0) + rate
             group_demand[rep_id] = total
-            covered = 0.0 if rep.is_supplied else min(total, inbound_left.get(rep.output_item_name, 0.0))
-            if covered > 0:
-                inbound_left[rep.output_item_name] -= covered
-                used = self.inbound_used[rep.output_item_name]
-                for consumer, rate in list(rep.parent_demands.items()):
-                    used[consumer] = used.get(consumer, 0) + rate * covered / total
-                    rep.parent_demands[consumer] = rate * (1 - covered / total)
-                rep.parent_demands = {k: v for k, v in rep.parent_demands.items() if v > EPSILON}
-            self._set_scale(rep, total - covered, round_up)
-            if total - covered <= EPSILON and (covered > 0 or (
+            item = rep.output_item_name
+            need = total
+            if not rep.is_supplied:
+                amount = min(need, inbound_left.get(item, 0.0))
+                if amount > 0:
+                    inbound_left[item] -= amount
+                    cover(rep, need, amount, self.inbound_used[item])
+                    need -= amount
+                for entry in byproducts_left.get(item, []):
+                    amount = min(need, entry[1])
+                    if amount > EPSILON:
+                        entry[1] -= amount
+                        cover(rep, need, amount, self.byproduct_used[(entry[0], item)])
+                        need -= amount
+            rep.parent_demands = {k: v for k, v in rep.parent_demands.items() if v > EPSILON}
+            self._set_scale(rep, need, round_up)
+            if need <= EPSILON and (need < total or (
                     group_parents[rep_id] and group_parents[rep_id] <= self.unused)):
                 self.unused.add(rep_id)
+            for (maker_id, byproduct) in uses:
+                if maker_id == rep_id:
+                    rate = dict((i.name, r) for i, r in rep.recipe.other_outputs(item))[byproduct]
+                    byproducts_left.setdefault(byproduct, []).append([rep_id, rate * rep.building_scale])
 
-            for child_id in group_children[rep_id]:
+            for child_id in order_children[rep_id]:
                 in_degree[child_id] -= 1
                 if in_degree[child_id] == 0:
                     queue.append(child_id)
+
+    def byproduct_choice(self, node_id: str) -> str:
+        return self.byproduct_choices.get(node_id, self.byproduct_default)
+
+    def _order_byproduct_uses(self, members: Dict[str, List[ProductionNode]],
+                              order_children: Dict[str, Set[str]]) -> List[Tuple[str, str]]:
+        """
+        (maker id, item) for each by-product used as supply, after adding maker -> consumer group edges to
+        `order_children`. A use whose edges would close a loop is left out and recorded in byproduct_loops.
+        """
+        self.byproduct_loops = set()
+        groups_of: Dict[str, List[str]] = {}
+        for rep_id in members:
+            rep = self.all_nodes[rep_id]
+            if not rep.is_supplied:
+                groups_of.setdefault(rep.output_item_name, []).append(rep_id)
+
+        def reaches(start: str, goal: str) -> bool:
+            seen, stack = set(), [start]
+            while stack:
+                current = stack.pop()
+                if current == goal:
+                    return True
+                if current not in seen:
+                    seen.add(current)
+                    stack.extend(order_children[current])
+            return False
+
+        uses = []
+        for rep_id in sorted(members):
+            rep = self.all_nodes[rep_id]
+            if rep.recipe is None or self.byproduct_choice(rep_id) != USE:
+                continue
+            for item, _ in rep.recipe.other_outputs(rep.output_item_name):
+                consumers = [group for group in groups_of.get(item.name, []) if group != rep_id]
+                if any(reaches(consumer, rep_id) for consumer in consumers):
+                    self.byproduct_loops.add((rep_id, item.name))
+                    continue
+                for consumer in consumers:
+                    order_children[rep_id].add(consumer)
+                uses.append((rep_id, item.name))
+        return uses
 
     def _set_scale(self, node: ProductionNode, required_rate: float, round_up: bool):
         """
@@ -337,6 +416,7 @@ class FactoryGraph:
             data["is_merged"] = len(constituents) > 0
             data["constituent_ids"] = [c.id for c in constituents]
             data["constituent_derivations"] = [self.derivation(c) for c in constituents]
+            data["byproducts"] = self._byproducts_of(node)
 
             ui_nodes.append(data)
 
@@ -346,22 +426,49 @@ class FactoryGraph:
             ui_nodes.append(sink)
         return ui_nodes
 
+    def _byproducts_of(self, node: ProductionNode) -> List[Dict]:
+        """
+        The node's by-products: {item, rate made, fluid, choice (USE or SINK), loop (a use left out as a
+        loop), used ({consumer id: rate} covered by it)}. What isn't used goes to the Sink.
+        """
+        if node.recipe is None:
+            return []
+        return [{
+            "item": item.name,
+            "rate": rate * node.building_scale,
+            "fluid": item.category in FLUIDS,
+            "choice": self.byproduct_choice(node.id),
+            "loop": (node.id, item.name) in self.byproduct_loops,
+            "used": {k: v for k, v in self.byproduct_used.get((node.id, item.name), {}).items() if v > EPSILON},
+        } for item, rate in node.recipe.other_outputs(node.output_item_name)]
+
+    def resolved_byproduct_choices(self) -> Dict[str, str]:
+        """
+        The choice of every node that makes a by-product, where the plan sets it or the default is USE:
+        the plan to keep. A default SINK isn't recorded, so a later Calculate (default USE) can still use it.
+        """
+        resolved = {}
+        for node in self.all_nodes.values():
+            if node.is_dormant or node.absorbed_by or node.recipe is None or node.is_supplied:
+                continue
+            if node.recipe.other_outputs(node.output_item_name):
+                if node.id in self.byproduct_choices or self.byproduct_default == USE:
+                    resolved[node.id] = self.byproduct_choice(node.id)
+        return resolved
+
     def _sink_node(self, node_ids: List[str]) -> Optional[Dict]:
         """
-        The Sink, in the shape of a serialized node, if any shown node makes a by-product: `sink.inputs`
-        lists each by-product ({from, item, rate, fluid}). Fluids can't be sunk; they are listed anyway,
-        so the rest of the plan calculates, and `sink.fluids` flags them (ticket 024).
+        The Sink, in the shape of a serialized node, if any shown node has a by-product left after what is
+        used as supply: `sink.inputs` lists each ({from, item, rate, fluid, loop}). Fluids can't be sunk; they
+        are listed anyway, so the rest of the plan calculates, and `sink.fluids` flags them (ticket 024).
         """
         inputs = []
         for node_id in node_ids:
-            node = self.all_nodes[node_id]
-            if node.recipe is None:
-                continue
-            for item, rate in node.recipe.other_outputs(node.output_item_name):
-                amount = rate * node.building_scale
+            for byproduct in self._byproducts_of(self.all_nodes[node_id]):
+                amount = byproduct["rate"] - sum(byproduct["used"].values())
                 if amount > EPSILON:
-                    inputs.append({"from": node_id, "item": item.name, "rate": amount,
-                                   "fluid": item.category in FLUIDS})
+                    inputs.append({"from": node_id, "item": byproduct["item"], "rate": amount,
+                                   "fluid": byproduct["fluid"], "loop": byproduct["loop"]})
         if not inputs:
             return None
         by_item: Dict[str, float] = {}

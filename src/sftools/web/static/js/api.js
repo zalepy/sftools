@@ -6,16 +6,16 @@ async function errorFrom(response) {
     return new Error(detail || `HTTP ${response.status}`);
 }
 
-/** Returns {nodes, ignored}; throws with the server's message on an error status. */
-export async function calculate({ demands, inbound, recipes, merges, splits, clocks }) {
+/** Returns {nodes, ignored, byproducts}; throws with the server's message on an error status. */
+export async function calculate(plan) {
     const response = await fetch('/api/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ demands, inbound, recipes, merges, splits, clocks })
+        body: JSON.stringify(plan)
     });
     if (!response.ok) throw await errorFrom(response);
     const data = await response.json();
-    return { nodes: data.nodes, ignored: data.ignored || [] };
+    return { nodes: data.nodes, ignored: data.ignored || [], byproducts: data.byproducts || {} };
 }
 
 export async function fetchRecipes(itemName) {

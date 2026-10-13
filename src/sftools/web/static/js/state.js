@@ -9,6 +9,7 @@ export const state = {
     merges: {},         // absorbed node_id -> target node_id
     recipes: {},        // node_id -> recipe name
     splits: {},         // node_id -> number of parts
+    byproducts: {},     // node_id -> 'use' | 'sink': what its by-products do (ticket 031)
     colors: {},         // item -> color
     selectedNodeId: null
 };
@@ -22,7 +23,8 @@ export function snapshot({ items, rates, inbound }) {
         clocks: state.clocks,
         merges: state.merges,
         recipes: state.recipes,
-        splits: state.splits
+        splits: state.splits,
+        byproducts: state.byproducts
     };
 }
 
@@ -31,6 +33,7 @@ export function applySaved(saved) {
     state.merges = saved.merges || {};
     state.recipes = saved.recipes || {};
     state.splits = saved.splits || {};
+    state.byproducts = saved.byproducts || {};
 }
 
 export function savePlan(plan) {
