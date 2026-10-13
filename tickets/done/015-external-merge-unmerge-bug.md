@@ -1,6 +1,8 @@
 # 015 — Wrong state after merging and unmerging external-demand nodes
 
-**Type:** bug · **Priority:** P1 · **Branch:** `distinct_extrenal_demand` (commit "added but fails after unmerge") · **Status:** Watch
+**Type:** bug · **Priority:** P1 · **Branch:** `distinct_extrenal_demand` (commit "added but fails after unmerge") · **Status:** Closed
+
+> **Closed (2026-10-13).** Not seen again on the stateless version. Merges no longer move external demand onto the target (each node keeps its own) and unmerge recalculates the plan without the merge, so the reported symptoms have no cause left. Decided: a merged node that includes a demanded node *is* shown as external (purple border, 018), since part of its output goes to a demand target; this replaces the first bullet below. Unmerge still separates every node merged into the selected target; unmerging a single constituent is a possible follow-up, not ticketed.
 
 > **Update (2026-10-11):** Not forcing a repro. Re-open with steps if it shows up during normal use of the stateless version.
 
