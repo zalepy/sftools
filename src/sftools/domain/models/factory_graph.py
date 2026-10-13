@@ -7,6 +7,9 @@ from sftools.domain.enums.recipe_type import RecipeType
 from sftools.domain.models.production_node import ProductionNode
 
 EPSILON = 1e-9
+# A by-product left over below this (per min) isn't sent to the Sink: it's rounding, e.g. a clock of
+# 83.333% for 5/6, and would show as 0.00/min (and, for a fluid, as a Sink that can't take it)
+NEGLIGIBLE = 0.005
 INBOUND_PREFIX = "inbound:"  # ID of the node showing an item's inbound production, e.g. 'inbound:Iron Ingot'
 SINK_ID = "sink"
 # The AWESOME Sink isn't in the scraped data. 30 MW each (satisfactory.wiki.gg); it takes one belt, so one
@@ -529,7 +532,7 @@ class FactoryGraph:
         for node_id in node_ids:
             for byproduct in self._byproducts_of(self.all_nodes[node_id]):
                 amount = byproduct["rate"] - sum(byproduct["used"].values())
-                if amount > EPSILON:
+                if amount >= NEGLIGIBLE:
                     inputs.append({"from": node_id, "item": byproduct["item"], "rate": amount,
                                    "fluid": byproduct["fluid"], "loop": byproduct["loop"]})
         if not inputs:
