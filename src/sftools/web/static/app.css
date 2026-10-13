@@ -148,8 +148,8 @@ button:disabled {
     margin-bottom: 0.5rem;
 }
 
-/* Node Details Panel; By-product Details (a selected by-product edge) */
-#node-details, #byproduct-details {
+/* Node Details Panel; By-product Details (a selected by-product edge); Logistics Details */
+#node-details, #byproduct-details, #logistics-details {
     border-top: 1px solid var(--border);
     padding-top: 1rem;
     display: none;
@@ -432,4 +432,133 @@ details[open] summary::after {
 
 .toast[hidden] {
     display: none;
+}
+
+/* --- Logistics mode (ticket 033) --- */
+
+.mode-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+}
+
+.mode-link:hover {
+    color: var(--text-primary);
+    border-color: var(--accent);
+}
+
+.mode-name {
+    font-size: 0.9rem;
+    color: #38bdf8;
+    font-weight: 600;
+    margin-left: 0.25rem;
+}
+
+/* No splits in logistics mode: separate groups of buildings inside a logistics node do that */
+body[data-mode="logistics"] #split-controls {
+    display: none !important;
+}
+
+#logistics-settings {
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+}
+
+.settings-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.settings-row select {
+    background: var(--bg-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.3rem;
+}
+
+.settings-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.settings-check input {
+    width: auto;
+}
+
+/* The main graph's zoom controls don't apply while a logistics node is zoomed in */
+.graph-container:has(.logistics-view:not([hidden])) .zoom-controls {
+    display: none;
+}
+
+.logistics-warnings {
+    margin: 0.5rem 0 0;
+    padding-left: 1.1rem;
+    color: #fca5a5;
+    font-size: 0.8rem;
+}
+
+/* The zoomed-in logistics node covers the graph area */
+.logistics-view {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    background: var(--bg-color);
+    display: flex;
+    flex-direction: column;
+}
+
+.logistics-view[hidden] {
+    display: none;
+}
+
+.logistics-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.logistics-toolbar button {
+    width: auto;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+}
+
+.logistics-toolbar strong {
+    margin-right: auto;
+    font-size: 0.9rem;
+}
+
+.logistics-toolbar select {
+    background: var(--bg-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.3rem;
+}
+
+.lv-hint {
+    padding: 0.4rem 1rem 0;
+}
+
+.lv-warnings {
+    padding: 0 1rem 0 2.1rem;
+}
+
+#lcy {
+    flex: 1;
+    min-height: 0;
 }

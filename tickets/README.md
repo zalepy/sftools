@@ -5,10 +5,9 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [027](027-optimize-branch.md) | "Optimize branch" with preview | feature | P3 | Parked |
-| [028](028-belts-and-pipes.md) | Belt and pipe capacity (logistics mode) | feature | P3 | Open |
-| [033](033-logistics-mode.md) | Logistics mode (separate, advanced) | feature | P3 | Open |
+| [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
 
-027 is parked (breakdown agreed in the ticket). Next when wanted: 033 (the logistics mode; design settled, see its Steps), with 028 inside it. Smaller ideas live in [TODO.md](../TODO.md).
+027 is parked (breakdown agreed in the ticket). Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
@@ -42,7 +41,9 @@ Moved to [done/](done/).
 | [024](done/024-byproducts-to-sink.md) | By-products go to a Sink node | feature | P2 | Done |
 | [025](done/025-exact-recipe-rates.md) | Recipe rates rounded to two decimals | data bug | P2 | Done |
 | [026](done/026-undo-redo.md) | Undo and redo of plan changes | feature | P2 | Done |
+| [028](done/028-belts-and-pipes.md) | Belt and pipe capacity (logistics mode) | feature | P3 | Done |
 | [029](done/029-cleanup-after-clocks.md) | Cleanup: API round-up, fixed scales, legacy engine paths and tests | debt | P2 | Done |
 | [030](done/030-inbound-production.md) | Inbound production | feature | P2 | Done |
 | [031](done/031-byproducts-as-supply.md) | By-products count as supply | feature | P2 | Done |
 | [032](done/032-solve-byproduct-loops.md) | Solve by-product loops on request | feature | P3 | Done |
+| [033](done/033-logistics-mode.md) | Logistics mode (separate, advanced) | feature | P3 | Done |

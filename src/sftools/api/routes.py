@@ -7,6 +7,7 @@ from sftools.api.schemas import PlanRequest, PlanResponse, RecipeInfo
 from sftools.config import DEFAULT_COLORS_FILE
 from sftools.engine.calculator import build_plan
 from sftools.engine.game_data import GameData, get_game_data
+from sftools.engine.logistics import FLUIDS, Settings, attach_logistics
 
 router = APIRouter(prefix="/api")
 
@@ -24,7 +25,7 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
             [(d.item, d.rate) for d in plan.demands],
             recipes=plan.recipes,
             merges=plan.merges,
-            splits=plan.splits,
+            splits={} if plan.mode == "logistics" else plan.splits,  # no splits in logistics mode
             clocks=plan.clocks,
             inbound=[(d.item, d.rate) for d in plan.inbound],
             byproducts=plan.byproducts,
@@ -34,7 +35,13 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
         # e.g. merging nodes with different output items
         raise HTTPException(status_code=400, detail=str(ex))
 
-    return {"nodes": graph.get_ui_data(), "ignored": graph.ignored, "byproducts": graph.resolved_byproduct_choices()}
+    nodes = graph.get_ui_data()
+    resets = []
+    if plan.mode == "logistics":
+        resets = attach_logistics(nodes, lambda item: data.items[item].category in FLUIDS,
+                                  Settings.parse(plan.logistics.get("settings")), plan.logistics.get("layouts") or {})
+    return {"nodes": nodes, "ignored": graph.ignored, "byproducts": graph.resolved_byproduct_choices(),
+            "logistics_resets": resets}
 
 
 @router.get("/available_recipes", response_model=List[RecipeInfo])

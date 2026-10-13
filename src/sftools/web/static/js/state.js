@@ -1,7 +1,10 @@
 // Client-side plan state and its persistence (localStorage, JSON export/import).
 
-const PLAN_KEY = 'sf_planner_state';
+// The page's mode: 'simple', or 'logistics' (ticket 033). Each keeps its own plan and files.
+export const MODE = document.body.dataset.mode || 'simple';
+const PLAN_KEY = MODE === 'logistics' ? 'sf_logistics_state' : 'sf_planner_state';
 const COLORS_KEY = 'sf_planner_colors';
+export const DEFAULT_LOGISTICS_SETTINGS = { belt_tier: 6, pipe_tier: 2, smart: true };
 
 // Mutable shared state; modules read and replace its fields.
 export const state = {
@@ -9,7 +12,9 @@ export const state = {
     merges: {},         // absorbed node_id -> target node_id
     recipes: {},        // node_id -> recipe name
     splits: {},         // node_id -> number of parts
-    byproducts: {},     // node_id -> 'use' | 'sink': what its by-products do (ticket 031)
+    byproducts: {},     // node_id -> 'use' | 'sink' | 'solve': what its by-products do (tickets 031, 032)
+    // Logistics mode: what's unlocked, and the logistics nodes the user edited ('<node id>|in' / '|out')
+    logistics: { settings: { ...DEFAULT_LOGISTICS_SETTINGS }, layouts: {} },
     colors: {},         // item -> color
     selectedNodeId: null
 };
@@ -17,6 +22,7 @@ export const state = {
 /** Plan in its saved/exported shape; demands and inbound production come from the form. */
 export function snapshot({ items, rates, inbound }) {
     return {
+        mode: MODE,
         items,
         rates,
         inbound,
@@ -24,7 +30,8 @@ export function snapshot({ items, rates, inbound }) {
         merges: state.merges,
         recipes: state.recipes,
         splits: state.splits,
-        byproducts: state.byproducts
+        byproducts: state.byproducts,
+        ...(MODE === 'logistics' && { logistics: state.logistics })
     };
 }
 
@@ -34,6 +41,20 @@ export function applySaved(saved) {
     state.recipes = saved.recipes || {};
     state.splits = saved.splits || {};
     state.byproducts = saved.byproducts || {};
+    const logistics = saved.logistics || {};
+    state.logistics = {
+        settings: { ...DEFAULT_LOGISTICS_SETTINGS, ...logistics.settings },
+        layouts: logistics.layouts || {}
+    };
+}
+
+/** Why a plan can't be opened on this page (another mode's), or null. Plans without a mode are simple ones. */
+export function wrongMode(plan) {
+    const mode = plan.mode || 'simple';
+    if (mode === MODE) return null;
+    return mode === 'logistics'
+        ? 'This is a logistics mode plan: open it in Logistics mode.'
+        : "This is a simple mode plan: open it in Simple mode. Plans don't convert between modes.";
 }
 
 export function savePlan(plan) {
@@ -60,7 +81,7 @@ export function downloadPlan(plan) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.setAttribute('download', 'sf_planner_save.json');
+    a.setAttribute('download', MODE === 'logistics' ? 'sf_logistics_save.json' : 'sf_planner_save.json');
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();

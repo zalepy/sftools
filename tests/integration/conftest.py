@@ -162,13 +162,13 @@ class Page:
             raise RuntimeError(result["exceptionDetails"].get("exception", {}).get("description"))
         return result["result"].get("value")
 
-    def open(self, url, plan=None):
-        """Loads the app with an empty browser state, or with `plan` as the saved plan."""
+    def open(self, url, plan=None, key="sf_planner_state"):
+        """Loads the app with an empty browser state, or with `plan` as the saved plan (under `key`)."""
         self.send("Page.navigate", url=url)
         self.wait_until("document.readyState === 'complete'")
         self.js("localStorage.clear()")
         if plan is not None:
-            self.js(f"localStorage.setItem('sf_planner_state', JSON.stringify({json.dumps(plan)}))")
+            self.js(f"localStorage.setItem({json.dumps(key)}, JSON.stringify({json.dumps(plan)}))")
         self.send("Page.reload")
         self.wait(0.3)
         self.wait_until("document.readyState === 'complete' && document.querySelectorAll('.color-input').length > 0")
@@ -177,8 +177,8 @@ class Page:
 
     # --- App helpers ---
 
-    def saved_plan(self):
-        return self.js("JSON.parse(localStorage.getItem('sf_planner_state'))")
+    def saved_plan(self, key="sf_planner_state"):
+        return self.js(f"JSON.parse(localStorage.getItem({json.dumps(key)}))")
 
     def node_ids(self):
         return self.js("document.getElementById('cy')._cyreg.cy.nodes().map(n => n.id())")

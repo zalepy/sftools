@@ -2,14 +2,16 @@
 import * as api from './api.js';
 import {
     state, snapshot, applySaved, savePlan, loadSavedPlan, downloadPlan, readPlanFile,
-    loadSavedColors, saveColors, dropIgnoredEntries
+    loadSavedColors, saveColors, dropIgnoredEntries, MODE, wrongMode
 } from './state.js';
 import {
     renderGraph, refreshNodeColors, hasNodes, fitView, resizeGraph, getNodeData, onNodeSelected, reselectNode, onMergeDrop,
-    onByproductSelected
+    onByproductSelected, onLogisticsSelected, selectLogistics
 } from './graph.js';
 import * as panel from './panel.js';
 import * as history from './history.js';
+// The zoomed-in logistics view exists only on the logistics page
+const logisticsView = MODE === 'logistics' ? await import('./logistics.js') : null;
 
 const $ = id => document.getElementById(id);
 
@@ -36,8 +38,9 @@ async function showHistoryStep(plan) {
     const selected = state.selectedNodeId;
     panel.setDemands(plan.items, plan.rates, plan.inbound);
     applySaved(plan);
+    if (MODE === 'logistics') showLogisticsSettings();
     try {
-        renderGraph(await requestPlan());
+        render(await requestPlan());
         save();
         if (selected && getNodeData(selected)) reselectNode(selected); else panel.hideNodeDetails();
     } catch (e) {
@@ -58,20 +61,32 @@ const redo = () => showHistoryStep(history.redo());
  */
 async function requestPlan({
     merges = state.merges, recipes = state.recipes, splits = state.splits, clocks = state.clocks,
-    byproducts = state.byproducts, byproductsDefault = 'sink'
+    byproducts = state.byproducts, byproductsDefault = 'sink', layouts = state.logistics.layouts
 } = {}) {
     const { items, rates, inbound } = panel.getDemands();
-    const { nodes, ignored, byproducts: resolved } = await api.calculate({
+    const logistics = MODE === 'logistics';
+    const { nodes, ignored, byproducts: resolved, logisticsResets } = await api.calculate({
         demands: items.map((item, i) => ({ item, rate: rates[i] })),
         inbound,
         recipes,
         merges,
-        splits,
+        splits: logistics ? {} : splits,  // no splits in logistics mode (ticket 033)
         clocks,
         byproducts,
-        byproducts_default: byproductsDefault
+        byproducts_default: byproductsDefault,
+        mode: MODE,
+        ...(logistics && { logistics: { settings: state.logistics.settings, layouts } })
     });
     state.byproducts = resolved;
+    // Edited logistics nodes whose buildings or edges changed go back to the suggested layout
+    if (logisticsResets.length) {
+        logisticsResets.forEach(reset => delete layouts[reset.key]);
+        const names = logisticsResets.map(reset => {
+            const [nodeId, side] = reset.key.split('|');
+            return `${panel.nodeLabel(nodeId)} (${side === 'out' ? 'output' : 'input'})`;
+        });
+        panel.showToast(`Logistics reset to the suggested layout: ${names.join(', ')}. Undo to get yours back.`, 6000);
+    }
     if (ignored.length) {
         dropIgnoredEntries(ignored, { merges, recipes, splits, clocks });
         // Entries on inputs a recipe no longer uses go quietly: that is what the switch (or merge) asked for
@@ -81,10 +96,19 @@ async function requestPlan({
     return nodes;
 }
 
+/** Draws the graph, and the zoomed-in logistics view if it's open. */
+function render(nodes) {
+    renderGraph(nodes);
+    if (logisticsView && logisticsView.isOpen()) {
+        const view = logisticsView.current();
+        logisticsView.refreshView(nodes.find(n => n.id === view.nodeId));
+    }
+}
+
 async function recalculate(options = {}) {
     if (panel.getDemands().items.length === 0) return;
     try {
-        renderGraph(await requestPlan(options));
+        render(await requestPlan(options));
         save();
     } catch (e) {
         console.error("Calculation failed", e);
@@ -94,8 +118,14 @@ async function recalculate(options = {}) {
 
 function loadPlan(saved) {
     if (!saved) return;
+    const wrong = wrongMode(saved);
+    if (wrong) {
+        alert(wrong);
+        return false;
+    }
     panel.setDemands(saved.items, saved.rates, saved.inbound);
     applySaved(saved);
+    if (MODE === 'logistics') showLogisticsSettings();
     recalculate();
 }
 
@@ -107,7 +137,7 @@ async function setClocks(groups) {
     const clocks = { ...state.clocks };
     if (groups) clocks[nodeId] = groups; else delete clocks[nodeId];
     try {
-        renderGraph(await requestPlan({ clocks }));
+        render(await requestPlan({ clocks }));
         state.clocks = clocks;
         save();
         reselectNode(nodeId);
@@ -132,7 +162,7 @@ async function switchRecipe(recipeName) {
 
     const recipes = { ...state.recipes, [nodeId]: recipeName };
     try {
-        renderGraph(await requestPlan({ recipes }));
+        render(await requestPlan({ recipes }));
         state.recipes = recipes;
         save();
         reselectNode(nodeId);
@@ -160,7 +190,7 @@ async function mergeNodes(sourceId, targetId) {
     const recipesDiffer = source && target && source.recipe_name !== target.recipe_name;
 
     try {
-        renderGraph(await requestPlan({ merges, clocks }));
+        render(await requestPlan({ merges, clocks }));
         state.merges = merges;
         state.clocks = clocks;
         save();
@@ -177,7 +207,7 @@ async function mergeNodes(sourceId, targetId) {
 async function setByproductChoice(makerId, choice) {
     const byproducts = { ...state.byproducts, [makerId]: choice };
     try {
-        renderGraph(await requestPlan({ byproducts }));
+        render(await requestPlan({ byproducts }));
         save();
         if (getNodeData(makerId)) panel.showByproductDetails(getNodeData(makerId));
         else panel.hideByproductDetails();
@@ -197,7 +227,7 @@ async function unmergeSelectedNode() {
     }
 
     try {
-        renderGraph(await requestPlan({ merges }));
+        render(await requestPlan({ merges }));
         state.merges = merges;
         save();
         panel.hideNodeDetails();
@@ -243,7 +273,7 @@ async function changeSplit(nodeId, count, selectAfter) {
     const merges = Object.fromEntries(Object.entries(state.merges).filter(([id, target]) => keep(id) && keep(target)));
 
     try {
-        renderGraph(await requestPlan({ splits, clocks, recipes, merges }));
+        render(await requestPlan({ splits, clocks, recipes, merges }));
         Object.assign(state, { splits, clocks, recipes, merges });
         save();
         if (getNodeData(selectAfter)) reselectNode(selectAfter); else panel.hideNodeDetails();
@@ -251,6 +281,60 @@ async function changeSplit(nodeId, count, selectAfter) {
         console.error("Split failed", e);
         alert(`Split failed: ${e.message}`);
     }
+}
+
+// --- Logistics mode (ticket 033) ---
+
+function readLogisticsSettings() {
+    return {
+        belt_tier: parseInt($('belt-tier').value, 10),
+        pipe_tier: parseInt($('pipe-tier').value, 10),
+        smart: $('smart-splitters').checked
+    };
+}
+
+function showLogisticsSettings() {
+    const settings = state.logistics.settings;
+    $('belt-tier').value = String(settings.belt_tier);
+    $('pipe-tier').value = String(settings.pipe_tier);
+    $('smart-splitters').checked = settings.smart;
+}
+
+async function changeLogisticsSettings() {
+    state.logistics.settings = readLogisticsSettings();
+    await recalculate();
+}
+
+/** Applies an edited layout of one side (null: back to the suggested one). */
+async function setLayout(nodeId, side, layout) {
+    const key = `${nodeId}|${side}`;
+    const layouts = { ...state.logistics.layouts };
+    if (layout) layouts[key] = layout; else delete layouts[key];
+    try {
+        render(await requestPlan({ layouts }));
+        state.logistics.layouts = layouts;
+        save();
+        selectLogistics(nodeId, side);
+    } catch (e) {
+        console.error("Logistics change failed", e);
+        alert(`Logistics change failed: ${e.message}`);
+    }
+}
+
+function zoomIn(nodeId, side) {
+    const node = getNodeData(nodeId);
+    if (!node) return;
+    logisticsView.openView(node, side, layout => setLayout(nodeId, side, layout), panel.nodeLabel);
+}
+
+function wireLogistics() {
+    onLogisticsSelected((nodeId, side) => {
+        panel.hideNodeDetails();
+        panel.hideByproductDetails();
+        panel.showLogisticsDetails(getNodeData(nodeId), side);
+    });
+    $('logistics-zoom-btn').addEventListener('click', e => zoomIn(e.target.dataset.node, e.target.dataset.side));
+    ['belt-tier', 'pipe-tier', 'smart-splitters'].forEach(id => $(id).addEventListener('change', changeLogisticsSettings));
 }
 
 // --- Plan-wide actions ---
@@ -275,8 +359,7 @@ async function importPlan(input) {
     const file = input.files[0];
     if (!file) return;
     try {
-        loadPlan(await readPlanFile(file));
-        save();
+        if (loadPlan(await readPlanFile(file)) !== false) save();
     } catch (err) {
         alert("Failed to parse JSON file.");
         console.error(err);
@@ -368,12 +451,15 @@ $('fit-view-btn').addEventListener('click', fitView);
 
 onNodeSelected(data => {
     panel.hideByproductDetails();
+    panel.hideLogisticsDetails();
     panel.showNodeDetails(data);
 });
 onByproductSelected(makerId => {
     panel.hideNodeDetails();
+    panel.hideLogisticsDetails();
     panel.showByproductDetails(getNodeData(makerId));
 });
+if (logisticsView) wireLogistics();
 ['byproduct-toggle-btn', 'byproduct-solve-btn'].forEach(id => $(id).addEventListener('click', e => {
     const { maker, choice } = e.target.dataset;
     setByproductChoice(maker, choice);

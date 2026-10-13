@@ -1,6 +1,6 @@
 // Cytoscape graph: rendering, zoom controls, node selection and drag-to-merge.
 // cytoscape and cytoscapeDagre are globals from the CDN scripts in index.html.
-import { state } from './state.js';
+import { state, MODE } from './state.js';
 
 const DEFAULT_NODE_COLOR = '#334155';
 const LIGHT_TEXT = '#f8fafc';
@@ -138,6 +138,34 @@ const cy = cytoscape({
                 'target-arrow-color': '#ef4444',
                 'color': '#fca5a5'
             }
+        },
+        {
+            // Logistics mode: a node's input (left) and output (right) logistics, with its number of
+            // splitters and mergers (ticket 033)
+            selector: '.lnode',
+            style: {
+                'shape': 'rectangle',
+                'width': 22,
+                'height': 50,
+                'background-color': '#1e293b',
+                'border-width': 2,
+                'border-color': '#94a3b8',
+                'color': '#e2e8f0',
+                'font-size': '11px'
+            }
+        },
+        {
+            // An edge that needs more than one belt (or pipe) of the highest tier unlocked
+            selector: 'edge.multi',
+            style: { 'line-color': '#f59e0b', 'target-arrow-color': '#f59e0b', 'width': 4 }
+        },
+        {
+            selector: '.lnode.edited',
+            style: { 'border-style': 'dashed', 'border-color': '#38bdf8' }
+        },
+        {
+            selector: '.lnode.warn',
+            style: { 'border-width': 3, 'border-color': '#ef4444' }
         },
         {
             // Last, so it shows on overridden nodes too; the node keeps its item color
@@ -317,13 +345,15 @@ export function renderGraph(nodesData) {
         (node.parents || []).forEach(parentId => {
             if (!nodeMap[parentId]) return;
             const rate = (node.parent_demands || {})[parentId] || 0;
+            const belts = beltText((node.edge_belts || {})[parentId]);
             elements.push({
                 group: 'edges',
                 data: {
                     source: node.id,
                     target: parentId,
-                    label: rate > 0 ? `${rate.toFixed(2)}/m` : ''
-                }
+                    label: rate > 0 ? `${rate.toFixed(2)}/m${belts}` : ''
+                },
+                classes: (node.edge_belts || {})[parentId]?.count > 1 ? ['multi'] : []
             });
         });
     });
@@ -336,7 +366,8 @@ export function renderGraph(nodesData) {
                 if (!nodeMap[consumer]) return;
                 elements.push({
                     group: 'edges',
-                    data: { source: node.id, target: consumer, label: `${rate.toFixed(2)}/m ${byproduct.item}${solved}`, maker: node.id },
+                    data: { source: node.id, target: consumer, maker: node.id,
+                        label: `${rate.toFixed(2)}/m ${byproduct.item}${solved}${beltText((byproduct.edge_belts || {})[consumer])}` },
                     classes: ['byproduct', 'used', byproduct.solving && 'loop'].filter(Boolean)
                 });
             });
@@ -346,9 +377,11 @@ export function renderGraph(nodesData) {
         sink.sink.inputs.forEach(input => {
             if (!nodeMap[input.from]) return;
             const loop = input.loop ? ' (loop)' : '';
+            const maker = (nodeMap[input.from].byproducts || []).find(b => b.item === input.item);
+            const belts = beltText(((maker || {}).edge_belts || {}).sink);
             elements.push({
                 group: 'edges',
-                data: { source: input.from, target: sink.id, label: `${input.rate.toFixed(2)}/m ${input.item}${loop}`, maker: input.from },
+                data: { source: input.from, target: sink.id, label: `${input.rate.toFixed(2)}/m ${input.item}${loop}${belts}`, maker: input.from },
                 classes: ['byproduct', input.fluid && 'invalid', input.loop && 'loop'].filter(Boolean)
             });
         });
@@ -357,13 +390,68 @@ export function renderGraph(nodesData) {
     cy.elements().remove();
     cy.add(elements);
 
-    const layout = cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 50, rankSep: 100 });
-    layout.one('layoutstop', fitView);
+    // Logistics nodes stand beside their production node: wider spacing, then attached after the layout
+    const logistics = MODE === 'logistics';
+    const layout = cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 50, rankSep: logistics ? 160 : 100 });
+    layout.one('layoutstop', () => {
+        if (logistics) attachLogistics(nodesData);
+        fitView();
+    });
     layout.run();
 }
 
+/** " · Mk.3", " · 2× Mk.6" or " · pipe Mk.1" for an edge's belts (logistics mode; see belts_needed). */
+function beltText(belts) {
+    if (!belts) return '';
+    const count = belts.count > 1 ? `${belts.count}× ` : '';
+    return ` · ${count}${belts.kind === 'pipe' ? 'pipe ' : ''}Mk.${belts.tier}`;
+}
+
+const LOGISTICS_GAP = 14;  // between a production node and its logistics nodes
+
+function attachLogistics(nodesData) {
+    const added = [];
+    nodesData.forEach(node => {
+        ['in', 'out'].forEach(side => {
+            const data = (node.logistics || {})[side];
+            if (!data) return;
+            added.push({
+                group: 'nodes',
+                data: { id: `${node.id}|${side}`, label: String(data.complexity), owner: node.id, side, raw: data, logistics: true },
+                classes: ['lnode', data.warnings.length && 'warn', data.edited && 'edited'].filter(Boolean),
+                grabbable: false
+            });
+        });
+    });
+    cy.add(added);
+    positionLogistics(cy.nodes().not('.lnode'));
+    // Belts run from a node's output logistics to the consumer's input logistics
+    cy.edges().forEach(edge => {
+        const source = cy.getElementById(`${edge.source().id()}|out`);
+        const target = cy.getElementById(`${edge.target().id()}|in`);
+        const move = {};
+        if (source.length) move.source = source.id();
+        if (target.length) move.target = target.id();
+        if (Object.keys(move).length) edge.move(move);
+    });
+}
+
+function positionLogistics(nodes) {
+    nodes.forEach(node => {
+        const { x, y } = node.position();
+        const offset = node.width() / 2 + LOGISTICS_GAP;
+        cy.getElementById(`${node.id()}|in`).position({ x: x - offset, y });
+        cy.getElementById(`${node.id()}|out`).position({ x: x + offset, y });
+    });
+}
+
+// Logistics nodes follow their production node when it's dragged
+cy.on('position', 'node[!logistics]', evt => {
+    if (MODE === 'logistics') positionLogistics(evt.target);
+});
+
 export function refreshNodeColors() {
-    cy.nodes().forEach(node => {
+    cy.nodes().not('.lnode').forEach(node => {
         const color = colorFor(node.data('raw').output_item);
         node.data({ backgroundColor: color, textColor: textColorOn(color) });
     });
@@ -382,7 +470,23 @@ export function getNodeData(nodeId) {
 // --- Interaction ---
 
 export function onNodeSelected(callback) {
-    cy.on('tap', 'node', evt => callback(evt.target.data('raw')));
+    cy.on('tap', 'node[!logistics]', evt => callback(evt.target.data('raw')));
+}
+
+/** Calls callback(production node id, 'in' | 'out') when a logistics node is clicked. */
+export function onLogisticsSelected(callback) {
+    cy.on('tap', 'node.lnode', evt => callback(evt.target.data('owner'), evt.target.data('side')));
+}
+
+/** A logistics side of a production node, as the server returned it, or null. */
+export function getLogistics(nodeId, side) {
+    const node = cy.getElementById(`${nodeId}|${side}`);
+    return node && node.length > 0 ? node.data('raw') : null;
+}
+
+export function selectLogistics(nodeId, side) {
+    const node = cy.getElementById(`${nodeId}|${side}`);
+    if (node && node.length > 0) node.emit('tap');
 }
 
 /** Calls callback(maker node id) when a by-product edge is clicked. */
@@ -405,7 +509,7 @@ export function onMergeDrop(callback) {
         const dragPos = dragNode.position();
         const dragData = dragNode.data('raw');
 
-        const overlapping = cy.nodes().filter(n => {
+        const overlapping = cy.nodes().not('.lnode').filter(n => {
             if (n.id() === dragNode.id()) return false;
             const pos = n.position();
             return Math.hypot(pos.x - dragPos.x, pos.y - dragPos.y) < MERGE_DISTANCE;

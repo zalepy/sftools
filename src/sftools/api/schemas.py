@@ -18,6 +18,8 @@ class PlanRequest(BaseModel):
     inbound: List[DemandIn] = []  # production supplied from outside the plan, used before producing anything
     byproducts: Dict[str, Literal["use", "sink", "solve"]] = {}  # node_id -> what its by-products do
     byproducts_default: Literal["use", "sink"] = "sink"  # for nodes not in `byproducts`: "use" for Calculate
+    mode: Literal["simple", "logistics"] = "simple"  # logistics mode (ticket 033): no splits, logistics per node
+    logistics: Dict[str, Any] = {}  # {"settings": {belt_tier, pipe_tier, smart}, "layouts": {"<id>|in|out": ...}}
 
 
 class IgnoredEntry(BaseModel):
@@ -33,6 +35,7 @@ class PlanResponse(BaseModel):
     nodes: List[Dict[str, Any]]
     ignored: List[IgnoredEntry] = []
     byproducts: Dict[str, str] = {}  # the by-product choices to keep in the plan (see resolved_byproduct_choices)
+    logistics_resets: List[Dict[str, str]] = []  # edited layouts that no longer fit: [{key, reason}]
 
 
 class RecipeInfo(BaseModel):
