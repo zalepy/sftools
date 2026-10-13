@@ -86,6 +86,41 @@ const cy = cytoscape({
             }
         },
         {
+            // Where by-products go (ticket 024)
+            selector: '.sink',
+            style: {
+                'shape': 'ellipse',
+                'width': 120,
+                'height': 120,
+                'border-width': 3,
+                'border-color': '#94a3b8'
+            }
+        },
+        {
+            // Fluids can't be sunk: the Sink only holds them as a placeholder
+            selector: '.sink.invalid',
+            style: {
+                'border-width': 8,
+                'border-color': '#ef4444'
+            }
+        },
+        {
+            selector: 'edge.byproduct',
+            style: {
+                'line-style': 'dotted',
+                'line-color': '#64748b',
+                'target-arrow-color': '#64748b'
+            }
+        },
+        {
+            selector: 'edge.byproduct.invalid',
+            style: {
+                'line-color': '#ef4444',
+                'target-arrow-color': '#ef4444',
+                'color': '#fca5a5'
+            }
+        },
+        {
             // Last, so it shows on overridden nodes too; the node keeps its item color
             selector: ':selected',
             style: {
@@ -230,14 +265,18 @@ export function renderGraph(nodesData) {
         const shards = node.power_shards ? ` · ${node.power_shards} shards` : '';
         const clockLine = clocks || shards ? `\n${clocks}${shards}` : '';
         const made = node.inbound ? 'inbound'
+            : node.sink ? `${node.buildings}× ${node.building}`
             : node.is_supplied ? 'supplied from outside' : `${buildingsText(node)}× ${node.building}`;
         const of = node.inbound ? ` of ${parseFloat(node.inbound.rate).toFixed(2)}` : '';
-        const label = `${node.output_item}${alternate}${part}\n${parseFloat(node.throughput).toFixed(2)}${of}/m\n(${made})${clockLine}`;
+        const fluids = node.sink && node.sink.fluids.length ? '\nfluids can\'t be sunk!' : '';
+        const label = `${node.output_item}${alternate}${part}\n${parseFloat(node.throughput).toFixed(2)}${of}/m\n(${made})${clockLine}${fluids}`;
         const color = colorFor(node.output_item);
         const classes = [
             state.clocks[node.id] && 'clocked',
             isExternalDemand(node) && 'external',
-            node.is_supplied && 'supplied'
+            node.is_supplied && 'supplied',
+            node.sink && 'sink',
+            fluids && 'invalid'
         ].filter(Boolean);
         elements.push({
             group: 'nodes',
@@ -266,6 +305,18 @@ export function renderGraph(nodesData) {
                     target: parentId,
                     label: rate > 0 ? `${rate.toFixed(2)}/m` : ''
                 }
+            });
+        });
+    });
+
+    // By-products, from each maker to the Sink; fluids in red
+    nodesData.filter(node => node.sink).forEach(sink => {
+        sink.sink.inputs.forEach(input => {
+            if (!nodeMap[input.from]) return;
+            elements.push({
+                group: 'edges',
+                data: { source: input.from, target: sink.id, label: `${input.rate.toFixed(2)}/m ${input.item}` },
+                classes: input.fluid ? ['byproduct', 'invalid'] : ['byproduct']
             });
         });
     });
@@ -325,7 +376,8 @@ export function onMergeDrop(callback) {
 
         const targetNode = overlapping[0];
         if (dragData.output_item !== targetNode.data('raw').output_item) return;
-        if (dragData.inbound || targetNode.data('raw').inbound) return;  // inbound production isn't a node of the plan
+        // Inbound production and the Sink aren't nodes of the plan
+        if ([dragData, targetNode.data('raw')].some(data => data.inbound || data.sink)) return;
 
         // Let Cytoscape finish the drag before the graph is re-rendered
         setTimeout(() => callback(dragNode.id(), targetNode.id()), 50);

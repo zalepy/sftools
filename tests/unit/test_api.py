@@ -272,3 +272,34 @@ def test_inbound_production_beyond_the_demand_is_left_over(client):
     rip = nodes_by_item(body["nodes"], "Reinforced Iron Plate")
     assert [n["id"] for n in rip] == ["inbound:Reinforced Iron Plate"]  # nothing left to produce
     assert rip[0]["inbound"] == {"rate": 8.0, "used": pytest.approx(5.0)}
+
+
+def sink_of(body):
+    return next((n for n in body["nodes"] if n["id"] == "sink"), None)
+
+
+def test_byproducts_go_to_the_sink(client):
+    """60 Aluminum Ingot: Alumina Solution makes 100 Silica (sunk) and Aluminum Scrap 120 Water (a fluid)."""
+    sink = sink_of(calculate(client, demands=[{"item": "Aluminum Ingot", "rate": 60}]).json())
+    assert sorted((i["from"], i["item"], i["rate"], i["fluid"]) for i in sink["sink"]["inputs"]) == [
+        ("Aluminum Ingot__Aluminum Scrap", "Water", pytest.approx(120), True),
+        ("Aluminum Ingot__Aluminum Scrap__Alumina Solution", "Silica", pytest.approx(100), False),
+    ]
+    assert sink["sink"]["fluids"] == ["Water"]
+    assert sink["buildings"] == 1 and sink["power"] == -30  # one AWESOME Sink for the Silica
+    assert sink["throughput"] == pytest.approx(220)
+
+
+def test_no_sink_without_byproducts(client):
+    assert sink_of(calculate(client).json()) is None
+
+
+def test_sink_follows_the_buildings(client):
+    """By-products scale with the maker's buildings and clocks: 2 Refineries at 50% make as much as 1."""
+    alumina = "Aluminum Ingot__Aluminum Scrap__Alumina Solution"
+    body = calculate(client, demands=[{"item": "Aluminum Ingot", "rate": 60}],
+                     clocks={alumina: [{"clock": 0.5}]}).json()
+    silica = next(i for i in sink_of(body)["sink"]["inputs"] if i["item"] == "Silica")
+    alumina_node = next(n for n in body["nodes"] if n["id"] == alumina)
+    assert alumina_node["clocks"] == [{"count": 4, "clock": 0.5}]
+    assert silica["rate"] == pytest.approx(100)
