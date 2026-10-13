@@ -5,9 +5,10 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [027](027-optimize-branch.md) | "Optimize branch" with preview | feature | P3 | Parked |
-| [028](028-belts-and-pipes.md) | Belt and pipe capacity | feature | P3 | Open |
+| [028](028-belts-and-pipes.md) | Belt and pipe capacity (logistics mode) | feature | P3 | Open |
+| [033](033-logistics-mode.md) | Logistics mode (separate, advanced) | feature | P3 | Open |
 
-027 is parked (breakdown agreed in the ticket). Next when wanted: 028. Smaller ideas live in [TODO.md](../TODO.md).
+027 is parked (breakdown agreed in the ticket). Next when wanted: 033 (the logistics mode; design settled, see its Steps), with 028 inside it. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
