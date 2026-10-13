@@ -445,3 +445,19 @@ def test_calculate_uses_byproducts_and_an_edge_sends_them_to_the_sink(page):
     assert "Aluminum Ingot__Silica" in page.node_ids()
     assert page.js("document.getElementById('byproduct-sunk').textContent") == "100.00/min"
     assert page.js("document.getElementById('byproduct-toggle-btn').textContent") == "Use as Supply"
+
+
+def test_solving_a_byproduct_loop(page):
+    scrap = "Water__Aluminum Casing__Aluminum Ingot__Aluminum Scrap"
+    page.open(page.base_url, plan(items=["Water"], rates=[100], recipes={"Water": "Battery"}, byproducts={scrap: "use"}))
+    assert page.js(edge_classes(scrap, "sink")) == ["byproduct", "invalid", "loop"]
+
+    cy = "document.getElementById('cy')._cyreg.cy"
+    page.js(f"void {cy}.edges().filter(e => e.source().id() === {json.dumps(scrap)} && e.target().id() === 'sink').emit('tap')")
+    assert page.js("document.getElementById('byproduct-solve-btn').textContent") == "Solve Loop"
+    page.js("document.getElementById('byproduct-solve-btn').click()")
+    page.wait_until(f"{SAVED}.byproducts[{json.dumps(scrap)}] === 'solve'")
+    assert page.js(edge_classes(scrap, "Water")) == ["byproduct", "used", "loop"]
+    assert "(loop, solved)" in page.js(f"{cy}.edges().filter(e => e.source().id() === {json.dumps(scrap)} && e.target().id() === 'Water').data('label')")
+    assert page.js("document.getElementById('byproduct-hint').textContent").startswith("Loop solved")
+    assert page.js("document.getElementById('byproduct-solve-btn').textContent") == "Stop Solving"

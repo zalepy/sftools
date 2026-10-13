@@ -6,7 +6,7 @@ from sftools.domain.enums.demand_type import DemandType
 from sftools.domain.enums.recipe_type import RecipeType
 from sftools.domain.models.building import Building
 from sftools.domain.models.demand import Demand
-from sftools.domain.models.factory_graph import FactoryGraph, SINK, USE
+from sftools.domain.models.factory_graph import FactoryGraph, SINK, SOLVE, USE
 from sftools.domain.models.item import Item
 from sftools.domain.models.production_node import ProductionNode
 from sftools.domain.models.recipe import Recipe
@@ -354,7 +354,8 @@ def build_plan(
     OUTSIDE_SUPPLY marks a node as supplied from outside the plan: it keeps its rate and loses its
     inputs and buildings. `inbound` lists (item, rate) supplied from outside the plan: it covers demand
     for the item before anything is produced (see FactoryGraph.recalculate). `byproducts` says per node
-    whether its by-products cover demand elsewhere (USE) or go to the Sink (SINK); nodes not listed get
+    whether its by-products cover demand elsewhere (USE, or SOLVE to solve a loop they'd close) or go to
+    the Sink (SINK); nodes not listed get
     `byproducts_default` (USE for Calculate, ticket 031).
 
     Entries that can't apply are skipped and listed in `graph.ignored` as
@@ -465,7 +466,7 @@ def build_plan(
     graph.inbound = {}
     for item, rate in inbound or []:
         graph.inbound[item] = graph.inbound.get(item, 0) + rate
-    graph.byproduct_choices = {node_id: choice for node_id, choice in (byproducts or {}).items() if choice in (USE, SINK)}
+    graph.byproduct_choices = {node_id: choice for node_id, choice in (byproducts or {}).items() if choice in (USE, SINK, SOLVE)}
     graph.byproduct_default = byproducts_default
 
     graph.recalculate(round_up=round_up)

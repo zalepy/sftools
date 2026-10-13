@@ -14,7 +14,11 @@ SINK_ID = "sink"
 SINK_POWER = 30
 SINK_INPUT_RATE = 1200
 FLUIDS = {ItemCategory.LIQUIDS, ItemCategory.GAS}  # can't be sunk
-USE, SINK = "use", "sink"  # what a node does with its by-products (ticket 031)
+USE, SINK, SOLVE = "use", "sink", "solve"  # what a node does with its by-products (tickets 031, 032)
+# Solving a by-product loop (see recalculate): rounds until the amounts change by at most LOOP_TOLERANCE
+# (per min), like Google Sheets' iterative calculation, but damped
+LOOP_ROUNDS = 100
+LOOP_TOLERANCE = 1e-6
 
 
 class FactoryGraph:
@@ -40,6 +44,10 @@ class FactoryGraph:
         # Set by recalculate: (maker id, item) -> {consumer id: rate}, and the uses left out as loops
         self.byproduct_used: Dict[Tuple[str, str], Dict[str, float]] = {}
         self.byproduct_loops: Set[Tuple[str, str]] = set()
+        # Loops being solved (choice SOLVE), and how: rounds taken and whether the amounts settled
+        self.byproduct_solving: Set[Tuple[str, str]] = set()
+        self.loop_rounds = 0
+        self.loop_settled = True
 
     def add_node(self, node: ProductionNode):
         self.all_nodes[node.id] = node
@@ -133,6 +141,44 @@ class FactoryGraph:
 
     def recalculate(self, round_up: bool = False):
         """
+        Propagates demand top-down and sets every node's scale (see _propagate).
+
+        A by-product loop the plan asks to solve (SOLVE) can't be ordered: its maker's output depends on
+        the demand it covers. It is solved on fractional buildings, round by round: each round supplies
+        what the maker made in the round before (none in the first). When the difference grows instead
+        of shrinking, rounds take only part of the step (damping), so loops with strong feedback settle
+        too. Whole buildings are then set in one more pass with the settled amounts; they make at least
+        that much, the rest going to the Sink. If it doesn't settle in LOOP_ROUNDS, `loop_settled` is
+        False and the plan is shown without those uses.
+        """
+        self.loop_settled, self.loop_rounds = True, 0
+        self._propagate(round_up, {})
+        if not self.byproduct_solving:
+            return
+        supply: Dict[Tuple[str, str], float] = {}
+        damping, last = 1.0, math.inf
+        for self.loop_rounds in range(1, LOOP_ROUNDS + 1):
+            self._propagate(False, supply)
+            made = {use: self._byproduct_made(*use) for use in self.byproduct_solving}
+            residual = max(abs(rate - supply.get(use, 0.0)) for use, rate in made.items())
+            if residual <= LOOP_TOLERANCE:
+                self._propagate(round_up, supply)
+                return
+            if residual >= last:
+                damping /= 2
+            last = residual
+            supply = {use: supply.get(use, 0.0) + damping * (rate - supply.get(use, 0.0)) for use, rate in made.items()}
+        # Didn't settle: show the plan without these uses, so it adds up; their by-products go to the Sink
+        self.loop_settled = False
+        self._propagate(round_up, {})
+
+    def _byproduct_made(self, maker_id: str, item: str) -> float:
+        maker = self.all_nodes[maker_id]
+        return sum(rate for i, rate in maker.recipe.other_outputs(maker.output_item_name) if i.name == item) \
+            * maker.building_scale
+
+    def _propagate(self, round_up: bool, loop_supply: Dict[Tuple[str, str], float]):
+        """
         Propagates demand top-down and sets every node's scale.
 
         A merge group (a target and the nodes absorbed into it) runs as one set of buildings for the
@@ -150,7 +196,8 @@ class FactoryGraph:
         production. A maker is ordered before every group of its by-product, as its output depends on its
         own scale. A use whose ordering would close a loop (a consumer upstream of its own maker, directly
         or through other by-products) isn't applied: it goes into `self.byproduct_loops`, and the
-        by-product goes to the Sink.
+        by-product goes to the Sink, unless the plan asks to solve it: then `loop_supply` (what its maker
+        made in the round before, see recalculate) is there from the start.
         """
         active = {node_id: node for node_id, node in self.all_nodes.items() if not node.is_dormant}
         for node in active.values():
@@ -189,13 +236,20 @@ class FactoryGraph:
         inbound_left = dict(self.inbound)
         self.inbound_used = {item: {} for item in self.inbound}
         self.unused = set()
+        idle: Set[str] = set()
         byproducts_left: Dict[str, List[List]] = {}  # item -> [[maker id, rate left], ...], in the order made
-        self.byproduct_used = {use: {} for use in uses}
+        for maker_id, item in sorted(self.byproduct_solving):
+            byproducts_left.setdefault(item, []).append([maker_id, loop_supply.get((maker_id, item), 0.0)])
+        self.byproduct_used = {use: {} for use in uses + sorted(self.byproduct_solving)}
 
         def cover(rep: ProductionNode, need: float, amount: float, used: Dict[str, float]):
-            """Moves `amount` of the group's remaining `need` from its consumers' demand to `used`."""
+            """
+            Moves `amount` of the group's remaining `need` from its consumers' demand to `used`. The user's
+            own demand is recorded against the group itself, which stays shown (see below).
+            """
             for consumer, rate in list(rep.parent_demands.items()):
-                used[consumer] = used.get(consumer, 0) + rate * amount / need
+                key = rep.id if consumer == "External Demand" else consumer
+                used[key] = used.get(key, 0) + rate * amount / need
                 rep.parent_demands[consumer] = rate * (1 - amount / need)
 
         def share(rep_id: str, member: ProductionNode) -> float:
@@ -260,9 +314,12 @@ class FactoryGraph:
                         need -= amount
             rep.parent_demands = {k: v for k, v in rep.parent_demands.items() if v > EPSILON}
             self._set_scale(rep, need, round_up)
-            if need <= EPSILON and (need < total or (
-                    group_parents[rep_id] and group_parents[rep_id] <= self.unused)):
-                self.unused.add(rep_id)
+            # Idle: nothing left to make, as it's covered or everything above it is idle. Hidden, unless
+            # the user demands it.
+            if need <= EPSILON and (need < total or (group_parents[rep_id] and group_parents[rep_id] <= idle)):
+                idle.add(rep_id)
+                if not any(self._external(member) > 0 for member in members[rep_id]):
+                    self.unused.add(rep_id)
             for (maker_id, byproduct) in uses:
                 if maker_id == rep_id:
                     rate = dict((i.name, r) for i, r in rep.recipe.other_outputs(item))[byproduct]
@@ -280,9 +337,11 @@ class FactoryGraph:
                               order_children: Dict[str, Set[str]]) -> List[Tuple[str, str]]:
         """
         (maker id, item) for each by-product used as supply, after adding maker -> consumer group edges to
-        `order_children`. A use whose edges would close a loop is left out and recorded in byproduct_loops.
+        `order_children`. A use whose edges would close a loop is left out and recorded in byproduct_loops,
+        and also in byproduct_solving if the plan asks to solve it (SOLVE; a SOLVE without a loop is a plain USE).
         """
         self.byproduct_loops = set()
+        self.byproduct_solving = set()
         groups_of: Dict[str, List[str]] = {}
         for rep_id in members:
             rep = self.all_nodes[rep_id]
@@ -303,12 +362,14 @@ class FactoryGraph:
         uses = []
         for rep_id in sorted(members):
             rep = self.all_nodes[rep_id]
-            if rep.recipe is None or self.byproduct_choice(rep_id) != USE:
+            if rep.recipe is None or self.byproduct_choice(rep_id) not in (USE, SOLVE):
                 continue
             for item, _ in rep.recipe.other_outputs(rep.output_item_name):
                 consumers = [group for group in groups_of.get(item.name, []) if group != rep_id]
                 if any(reaches(consumer, rep_id) for consumer in consumers):
                     self.byproduct_loops.add((rep_id, item.name))
+                    if self.byproduct_choice(rep_id) == SOLVE:
+                        self.byproduct_solving.add((rep_id, item.name))
                     continue
                 for consumer in consumers:
                     order_children[rep_id].add(consumer)
@@ -439,6 +500,8 @@ class FactoryGraph:
             "fluid": item.category in FLUIDS,
             "choice": self.byproduct_choice(node.id),
             "loop": (node.id, item.name) in self.byproduct_loops,
+            "solving": (node.id, item.name) in self.byproduct_solving,
+            "settled": self.loop_settled, "rounds": self.loop_rounds,
             "used": {k: v for k, v in self.byproduct_used.get((node.id, item.name), {}).items() if v > EPSILON},
         } for item, rate in node.recipe.other_outputs(node.output_item_name)]
 
@@ -501,7 +564,7 @@ class FactoryGraph:
             "building": "Outside the plan", "building_scale": total, "original_building_scale": total,
             "buildings": 0, "clocks": [], "power_shards": 0, "ideal_building_scale": total,
             "throughput": total, "power": 0, "output_item": item,
-            "parents": sorted(c for c in consumers if c != "External Demand"), "children": [],
+            "parents": sorted(consumers), "children": [],
             "scaled_inputs": [], "parent_demands": consumers, "base_output_rate": 1, "base_inputs": [],
             "base_power": 0, "is_dormant": False, "is_alternate": False, "is_supplied": True,
             "derivation": [{"id": node_id, "item": item, "recipe": "Inbound production", "building": "Outside the plan"}],

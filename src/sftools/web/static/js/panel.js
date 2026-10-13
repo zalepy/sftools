@@ -357,19 +357,31 @@ export function showByproductDetails(maker) {
     $('byproduct-used').innerText = `${used.toFixed(2)}/min`;
     $('byproduct-sunk').innerText = `${(made - used).toFixed(2)}/min`;
 
+    const loop = byproducts.find(b => b.loop);
     const hints = [];
-    if (choice === 'use' && byproducts.some(b => b.loop)) {
-        hints.push('Using it would feed a node above its own maker (a loop), so it goes to the Sink.');
-    } else if (choice === 'use' && made - used > EPSILON) {
+    if (choice === 'use' && loop) {
+        hints.push('Using it would feed a node above its own maker (a loop), so it goes to the Sink. Solve Loop balances it.');
+    } else if (choice === 'solve' && loop && !loop.settled) {
+        hints.push(`The loop didn't settle in ${loop.rounds} rounds, so it goes to the Sink.`);
+    } else if (choice === 'solve' && loop) {
+        hints.push(`Loop solved (${loop.rounds} rounds).`);
+    }
+    if (choice !== 'sink' && made - used > EPSILON && !(loop && choice === 'use')) {
         hints.push('More is made than the plan needs; the rest goes to the Sink.');
     }
     if (byproducts.some(b => b.fluid) && made - used > EPSILON) hints.push("Fluids can't be sunk.");
     $('byproduct-hint').innerText = hints.join(' ');
 
     const button = $('byproduct-toggle-btn');
-    button.innerText = choice === 'use' ? 'Send to Sink' : 'Use as Supply';
+    button.innerText = choice === 'sink' ? 'Use as Supply' : 'Send to Sink';
     button.dataset.maker = maker.id;
-    button.dataset.choice = choice === 'use' ? 'sink' : 'use';
+    button.dataset.choice = choice === 'sink' ? 'use' : 'sink';
+    // Solving is offered on loops only; "use" leaves a loop out
+    const solve = $('byproduct-solve-btn');
+    solve.style.display = loop ? 'block' : 'none';
+    solve.innerText = choice === 'solve' ? 'Stop Solving' : 'Solve Loop';
+    solve.dataset.maker = maker.id;
+    solve.dataset.choice = choice === 'solve' ? 'use' : 'solve';
     $('byproduct-details').style.display = 'block';
 }
 
