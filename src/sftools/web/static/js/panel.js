@@ -474,8 +474,40 @@ export function readColorInputs() {
 // --- Collapsing the side panel ---
 
 const PANEL_KEY = 'sf_planner_panel_collapsed';
+const LEGEND_KEY = 'sf_legend_shown';
 
 /** Wires the header button; `onResize` runs after the graph area changes width. */
+/** The legend (ticket 035): shown or hidden with the header button, remembered in the browser. */
+export function initLegendToggle() {
+    const button = $('legend-toggle');
+    const legend = $('legend');
+
+    function setShown(shown) {
+        legend.hidden = !shown;
+        button.setAttribute('aria-expanded', String(shown));
+        button.title = shown ? 'Hide the legend' : 'Show the legend';
+        button.classList.toggle('active', shown);
+    }
+
+    let shown = false;
+    try {
+        shown = localStorage.getItem(LEGEND_KEY) === '1';
+    } catch (e) {
+        // Storage unavailable: start hidden
+    }
+    setShown(shown);
+
+    button.addEventListener('click', () => {
+        shown = legend.hidden;
+        setShown(shown);
+        try {
+            localStorage.setItem(LEGEND_KEY, shown ? '1' : '0');
+        } catch (e) {
+            // Not remembered; the legend still toggles
+        }
+    });
+}
+
 export function initPanelToggle(onResize) {
     const button = $('panel-toggle');
     const container = document.querySelector('.main-container');

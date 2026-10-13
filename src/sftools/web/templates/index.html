@@ -25,11 +25,15 @@
             </div>
             <h1>Satisfactory Planner{% if mode == 'logistics' %} <span class="mode-name">Logistics</span>{% endif %}</h1>
         </div>
+        <div class="header-right">
+        <button type="button" id="legend-toggle" class="icon-btn" aria-controls="legend" aria-expanded="false"
+            title="Show the legend">Legend</button>
         {% if mode == 'logistics' %}
         <a class="mode-link" href="/" title="The planner without belts; its plans are separate">&larr; Simple mode</a>
         {% else %}
         <a class="mode-link" href="/logistics" title="Plan belts, splitters and mergers too; its plans are separate">Logistics mode &rarr;</a>
         {% endif %}
+        </div>
     </header>
 
     <div class="main-container">
@@ -315,6 +319,51 @@
             <div id="cy"></div>
 
             <div id="toast" class="toast" role="status" hidden></div>
+
+            <!-- What the colors and shapes mean (ticket 035) -->
+            <aside id="legend" class="legend" aria-label="Legend" hidden>
+                <h3>Legend</h3>
+                <h4>Node borders</h4>
+                <ul>
+                    <li><span class="swatch border" style="--c: #f59e0b"></span>Production node</li>
+                    <li><span class="swatch border" style="--c: #a855f7"></span>Demanded by you (or merged with a demanded node)</li>
+                    <li><span class="swatch border" style="--c: #38bdf8"></span>Supplied from outside: inbound production, or "Supplied from outside"</li>
+                    <li><span class="swatch border dashed" style="--c: #22d3ee"></span>Clock speeds set</li>
+                    <li><span class="swatch border" style="--c: #f43f5e"></span>Selected</li>
+                    <li><span class="swatch round" style="--c: #94a3b8"></span>Sink: by-products that aren't used</li>
+                    <li><span class="swatch round thick" style="--c: #ef4444"></span>Sink holding fluids, which can't be sunk</li>
+                </ul>
+                <h4>Dot, top right</h4>
+                <ul>
+                    <li><span class="swatch dot" style="--c: #22c55e"></span>Makes a little more than needed</li>
+                    <li><span class="swatch dot" style="--c: #3b82f6"></span>A whole building or more to spare</li>
+                    <li><span class="swatch dot" style="--c: #ef4444"></span>Makes less than needed</li>
+                </ul>
+                <h4>Edges</h4>
+                <ul>
+                    <li><span class="swatch line" style="--c: #475569"></span>Supplies the node it points to, at the rate shown</li>
+                    <li><span class="swatch line dashed" style="--c: #38bdf8"></span>By-product used as supply</li>
+                    <li><span class="swatch line dotted" style="--c: #64748b"></span>By-product to the Sink</li>
+                    <li><span class="swatch line dotted" style="--c: #ef4444"></span>Fluid by-product to the Sink</li>
+                    <li><span class="swatch line" style="--c: #f59e0b"></span>By-product loop: "(loop)" not applied, "(loop, solved)" solved</li>
+                </ul>
+                <h4>Labels</h4>
+                <ul>
+                    <li><span class="swatch text">(A)</span>Runs an alternate recipe</li>
+                    <li><span class="swatch text">[1/2]</span>Part of a split node</li>
+                    <li><span class="swatch text">8×100%</span>Buildings by clock speed, and power shards</li>
+                </ul>
+                {% if mode == 'logistics' %}
+                <h4>Logistics</h4>
+                <ul>
+                    <li><span class="swatch lnode" style="--c: #94a3b8">2</span>Logistics node: inputs left, outputs right; splitters and mergers inside</li>
+                    <li><span class="swatch lnode dashed" style="--c: #38bdf8">2</span>Edited by you</li>
+                    <li><span class="swatch lnode" style="--c: #ef4444">2</span>Something's short or not connected</li>
+                    <li><span class="swatch line thick" style="--c: #f59e0b"></span>Needs more than one belt (or pipe) of the highest tier</li>
+                    <li><span class="swatch text">Mk.3</span>The belt (or pipe) tier an edge needs</li>
+                </ul>
+                {% endif %}
+            </aside>
 
             {% if mode == 'logistics' %}
             <!-- Zoomed-in logistics node: the whole graph area -->

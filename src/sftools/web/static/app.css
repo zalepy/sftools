@@ -562,3 +562,131 @@ body[data-mode="logistics"] #split-controls {
     flex: 1;
     min-height: 0;
 }
+
+/* --- Legend (ticket 035) --- */
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.icon-btn.active {
+    background-color: var(--border);
+    color: var(--text-primary);
+}
+
+.legend {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 30;  /* under a zoomed-in logistics node */
+    width: 300px;
+    max-height: calc(100% - 11rem);  /* ends above the zoom controls */
+    overflow-y: auto;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.legend[hidden] {
+    display: none;
+}
+
+.legend h3 {
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+}
+
+.legend h4 {
+    margin: 0.75rem 0 0.35rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.legend ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.3rem;
+}
+
+.swatch {
+    flex: none;
+    width: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.swatch.border {
+    height: 16px;
+    border: 3px solid var(--c);
+    border-radius: 4px;
+    background: var(--node-bg);
+    box-sizing: border-box;
+}
+
+.swatch.round {
+    width: 20px;
+    height: 20px;
+    margin: 0 5px;
+    border: 3px solid var(--c);
+    border-radius: 50%;
+    background: var(--node-bg);
+    box-sizing: border-box;
+}
+
+.swatch.round.thick {
+    border-width: 5px;
+}
+
+.swatch.dot {
+    width: 10px;
+    height: 10px;
+    margin: 0 10px;
+    border-radius: 50%;
+    background: var(--c);
+}
+
+.swatch.line {
+    height: 0;
+    border-top: 3px solid var(--c);
+}
+
+.swatch.line.thick {
+    border-top-width: 5px;
+}
+
+.swatch.dashed {
+    border-style: dashed;
+}
+
+.swatch.line.dotted {
+    border-top-style: dotted;
+}
+
+.swatch.text {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.swatch.lnode {
+    width: 12px;
+    height: 24px;
+    margin: 0 9px;
+    border: 2px solid var(--c);
+    background: #1e293b;
+    font-size: 0.65rem;
+    box-sizing: border-box;
+}

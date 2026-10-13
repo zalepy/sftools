@@ -465,6 +465,7 @@ if (logisticsView) wireLogistics();
     setByproductChoice(maker, choice);
 }));
 panel.initPanelToggle(resizeGraph);
+panel.initLegendToggle();
 onMergeDrop(mergeNodes);
 
 // Module scripts run after the document is parsed. Colors first, so the first render uses them.

@@ -5,7 +5,7 @@ Production planner for [Satisfactory](https://www.satisfactorygame.com/). Enter 
 Live (UAT): https://sftools.onrender.com/
 
 ## Features
-* **Graph visualization**: Cytoscape graph of the production chain. Nodes you demand have a purple border, nodes supplied from outside a sky-blue one, and nodes with clocks set a dashed cyan one. Node text turns dark on bright node colors. The side panel can be hidden (button left of the title) to give the graph the whole width; the choice is remembered in the browser.
+* **Graph visualization**: Cytoscape graph of the production chain. The Legend button in the header explains the colors and marks. Nodes you demand have a purple border, nodes supplied from outside a sky-blue one, and nodes with clocks set a dashed cyan one. Node text turns dark on bright node colors. The side panel can be hidden (button left of the title) to give the graph the whole width; the choice is remembered in the browser.
 * **Clock speeds**: set a node's clock for all its buildings, and optionally a different one for the last building. The number of buildings is always calculated from the demand and the clocks, and the inputs follow. Power accounts for the clocks, and nodes show the power shards they need.
 * **Merging**: drag one node onto another node with the same output item to combine them; unmerge from the side panel.
 * **Splitting**: split a node into equal parts from the side panel, e.g. to build them in different places. Each part has its own inputs, clocks and recipe. Dragging one part onto another merges them back.
