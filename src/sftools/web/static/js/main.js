@@ -173,7 +173,7 @@ async function mergeNodes(sourceId, targetId) {
     }
 }
 
-/** Uses a node's by-products as supply, or sends them to the Sink. */
+/** Uses a node's by-products as supply, sends them to the Sink, or solves the loop they'd close. */
 async function setByproductChoice(makerId, choice) {
     const byproducts = { ...state.byproducts, [makerId]: choice };
     try {
@@ -374,10 +374,10 @@ onByproductSelected(makerId => {
     panel.hideNodeDetails();
     panel.showByproductDetails(getNodeData(makerId));
 });
-$('byproduct-toggle-btn').addEventListener('click', e => {
+['byproduct-toggle-btn', 'byproduct-solve-btn'].forEach(id => $(id).addEventListener('click', e => {
     const { maker, choice } = e.target.dataset;
     setByproductChoice(maker, choice);
-});
+}));
 panel.initPanelToggle(resizeGraph);
 onMergeDrop(mergeNodes);
 

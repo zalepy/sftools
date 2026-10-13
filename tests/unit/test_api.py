@@ -349,3 +349,40 @@ def test_byproduct_loop_goes_to_the_sink(client):
     water = byproduct(body, scrap, "Water")
     assert water["loop"] and water["used"] == {}
     assert next(i for i in sink_of(body)["sink"]["inputs"] if i["from"] == scrap)["loop"]
+
+
+BATTERY_WATER = dict(demands=[{"item": "Water", "rate": 100}], recipes={"Water": "Battery"})
+LOOP_SCRAP = "Water__Aluminum Casing__Aluminum Ingot__Aluminum Scrap"
+
+
+def test_solving_a_byproduct_loop(client):
+    """100 Water by the Battery recipe: 4 buildings alone; with the loop's Water solved, 3."""
+    left_out = calculate(client, **BATTERY_WATER, byproducts={LOOP_SCRAP: "use"}).json()
+    assert next(n for n in left_out["nodes"] if n["id"] == "Water")["buildings"] == 4
+
+    body = calculate(client, **BATTERY_WATER, byproducts={LOOP_SCRAP: "solve"}).json()
+    assert body["byproducts"] == {LOOP_SCRAP: "solve"}
+    water = byproduct(body, LOOP_SCRAP, "Water")
+    assert water["loop"] and water["solving"] and water["settled"] and 1 < water["rounds"] <= 100
+    assert next(n for n in body["nodes"] if n["id"] == "Water")["buildings"] == 3
+    used = sum(water["used"].values())
+    assert used == pytest.approx(100 / 3, rel=1e-4)  # the balance on fractional buildings
+    assert used <= water["rate"]  # whole buildings make at least that; the rest goes to the Sink
+
+
+def test_a_loop_that_does_not_settle_is_left_out(client, monkeypatch):
+    from sftools.domain.models import factory_graph
+    monkeypatch.setattr(factory_graph, "LOOP_ROUNDS", 2)
+    body = calculate(client, **BATTERY_WATER, byproducts={LOOP_SCRAP: "solve"}).json()
+    water = byproduct(body, LOOP_SCRAP, "Water")
+    assert water["solving"] and not water["settled"] and water["used"] == {}
+    assert next(n for n in body["nodes"] if n["id"] == "Water")["buildings"] == 4
+
+
+def test_a_demand_covered_by_inbound_production_stays_shown(client):
+    body = calculate(client, demands=[{"item": "Rotor", "rate": 4}], inbound=[{"item": "Rotor", "rate": 10}]).json()
+    nodes = {n["id"]: n for n in body["nodes"]}
+    assert nodes["Rotor"]["buildings"] == 0
+    assert not any(node_id.startswith("Rotor__") for node_id in nodes)  # nothing to make: no inputs
+    assert nodes["inbound:Rotor"]["parent_demands"] == {"Rotor": pytest.approx(4)}  # drawn to the demand node
+

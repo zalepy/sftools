@@ -331,12 +331,13 @@ export function renderGraph(nodesData) {
     // By-products: from each maker to the nodes it supplies, and what's left to the Sink (fluids in red)
     nodesData.forEach(node => {
         (node.byproducts || []).forEach(byproduct => {
+            const solved = byproduct.solving ? ' (loop, solved)' : '';
             Object.entries(byproduct.used).forEach(([consumer, rate]) => {
                 if (!nodeMap[consumer]) return;
                 elements.push({
                     group: 'edges',
-                    data: { source: node.id, target: consumer, label: `${rate.toFixed(2)}/m ${byproduct.item}`, maker: node.id },
-                    classes: ['byproduct', 'used']
+                    data: { source: node.id, target: consumer, label: `${rate.toFixed(2)}/m ${byproduct.item}${solved}`, maker: node.id },
+                    classes: ['byproduct', 'used', byproduct.solving && 'loop'].filter(Boolean)
                 });
             });
         });
