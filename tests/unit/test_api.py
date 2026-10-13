@@ -303,3 +303,49 @@ def test_sink_follows_the_buildings(client):
     alumina_node = next(n for n in body["nodes"] if n["id"] == alumina)
     assert alumina_node["clocks"] == [{"count": 4, "clock": 0.5}]
     assert silica["rate"] == pytest.approx(100)
+
+
+ALU = [{"item": "Aluminum Ingot", "rate": 60}]
+SCRAP = "Aluminum Ingot__Aluminum Scrap"
+ALUMINA = f"{SCRAP}__Alumina Solution"
+
+
+def byproduct(body, maker, item):
+    node = next(n for n in body["nodes"] if n["id"] == maker)
+    return next(b for b in node["byproducts"] if b["item"] == item)
+
+
+def test_byproducts_go_to_the_sink_unless_used(client):
+    body = calculate(client, demands=ALU).json()
+    assert body["byproducts"] == {}  # the default (Sink) isn't recorded: a later Calculate may still use them
+    assert byproduct(body, ALUMINA, "Silica")["used"] == {}
+
+
+def test_calculate_uses_byproducts_as_supply(client):
+    """Aluminum Scrap's 120 Water covers Alumina Solution's; Alumina Solution's 100 Silica covers the 75 needed."""
+    body = calculate(client, demands=ALU, byproducts_default="use").json()
+    assert body["byproducts"] == {SCRAP: "use", ALUMINA: "use"}
+    assert byproduct(body, SCRAP, "Water")["used"] == {ALUMINA: pytest.approx(120)}
+    assert byproduct(body, ALUMINA, "Silica")["used"] == {"Aluminum Ingot": pytest.approx(75)}
+    ids = {n["id"] for n in body["nodes"]}
+    assert "Aluminum Ingot__Silica" not in ids  # nothing left to make
+    water = next(n for n in body["nodes"] if n["id"] == f"{ALUMINA}__Water")
+    assert water["throughput"] == pytest.approx(240)  # 360 needed, 120 from the by-product
+    assert [(i["item"], i["rate"]) for i in sink_of(body)["sink"]["inputs"]] == [("Silica", pytest.approx(25))]
+
+
+def test_a_choice_in_the_plan_beats_the_default(client):
+    body = calculate(client, demands=ALU, byproducts={ALUMINA: "sink"}, byproducts_default="use").json()
+    assert body["byproducts"] == {SCRAP: "use", ALUMINA: "sink"}
+    assert byproduct(body, ALUMINA, "Silica")["used"] == {}
+    assert byproduct(body, SCRAP, "Water")["used"] != {}
+
+
+def test_byproduct_loop_goes_to_the_sink(client):
+    """Water made by the Battery recipe: Aluminum Scrap further down makes Water, which would feed the top node."""
+    body = calculate(client, demands=[{"item": "Water", "rate": 10}], recipes={"Water": "Battery"},
+                     byproducts_default="use").json()
+    scrap = "Water__Aluminum Casing__Aluminum Ingot__Aluminum Scrap"
+    water = byproduct(body, scrap, "Water")
+    assert water["loop"] and water["used"] == {}
+    assert next(i for i in sink_of(body)["sink"]["inputs"] if i["from"] == scrap)["loop"]

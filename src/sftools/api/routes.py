@@ -27,12 +27,14 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
             splits=plan.splits,
             clocks=plan.clocks,
             inbound=[(d.item, d.rate) for d in plan.inbound],
+            byproducts=plan.byproducts,
+            byproducts_default=plan.byproducts_default,
         )
     except ValueError as ex:
         # e.g. merging nodes with different output items
         raise HTTPException(status_code=400, detail=str(ex))
 
-    return {"nodes": graph.get_ui_data(), "ignored": graph.ignored}
+    return {"nodes": graph.get_ui_data(), "ignored": graph.ignored, "byproducts": graph.resolved_byproduct_choices()}
 
 
 @router.get("/available_recipes", response_model=List[RecipeInfo])

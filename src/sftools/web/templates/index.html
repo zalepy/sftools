@@ -213,6 +213,33 @@
                     <button type="button" id="unsplit-btn" class="secondary" style="display: none;">Unsplit Node</button>
                     </div>
                 </section>
+
+                <!-- By-product details (appear when a by-product edge is selected) -->
+                <section id="byproduct-details">
+                    <h3>By-product</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Item:</span>
+                        <span class="stat-value" id="byproduct-item">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Made by:</span>
+                        <span class="stat-value" id="byproduct-maker">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Made:</span>
+                        <span class="stat-value" id="byproduct-rate">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Used as supply:</span>
+                        <span class="stat-value" id="byproduct-used">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">To the Sink:</span>
+                        <span class="stat-value" id="byproduct-sunk">-</span>
+                    </div>
+                    <div class="hint" id="byproduct-hint"></div>
+                    <button type="button" id="byproduct-toggle-btn" style="margin-top: 0.5rem;">Use as Supply</button>
+                </section>
             </div>
 
             <!-- Colors Tab -->

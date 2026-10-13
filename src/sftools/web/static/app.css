@@ -148,8 +148,8 @@ button:disabled {
     margin-bottom: 0.5rem;
 }
 
-/* Node Details Panel */
-#node-details {
+/* Node Details Panel; By-product Details (a selected by-product edge) */
+#node-details, #byproduct-details {
     border-top: 1px solid var(--border);
     padding-top: 1rem;
     display: none;

@@ -340,6 +340,43 @@ export function getSplitCount() {
     return parseInt($('split-count').value, 10);
 }
 
+// --- Selected by-product (an edge from its maker) ---
+
+/** The maker's by-products: what's made, used and sunk, and a button to use them or send them to the Sink. */
+export function showByproductDetails(maker) {
+    if (!maker || !maker.byproducts || !maker.byproducts.length) return hideByproductDetails();
+    const byproducts = maker.byproducts;
+    const made = byproducts.reduce((sum, b) => sum + b.rate, 0);
+    const used = byproducts.reduce((sum, b) => sum + Object.values(b.used).reduce((s, r) => s + r, 0), 0);
+    const choice = byproducts[0].choice;
+
+    $('byproduct-item').innerText = byproducts.map(b => b.item).join(', ');
+    $('byproduct-maker').innerText = parentLabel(maker.id);
+    $('byproduct-maker').title = derivationText(maker.derivation || []);
+    $('byproduct-rate').innerText = `${made.toFixed(2)}/min`;
+    $('byproduct-used').innerText = `${used.toFixed(2)}/min`;
+    $('byproduct-sunk').innerText = `${(made - used).toFixed(2)}/min`;
+
+    const hints = [];
+    if (choice === 'use' && byproducts.some(b => b.loop)) {
+        hints.push('Using it would feed a node above its own maker (a loop), so it goes to the Sink.');
+    } else if (choice === 'use' && made - used > EPSILON) {
+        hints.push('More is made than the plan needs; the rest goes to the Sink.');
+    }
+    if (byproducts.some(b => b.fluid) && made - used > EPSILON) hints.push("Fluids can't be sunk.");
+    $('byproduct-hint').innerText = hints.join(' ');
+
+    const button = $('byproduct-toggle-btn');
+    button.innerText = choice === 'use' ? 'Send to Sink' : 'Use as Supply';
+    button.dataset.maker = maker.id;
+    button.dataset.choice = choice === 'use' ? 'sink' : 'use';
+    $('byproduct-details').style.display = 'block';
+}
+
+export function hideByproductDetails() {
+    $('byproduct-details').style.display = 'none';
+}
+
 export function hideNodeDetails() {
     $('node-details').style.display = 'none';
     state.selectedNodeId = null;

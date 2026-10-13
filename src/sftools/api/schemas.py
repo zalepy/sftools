@@ -16,6 +16,8 @@ class PlanRequest(BaseModel):
     splits: Dict[str, int] = {}  # node_id -> number of equal parts
     clocks: Dict[str, List[Dict[str, Any]]] = {}  # node_id -> [{"clock": 1.0}, {"count": 1, "clock": 0.6}]
     inbound: List[DemandIn] = []  # production supplied from outside the plan, used before producing anything
+    byproducts: Dict[str, Literal["use", "sink"]] = {}  # node_id -> what its by-products do
+    byproducts_default: Literal["use", "sink"] = "sink"  # for nodes not in `byproducts`: "use" for Calculate
 
 
 class IgnoredEntry(BaseModel):
@@ -30,6 +32,7 @@ class IgnoredEntry(BaseModel):
 class PlanResponse(BaseModel):
     nodes: List[Dict[str, Any]]
     ignored: List[IgnoredEntry] = []
+    byproducts: Dict[str, str] = {}  # the by-product choices to keep in the plan (see resolved_byproduct_choices)
 
 
 class RecipeInfo(BaseModel):

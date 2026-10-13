@@ -6,7 +6,7 @@ from sftools.domain.enums.demand_type import DemandType
 from sftools.domain.enums.recipe_type import RecipeType
 from sftools.domain.models.building import Building
 from sftools.domain.models.demand import Demand
-from sftools.domain.models.factory_graph import FactoryGraph
+from sftools.domain.models.factory_graph import FactoryGraph, SINK, USE
 from sftools.domain.models.item import Item
 from sftools.domain.models.production_node import ProductionNode
 from sftools.domain.models.recipe import Recipe
@@ -337,6 +337,8 @@ def build_plan(
     clocks: Optional[Dict[str, list]] = None,
     exact: bool = False,
     inbound: Optional[List[Tuple[str, float]]] = None,
+    byproducts: Optional[Dict[str, str]] = None,
+    byproducts_default: str = SINK,
 ) -> FactoryGraph:
     """
     Builds a FactoryGraph from the full plan description.
@@ -351,7 +353,9 @@ def build_plan(
     the absorbed nodes' inputs that it doesn't use are dropped the same way. The recipe name
     OUTSIDE_SUPPLY marks a node as supplied from outside the plan: it keeps its rate and loses its
     inputs and buildings. `inbound` lists (item, rate) supplied from outside the plan: it covers demand
-    for the item before anything is produced (see FactoryGraph.recalculate).
+    for the item before anything is produced (see FactoryGraph.recalculate). `byproducts` says per node
+    whether its by-products cover demand elsewhere (USE) or go to the Sink (SINK); nodes not listed get
+    `byproducts_default` (USE for Calculate, ticket 031).
 
     Entries that can't apply are skipped and listed in `graph.ignored` as
     {"kind": "recipe" | "merge" | "split" | "clock", "node_id", "reason"}. Entries on dropped
@@ -461,6 +465,8 @@ def build_plan(
     graph.inbound = {}
     for item, rate in inbound or []:
         graph.inbound[item] = graph.inbound.get(item, 0) + rate
+    graph.byproduct_choices = {node_id: choice for node_id, choice in (byproducts or {}).items() if choice in (USE, SINK)}
+    graph.byproduct_default = byproducts_default
 
     graph.recalculate(round_up=round_up)
     graph.ignored = ignored

@@ -416,3 +416,32 @@ def test_byproducts_go_to_the_sink(page):
     assert page.js("document.getElementById('detail-power').textContent") == "-30.00 MW"
     for section in ("details-recipe-collapsible", "split-controls", "clock-controls"):
         assert page.js(f"document.getElementById('{section}').style.display") == "none"
+
+
+ALU_SCRAP = "Aluminum Ingot__Aluminum Scrap"
+ALU_ALUMINA = f"{ALU_SCRAP}__Alumina Solution"
+
+
+def test_calculate_uses_byproducts_and_an_edge_sends_them_to_the_sink(page):
+    page.open(page.base_url, plan(items=["Aluminum Ingot"], rates=[60]))
+    assert page.saved_plan().get("byproducts", {}) == {}  # loading a plan doesn't use them
+
+    page.js("document.querySelector('#demand-form button[type=submit]').click()")
+    page.wait_until(f"({SAVED}.byproducts || {{}})[{json.dumps(ALU_ALUMINA)}] === 'use'")
+    assert page.js(edge_classes(ALU_ALUMINA, "Aluminum Ingot")) == ["byproduct", "used"]
+    assert page.js(edge_classes(ALU_ALUMINA, "sink")) == ["byproduct"]  # 25 left over
+
+    cy = "document.getElementById('cy')._cyreg.cy"
+    page.js(f"void {cy}.edges().filter(e => e.source().id() === {json.dumps(ALU_ALUMINA)} && e.target().id() === 'Aluminum Ingot').emit('tap')")
+    assert page.js("document.getElementById('byproduct-details').style.display") == "block"
+    assert page.js("document.getElementById('node-details').style.display") == "none"
+    assert page.js("document.getElementById('byproduct-used').textContent") == "75.00/min"
+    assert page.js("document.getElementById('byproduct-toggle-btn').textContent") == "Send to Sink"
+
+    page.js("document.getElementById('byproduct-toggle-btn').click()")
+    page.wait_until(f"{SAVED}.byproducts[{json.dumps(ALU_ALUMINA)}] === 'sink'")
+    cy_edges = f"{cy}.edges().filter(e => e.source().id() === {json.dumps(ALU_ALUMINA)} && e.target().id() === 'Aluminum Ingot')"
+    assert page.js(f"{cy_edges}.length") == 0  # no by-product edge any more
+    assert "Aluminum Ingot__Silica" in page.node_ids()
+    assert page.js("document.getElementById('byproduct-sunk').textContent") == "100.00/min"
+    assert page.js("document.getElementById('byproduct-toggle-btn').textContent") == "Use as Supply"
