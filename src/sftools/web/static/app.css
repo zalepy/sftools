@@ -681,6 +681,16 @@ body[data-mode="logistics"] #split-controls {
     white-space: nowrap;
 }
 
+.swatch.check {
+    width: 16px;
+    height: 16px;
+    margin: 0 7px;
+    border-radius: 50%;
+    background: #16a34a;
+    color: #fff;
+    font-size: 0.7rem;
+}
+
 .swatch.lnode {
     width: 12px;
     height: 24px;

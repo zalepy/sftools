@@ -482,3 +482,54 @@ def test_legend_toggles_and_is_remembered(page):
     page.js("document.getElementById('legend-toggle').click()")
     assert "Logistics node" in page.js("document.getElementById('legend').textContent")
 
+
+
+def badges(node_id):
+    """The node's badge image (status dot, built mark) as SVG text."""
+    cy = "document.getElementById('cy')._cyreg.cy"
+    return f"atob(({cy}.getElementById({json.dumps(node_id)}).data('backgroundImage') || ',').split(',')[1])"
+
+
+def test_marking_buildings_built(page):
+    page.open(page.base_url, {"items": ["Smart Plating"], "rates": [20], "clocks": {}, "merges": {}, "recipes": {}})
+    node = "document.getElementById('cy')._cyreg.cy.getElementById('Smart Plating')"
+    page.select_node("Smart Plating")
+    assert page.js("document.getElementById('built-of').textContent") == "of 10"
+
+    # Some built: "4/10" on the node, which stays bright
+    page.js("""(() => {
+        const input = document.getElementById('built-count');
+        input.value = '4';
+        input.dispatchEvent(new Event('change'));
+    })()""")
+    assert page.saved_plan()["built"] == {"Smart Plating": {"count": 4, "recipe": "Smart Plating"}}
+    assert "4/10" in page.js(badges("Smart Plating"))
+    assert not page.js(f"{node}.hasClass('done')")
+    assert page.js("document.getElementById('built-hint').textContent") == "6 left to build."
+
+    # All built: faded, with a check
+    page.js("document.getElementById('built-all-btn').click()")
+    assert page.saved_plan()["built"]["Smart Plating"]["count"] == 10
+    assert page.js(f"{node}.hasClass('done')")
+    assert "/10" not in page.js(badges("Smart Plating"))
+    assert page.js("document.getElementById('built-all-btn').textContent") == "Not Built"
+
+    # The plan grows: no longer done, "10/15"
+    rows = "document.querySelectorAll('#demand-rows input[name=rates]')"
+    page.js(f"{rows}[0].value = '30'; document.getElementById('demand-form').requestSubmit()")
+    page.wait_until(f"{badges('Smart Plating')}.includes('10/15')")
+    assert not page.js(f"{node}.hasClass('done')")
+
+    # Built for another recipe: doesn't count, and the panel says so
+    switch_recipe(page, "Smart Plating", "Alternate: Plastic Smart Plating")
+    assert not page.js(f"{node}.hasClass('done')")
+    assert page.js("document.getElementById('built-hint').textContent").startswith("10 were marked built for Smart Plating")
+
+    # Undo goes back to the recipe they were built for
+    page.js("document.getElementById('undo-btn').click()")
+    page.wait_until(f"{badges('Smart Plating')}.includes('10/15')")
+
+    # Clear Built Marks
+    page.js("window.confirm = () => true; document.getElementById('clear-built-btn').click()")
+    assert page.saved_plan()["built"] == {}
+    assert "/15" not in page.js(badges("Smart Plating"))

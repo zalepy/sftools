@@ -13,6 +13,7 @@ export const state = {
     recipes: {},        // node_id -> recipe name
     splits: {},         // node_id -> number of parts
     byproducts: {},     // node_id -> 'use' | 'sink' | 'solve': what its by-products do (tickets 031, 032)
+    built: {},          // node_id -> {count, recipe}: buildings already built in the game (ticket 037)
     // Logistics mode: what's unlocked, and the logistics nodes the user edited ('<node id>|in' / '|out')
     logistics: { settings: { ...DEFAULT_LOGISTICS_SETTINGS }, layouts: {} },
     colors: {},         // item -> color
@@ -31,6 +32,7 @@ export function snapshot({ items, rates, inbound }) {
         recipes: state.recipes,
         splits: state.splits,
         byproducts: state.byproducts,
+        built: state.built,
         ...(MODE === 'logistics' && { logistics: state.logistics })
     };
 }
@@ -41,6 +43,7 @@ export function applySaved(saved) {
     state.recipes = saved.recipes || {};
     state.splits = saved.splits || {};
     state.byproducts = saved.byproducts || {};
+    state.built = saved.built || {};
     const logistics = saved.logistics || {};
     state.logistics = {
         settings: { ...DEFAULT_LOGISTICS_SETTINGS, ...logistics.settings },
