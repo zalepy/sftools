@@ -569,3 +569,13 @@ def test_selecting_opens_the_node_tab(page):
     assert page.js("document.querySelector('.tab.active').dataset.tab") == "node"
     # The plan-wide controls stay on the Planner tab
     assert page.js("document.getElementById('demand-form').closest('.tab-content').id") == "planner-tab"
+
+
+def test_clearing_clocks_removes_the_dashed_border(page):
+    page.open(page.base_url, plan())
+    node = "document.getElementById('cy')._cyreg.cy.getElementById('Smart Plating')"
+    page.select_node("Smart Plating")
+    page.js("document.getElementById('clock-all').value = '150'; document.getElementById('apply-clocks-btn').click()")
+    page.wait_until(f"{node}.hasClass('clocked')")
+    page.js("document.getElementById('clear-clocks-node-btn').click()")
+    page.wait_until(f"!{node}.hasClass('clocked')")

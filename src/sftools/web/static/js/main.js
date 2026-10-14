@@ -78,6 +78,8 @@ async function requestPlan({
         ...(logistics && { logistics: { settings: state.logistics.settings, layouts } })
     });
     state.byproducts = resolved;
+    // The dashed border shows the clocks of the plan just calculated; callers keep them in state afterwards
+    nodes.forEach(node => { node.clocks_set = Boolean(clocks[node.id]); });
     // Edited logistics nodes whose buildings or edges changed go back to the suggested layout
     if (logisticsResets.length) {
         logisticsResets.forEach(reset => delete layouts[reset.key]);

@@ -356,7 +356,7 @@ export function renderGraph(nodesData) {
         const label = `${node.output_item}${alternate}${part}\n${parseFloat(node.throughput).toFixed(2)}${of}/m\n(${made})${clockLine}${fluids}`;
         const color = colorFor(node.output_item);
         const classes = [
-            state.clocks[node.id] && 'clocked',
+            node.clocks_set && 'clocked',
             isExternalDemand(node) && 'external',
             node.is_supplied && 'supplied',
             node.sink && 'sink',
