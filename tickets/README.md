@@ -6,8 +6,9 @@
 |---|-------|------|-----|--------|
 | [027](027-optimize-branch.md) | "Optimize branch" with preview | feature | P3 | Parked |
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
+| [036](036-logistics-editing-issues.md) | Splitter/merger editing problems (logistics mode) | bug | P2 | Open (needs description) |
 
-027 is parked (breakdown agreed in the ticket). Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
+027 is parked (breakdown agreed in the ticket). 036 waits for a description of what fails. Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
@@ -48,3 +49,4 @@ Moved to [done/](done/).
 | [032](done/032-solve-byproduct-loops.md) | Solve by-product loops on request | feature | P3 | Done |
 | [033](done/033-logistics-mode.md) | Logistics mode (separate, advanced) | feature | P3 | Done |
 | [035](done/035-legend.md) | Legend | feature | P3 | Done |
+| [037](done/037-built-marks.md) | Mark buildings as built | feature | P3 | Done |

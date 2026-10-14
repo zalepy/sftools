@@ -1,6 +1,6 @@
 // Sidebar: demand rows, selected-node details, recipe picker, colors tab and the plan notice.
 import { fetchRecipes } from './api.js';
-import { getNodeData, clocksText, buildingsText } from './graph.js';
+import { getNodeData, clocksText, buildingsText, builtStatus } from './graph.js';
 import { state } from './state.js';
 
 const EPSILON = 0.0001;
@@ -316,9 +316,31 @@ export function showNodeDetails(data) {
     $('unmerge-btn').style.display = isMergeTarget ? 'block' : 'none';
 
     renderSplit(data);
+    renderBuilt(data);
     if (!fixed) populateRecipeSelector(data.output_item, data.recipe_name || data.name);
 
     $('node-details').style.display = 'block';
+}
+
+/** How many of the node's buildings are built (ticket 037); hidden on nodes without buildings. */
+export function renderBuilt(data) {
+    const status = builtStatus(data);
+    $('built-controls').style.display = status ? '' : 'none';
+    if (!status) return;
+    $('built-count').value = status.built || '';
+    $('built-of').innerText = `of ${status.needed}`;
+    const button = $('built-all-btn');
+    button.innerText = status.done ? 'Not Built' : 'All Built';
+    button.dataset.count = status.done ? 0 : status.needed;
+    $('built-hint').innerText = status.stale
+        ? `${status.stale.count} were marked built for ${status.stale.recipe}; this node now runs ${data.recipe_name}.`
+        : status.built > status.needed ? `${status.built - status.needed} more than the plan needs.`
+        : status.built > 0 && !status.done ? `${status.needed - status.built} left to build.` : '';
+}
+
+export function getBuiltCount() {
+    const count = parseInt($('built-count').value, 10);
+    return isNaN(count) || count < 0 ? 0 : count;
 }
 
 // Merged nodes can't be split: which branch's demand would go to which part?

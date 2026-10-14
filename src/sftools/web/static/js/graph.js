@@ -140,6 +140,11 @@ const cy = cytoscape({
             }
         },
         {
+            // All its buildings are built (ticket 037): faded, so what's left to build stands out
+            selector: '.done',
+            style: { 'opacity': 0.45 }
+        },
+        {
             // Logistics mode: a node's input (left) and output (right) logistics, with its number of
             // splitters and mergers (ticket 033)
             selector: '.lnode',
@@ -262,25 +267,57 @@ export function isExternalDemand(node) {
     return ((node.parent_demands || {})['External Demand'] || 0) > 0;
 }
 
-// Small dot in the top-right corner: blue = a whole building or more spare, green = surplus, red = shortage
-function indicatorImage(node) {
-    const surplus = parseFloat(node.building_scale) - parseFloat(node.ideal_building_scale);
-    let color = null;
-    if (surplus > 1 - EPSILON) {
-        color = '#3b82f6';
-    } else if (surplus > EPSILON) {
-        color = '#22c55e';
-    } else if (surplus < -EPSILON) {
-        color = '#ef4444';
-    }
-    if (!color) return null;
+/**
+ * Buildings needed and built (ticket 037), or null for nodes without buildings to build (inbound
+ * production, supplied from outside). Built counts are kept per recipe: after a recipe switch they no
+ * longer count, and `stale` holds the old mark.
+ */
+export function builtStatus(node) {
+    if (!node || node.inbound || node.is_supplied) return null;
+    const needed = node.clocks && node.clocks.length ? node.buildings : Math.ceil(parseFloat(node.building_scale) - EPSILON);
+    if (!(needed > 0)) return null;
+    const mark = state.built[node.id];
+    const current = mark && mark.recipe === node.recipe_name;
+    const built = current ? mark.count : 0;
+    return { needed, built, done: built >= needed, stale: mark && !current ? mark : null };
+}
 
-    const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="150" height="80">
-            <circle cx="140" cy="10" r="6" fill="${color}" />
-        </svg>
-    `;
+// Small dot in the top-right corner: blue = a whole building or more spare, green = surplus, red = shortage
+function statusColor(node) {
+    const surplus = parseFloat(node.building_scale) - parseFloat(node.ideal_building_scale);
+    if (surplus > 1 - EPSILON) return '#3b82f6';
+    if (surplus > EPSILON) return '#22c55e';
+    if (surplus < -EPSILON) return '#ef4444';
+    return null;
+}
+
+// Top-left: a check when all buildings are built, "6/8" when some are (and "10/8" past done)
+function builtBadge(node) {
+    const status = builtStatus(node);
+    if (!status || status.built === 0) return '';
+    const check = status.done
+        ? '<circle cx="12" cy="12" r="8" fill="#16a34a" /><path d="M8 12 l3 3 l5 -6" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round" />'
+        : '';
+    if (status.built === status.needed) return check;
+    const text = `${status.built}/${status.needed}`;
+    const x = status.done ? 24 : 4;
+    const width = 7 * text.length + 8;
+    return `${check}<rect x="${x}" y="4" width="${width}" height="16" rx="4" fill="#0f172a" fill-opacity="0.85" />` +
+        `<text x="${x + width / 2}" y="16" font-family="sans-serif" font-size="12" text-anchor="middle" fill="#e2e8f0">${text}</text>`;
+}
+
+/** The node's badges as an image (the status dot and the built mark), or null when it has none. */
+function badgeImage(node) {
+    const color = statusColor(node);
+    const parts = (color ? `<circle cx="140" cy="10" r="6" fill="${color}" />` : '') + builtBadge(node);
+    if (!parts) return null;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="150" height="80">${parts}</svg>`;
     return `data:image/svg+xml;base64,${btoa(svg)}`;
+}
+
+function isDone(node) {
+    const status = builtStatus(node);
+    return Boolean(status && status.done);
 }
 
 /** "10×", or "8 × 100% + 1 × 200%" when any building runs at another clock. */
@@ -304,7 +341,7 @@ export function renderGraph(nodesData) {
     const elements = [];
 
     nodesData.forEach(node => {
-        const indicator = indicatorImage(node);
+        const badges = badgeImage(node);
         const part = node.split ? ` [${node.split.part}/${node.split.count}]` : '';
         const alternate = node.is_alternate ? ' (A)' : '';
         // A fourth line only when some building runs at another clock than 100%
@@ -323,7 +360,8 @@ export function renderGraph(nodesData) {
             isExternalDemand(node) && 'external',
             node.is_supplied && 'supplied',
             node.sink && 'sink',
-            fluids && 'invalid'
+            fluids && 'invalid',
+            isDone(node) && 'done'
         ].filter(Boolean);
         elements.push({
             group: 'nodes',
@@ -333,7 +371,7 @@ export function renderGraph(nodesData) {
                 raw: node,
                 backgroundColor: color,
                 textColor: textColorOn(color),
-                ...(indicator && { backgroundImage: indicator })
+                ...(badges && { backgroundImage: badges })
             },
             classes
         });
@@ -454,6 +492,16 @@ export function refreshNodeColors() {
     cy.nodes().not('.lnode').forEach(node => {
         const color = colorFor(node.data('raw').output_item);
         node.data({ backgroundColor: color, textColor: textColorOn(color) });
+    });
+}
+
+/** Redraws the built marks after state.built changed; nothing else needs the server. */
+export function refreshBuilt() {
+    cy.nodes().not('.lnode').forEach(node => {
+        const raw = node.data('raw');
+        const badges = badgeImage(raw);
+        if (badges) node.data('backgroundImage', badges); else node.removeData('backgroundImage');
+        node.toggleClass('done', isDone(raw));
     });
 }
 

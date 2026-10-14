@@ -5,7 +5,7 @@ import {
     loadSavedColors, saveColors, dropIgnoredEntries, MODE, wrongMode
 } from './state.js';
 import {
-    renderGraph, refreshNodeColors, hasNodes, fitView, resizeGraph, getNodeData, onNodeSelected, reselectNode, onMergeDrop,
+    renderGraph, refreshNodeColors, refreshBuilt, hasNodes, fitView, resizeGraph, getNodeData, onNodeSelected, reselectNode, onMergeDrop,
     onByproductSelected, onLogisticsSelected, selectLogistics
 } from './graph.js';
 import * as panel from './panel.js';
@@ -203,6 +203,18 @@ async function mergeNodes(sourceId, targetId) {
     }
 }
 
+/** Records how many of a node's buildings are built (ticket 037); 0 removes the mark. Needs no server. */
+function setBuilt(nodeId, count) {
+    const data = getNodeData(nodeId);
+    if (!data) return;
+    const built = { ...state.built };
+    if (count > 0) built[nodeId] = { count, recipe: data.recipe_name }; else delete built[nodeId];
+    state.built = built;
+    refreshBuilt();
+    save();
+    panel.renderBuilt(data);
+}
+
 /** Uses a node's by-products as supply, sends them to the Sink, or solves the loop they'd close. */
 async function setByproductChoice(makerId, choice) {
     const byproducts = { ...state.byproducts, [makerId]: choice };
@@ -355,6 +367,16 @@ function clearMerges() {
     }
 }
 
+function clearBuilt() {
+    if (confirm("Clear all built marks? Every node counts as not built.")) {
+        state.built = {};
+        refreshBuilt();
+        save();
+        const data = getNodeData(state.selectedNodeId);
+        if (data) panel.renderBuilt(data);
+    }
+}
+
 async function importPlan(input) {
     const file = input.files[0];
     if (!file) return;
@@ -420,6 +442,9 @@ $('import-btn').addEventListener('click', () => $('import-input').click());
 $('import-input').addEventListener('change', e => importPlan(e.target));
 $('clear-clocks-btn').addEventListener('click', clearAllClocks);
 $('clear-merges-btn').addEventListener('click', clearMerges);
+$('clear-built-btn').addEventListener('click', clearBuilt);
+$('built-count').addEventListener('change', () => setBuilt(state.selectedNodeId, panel.getBuiltCount()));
+$('built-all-btn').addEventListener('click', e => setBuilt(state.selectedNodeId, parseInt(e.target.dataset.count, 10)));
 
 $('apply-clocks-btn').addEventListener('click', applyClocks);
 $('clear-clocks-node-btn').addEventListener('click', clearClocks);

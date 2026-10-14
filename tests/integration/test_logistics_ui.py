@@ -111,3 +111,12 @@ def test_a_change_that_breaks_an_edited_layout_resets_it(page):
     page.js(f"{rows}[0].value = '10'; document.querySelector('#demand-form button[type=submit]').click()")
     page.wait_until("document.getElementById('toast').textContent.startsWith('Logistics reset')")
     assert f"{BEAM}|out" not in saved(page)["logistics"]["layouts"]
+
+
+def test_marking_buildings_built(page):
+    open_logistics(page)
+    page.select_node(BEAM)
+    page.js("document.getElementById('built-all-btn').click()")
+    assert saved(page)["built"][BEAM]["count"] == 5
+    assert page.js(f"{CY}.getElementById({json.dumps(BEAM)}).hasClass('done')")
+    assert not page.js(f"{CY}.getElementById({json.dumps(BEAM + '|out')}).hasClass('done')")  # production nodes only
