@@ -6,6 +6,21 @@ import { state } from './state.js';
 const EPSILON = 0.0001;
 const $ = id => document.getElementById(id);
 
+// --- Tabs ---
+
+/** Shows a tab of the side panel: 'planner', 'node' or 'colors'. */
+export function showTab(tabId) {
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.tab === tabId));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.toggle('active', content.id === `${tabId}-tab`));
+}
+
+// The Node tab says what to click while nothing is selected
+function updateNodeEmpty() {
+    const shown = ['node-details', 'byproduct-details', 'logistics-details']
+        .some(id => $(id) && $(id).style.display === 'block');
+    $('node-empty').hidden = shown;
+}
+
 // --- Demand and inbound rows ---
 
 const demandRows = $('demand-rows');
@@ -320,6 +335,7 @@ export function showNodeDetails(data) {
     if (!fixed) populateRecipeSelector(data.output_item, data.recipe_name || data.name);
 
     $('node-details').style.display = 'block';
+    updateNodeEmpty();
 }
 
 /** How many of the node's buildings are built (ticket 037); hidden on nodes without buildings. */
@@ -383,11 +399,13 @@ export function showLogisticsDetails(node, side) {
     zoom.dataset.node = node.id;
     zoom.dataset.side = side;
     $('logistics-details').style.display = 'block';
+    updateNodeEmpty();
 }
 
 export function hideLogisticsDetails() {
     const section = $('logistics-details');
     if (section) section.style.display = 'none';
+    updateNodeEmpty();
 }
 
 // --- Selected by-product (an edge from its maker) ---
@@ -433,15 +451,18 @@ export function showByproductDetails(maker) {
     solve.dataset.maker = maker.id;
     solve.dataset.choice = choice === 'solve' ? 'use' : 'solve';
     $('byproduct-details').style.display = 'block';
+    updateNodeEmpty();
 }
 
 export function hideByproductDetails() {
     $('byproduct-details').style.display = 'none';
+    updateNodeEmpty();
 }
 
 export function hideNodeDetails() {
     $('node-details').style.display = 'none';
     state.selectedNodeId = null;
+    updateNodeEmpty();
 }
 
 /** Clock groups from the boxes (percent), or null for the default (all at 100%). */

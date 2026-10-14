@@ -553,3 +553,19 @@ def test_new_plan_clears_everything_and_undo_brings_it_back(page):
 
     page.js("document.getElementById('redo-btn').click()")
     page.wait_until("document.getElementById('cy')._cyreg.cy.nodes().length === 0")
+
+
+def test_selecting_opens_the_node_tab(page):
+    page.open(page.base_url, plan())
+    active = "document.querySelector('.tab-content.active').id"
+    assert page.js(active) == "planner-tab"
+    page.js("document.querySelector('.tab[data-tab=node]').click()")
+    assert not page.js("document.getElementById('node-empty').hidden")  # nothing selected yet
+
+    page.js("document.querySelector('.tab[data-tab=planner]').click()")
+    page.select_node("Smart Plating")
+    assert page.js(active) == "node-tab"
+    assert page.js("document.getElementById('node-empty').hidden")
+    assert page.js("document.querySelector('.tab.active').dataset.tab") == "node"
+    # The plan-wide controls stay on the Planner tab
+    assert page.js("document.getElementById('demand-form').closest('.tab-content').id") == "planner-tab"

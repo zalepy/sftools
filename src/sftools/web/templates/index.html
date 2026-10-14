@@ -41,6 +41,7 @@
         <div class="sidebar" id="sidebar">
             <div class="tabs">
                 <div class="tab active" data-tab="planner">Planner</div>
+                <div class="tab" data-tab="node">Node</div>
                 <div class="tab" data-tab="colors">Colors</div>
             </div>
 
@@ -116,7 +117,14 @@
                     </div>
                     <label class="settings-check"><input type="checkbox" id="smart-splitters" checked> Smart and programmable splitters</label>
                 </section>
+                {% endif %}
+            </div>
 
+            <!-- Node Tab: what's selected in the graph (ticket 038) -->
+            <div id="node-tab" class="tab-content">
+                <p id="node-empty" class="hint">Click a node, a by-product edge{% if mode == 'logistics' %} or a logistics node{% endif %} in the graph to see and change it here.</p>
+
+                {% if mode == 'logistics' %}
                 <!-- Logistics side details (a selected logistics node) -->
                 <section id="logistics-details">
                     <h3 id="logistics-title">Logistics</h3>
