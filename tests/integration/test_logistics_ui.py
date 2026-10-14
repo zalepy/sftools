@@ -120,3 +120,10 @@ def test_marking_buildings_built(page):
     assert saved(page)["built"][BEAM]["count"] == 5
     assert page.js(f"{CY}.getElementById({json.dumps(BEAM)}).hasClass('done')")
     assert not page.js(f"{CY}.getElementById({json.dumps(BEAM + '|out')}).hasClass('done')")  # production nodes only
+
+
+def test_new_plan_keeps_the_settings(page):
+    open_logistics(page, {**BEAMS, "logistics": {"settings": {"belt_tier": 2, "pipe_tier": 1, "smart": False}, "layouts": {}}})
+    page.js("window.confirm = () => true; document.getElementById('new-plan-btn').click()")
+    assert saved(page)["items"] == []
+    assert saved(page)["logistics"] == {"settings": {"belt_tier": 2, "pipe_tier": 1, "smart": False}, "layouts": {}}
