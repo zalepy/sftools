@@ -40,7 +40,7 @@ async function showHistoryStep(plan) {
     applySaved(plan);
     if (MODE === 'logistics') showLogisticsSettings();
     try {
-        render(await requestPlan());
+        render(plan.items && plan.items.length ? await requestPlan() : []);
         save();
         if (selected && getNodeData(selected)) reselectNode(selected); else panel.hideNodeDetails();
     } catch (e) {
@@ -367,6 +367,20 @@ function clearMerges() {
     }
 }
 
+/** Starts a fresh plan: no demands, inbound production or adjustments. Logistics settings stay; undo brings it back. */
+function newPlan() {
+    if (!confirm("Start a new plan? This clears the demands, inbound production and every adjustment. Undo brings the plan back.")) return;
+    if (logisticsView && logisticsView.isOpen()) logisticsView.closeView();
+    panel.setDemands();
+    applySaved({ logistics: { settings: state.logistics.settings } });
+    panel.hideNodeDetails();
+    panel.hideByproductDetails();
+    panel.hideLogisticsDetails();
+    panel.hidePlanNotice();
+    renderGraph([]);
+    save();
+}
+
 function clearBuilt() {
     if (confirm("Clear all built marks? Every node counts as not built.")) {
         state.built = {};
@@ -437,6 +451,7 @@ $('demand-form').addEventListener('submit', e => {
 });
 $('add-row-btn').addEventListener('click', panel.addRow);
 $('add-inbound-btn').addEventListener('click', panel.addInboundRow);
+$('new-plan-btn').addEventListener('click', newPlan);
 $('export-btn').addEventListener('click', () => downloadPlan(currentPlan()));
 $('import-btn').addEventListener('click', () => $('import-input').click());
 $('import-input').addEventListener('change', e => importPlan(e.target));

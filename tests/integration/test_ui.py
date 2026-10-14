@@ -533,3 +533,23 @@ def test_marking_buildings_built(page):
     page.js("window.confirm = () => true; document.getElementById('clear-built-btn').click()")
     assert page.saved_plan()["built"] == {}
     assert "/15" not in page.js(badges("Smart Plating"))
+
+
+def test_new_plan_clears_everything_and_undo_brings_it_back(page):
+    page.open(page.base_url, plan(recipes={RIP_SP: "Alternate: Bolted Iron Plate"}, inbound=[{"item": "Screws", "rate": 10}],
+                                  built={"Smart Plating": {"count": 1, "recipe": "Smart Plating"}}))
+    page.select_node("Smart Plating")
+    page.js("window.confirm = () => true; document.getElementById('new-plan-btn').click()")
+    saved = page.saved_plan()
+    assert (saved["items"], saved["inbound"], saved["recipes"], saved["built"]) == ([], [], {}, {})
+    assert page.node_ids() == []
+    assert page.js("document.getElementById('node-details').style.display") == "none"
+    assert page.js("document.querySelectorAll('#demand-rows .demand-row').length") == 1
+
+    page.js("document.getElementById('undo-btn').click()")
+    page.wait_until("document.getElementById('cy')._cyreg.cy.nodes().length > 0")
+    assert page.saved_plan()["recipes"] == {RIP_SP: "Alternate: Bolted Iron Plate"}
+    assert page.saved_plan()["items"] == ["Smart Plating", "Modular Frame"]
+
+    page.js("document.getElementById('redo-btn').click()")
+    page.wait_until("document.getElementById('cy')._cyreg.cy.nodes().length === 0")
