@@ -148,10 +148,8 @@ button:disabled {
     margin-bottom: 0.5rem;
 }
 
-/* Node Details Panel; By-product Details (a selected by-product edge); Logistics Details */
+/* Node tab: Node Details; By-product Details (a selected by-product edge); Logistics Details. One at a time. */
 #node-details, #byproduct-details, #logistics-details {
-    border-top: 1px solid var(--border);
-    padding-top: 1rem;
     display: none;
 }
 

@@ -50,3 +50,4 @@ Moved to [done/](done/).
 | [033](done/033-logistics-mode.md) | Logistics mode (separate, advanced) | feature | P3 | Done |
 | [035](done/035-legend.md) | Legend | feature | P3 | Done |
 | [037](done/037-built-marks.md) | Mark buildings as built | feature | P3 | Done |
+| [038](done/038-node-tab.md) | Node tab in the side panel | feature | P3 | Done |

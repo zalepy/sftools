@@ -344,6 +344,7 @@ function wireLogistics() {
         panel.hideNodeDetails();
         panel.hideByproductDetails();
         panel.showLogisticsDetails(getNodeData(nodeId), side);
+        panel.showTab('node');
     });
     $('logistics-zoom-btn').addEventListener('click', e => zoomIn(e.target.dataset.node, e.target.dataset.side));
     ['belt-tier', 'pipe-tier', 'smart-splitters'].forEach(id => $(id).addEventListener('change', changeLogisticsSettings));
@@ -430,13 +431,10 @@ function saveColorChanges() {
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
         const tabId = tab.dataset.tab;
-        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-        tab.classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        $(`${tabId}-tab`).classList.add('active');
+        panel.showTab(tabId);
 
         // Colors may have changed on the colors tab
-        if (tabId === 'planner' && hasNodes()) {
+        if (tabId !== 'colors' && hasNodes()) {
             refreshNodeColors();
         }
     });
@@ -493,11 +491,13 @@ onNodeSelected(data => {
     panel.hideByproductDetails();
     panel.hideLogisticsDetails();
     panel.showNodeDetails(data);
+    panel.showTab('node');
 });
 onByproductSelected(makerId => {
     panel.hideNodeDetails();
     panel.hideLogisticsDetails();
     panel.showByproductDetails(getNodeData(makerId));
+    panel.showTab('node');
 });
 if (logisticsView) wireLogistics();
 ['byproduct-toggle-btn', 'byproduct-solve-btn'].forEach(id => $(id).addEventListener('click', e => {
