@@ -4,11 +4,10 @@
 
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
-| [027](027-optimize-branch.md) | "Optimize branch" with preview | feature | P3 | Parked |
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
 | [036](036-logistics-editing-issues.md) | Splitter/merger editing problems (logistics mode) | bug | P2 | Open (needs description) |
 
-027 is parked (breakdown agreed in the ticket). 036 waits for a description of what fails. Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
+036 waits for a description of what fails. Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
@@ -42,6 +41,7 @@ Moved to [done/](done/).
 | [024](done/024-byproducts-to-sink.md) | By-products go to a Sink node | feature | P2 | Done |
 | [025](done/025-exact-recipe-rates.md) | Recipe rates rounded to two decimals | data bug | P2 | Done |
 | [026](done/026-undo-redo.md) | Undo and redo of plan changes | feature | P2 | Done |
+| [027](done/027-optimize-branch.md) | "Optimize branch" with preview | feature | P3 | Won't do |
 | [028](done/028-belts-and-pipes.md) | Belt and pipe capacity (logistics mode) | feature | P3 | Done |
 | [029](done/029-cleanup-after-clocks.md) | Cleanup: API round-up, fixed scales, legacy engine paths and tests | debt | P2 | Done |
 | [030](done/030-inbound-production.md) | Inbound production | feature | P2 | Done |
