@@ -1,6 +1,8 @@
 # 027 — "Optimize branch" with preview
 
-**Type:** feature · **Priority:** P3 · **Status:** Parked · **Depends on:** 023, 026 · **Related:** 028
+**Type:** feature · **Priority:** P3 · **Status:** Won't do · **Depends on:** 023, 026 · **Related:** 028
+
+> **Won't do (2026-10-15).** An optimization only fits an initial plan. Most final layouts are a mix: some branches are optimized for one thing, others for another. Supporting that would need new layers in the plan (which branch optimizes for what) so each could be targeted on its own, which is overkill for this tool. It's also part of why the game is fun: it's rich in ways to foil the plans, and optimizing further takes that away. The design and breakdown below are kept for reference.
 
 ## Goal
 The tool computes optimizations only when asked, on a part of the plan the user picks, and shows them before anything changes.
