@@ -31,7 +31,8 @@ SPLITTER, MERGER, OVERFLOW = "splitter", "merger", "overflow"
 PARTS = (SPLITTER, MERGER, OVERFLOW, BUFFER)  # what the user can add
 PORTS = {  # (max belts in, max belts out); None: any number
     SPLITTER: (1, 3), OVERFLOW: (1, 3), MERGER: (3, 1), BUFFER: (None, 0),
-}  # buildings: one belt for each item; entries and exits: as many as their rate needs (see _ports)
+}  # buildings: one belt for each item; entries and exits: see _ports
+JOIN = 3  # an exit merges up to 3 belts onto each of its lines, an entry splits each line into up to 3 (ticket 036)
 
 
 @dataclass
@@ -129,7 +130,8 @@ def side_specs(nodes: List[Dict], is_fluid) -> Dict[str, Dict]:
 def fixed_nodes(spec: Dict, settings: Settings, is_fluid) -> List[Dict]:
     """
     The nodes the plan gives a side: buildings, and entries (in) or exits (out), per item. An entry or
-    exit is an edge of the production graph: `lines` is how many belts it takes (see belts_needed).
+    exit is an edge of the production graph: `lines` is how many belts it is (see belts_needed). An exit
+    has a merger built in, so it takes up to JOIN belts per line; an entry a splitter, with as many out.
     """
     result = []
     for item, sub in spec["items"].items():
@@ -194,6 +196,12 @@ class _Builder:
             rest, current = rest[2:], following
         return current
 
+    def combine_to(self, sources: List[str], count: int, item: str) -> List[str]:
+        """At most `count` nodes that carry all the sources: the first ones as they are, the rest merged."""
+        if len(sources) <= count:
+            return list(sources)
+        return sources[:count - 1] + [self.combine(sources[count - 1:], item)]
+
     def _open_merger(self, node_id: str) -> bool:
         return any(n["id"] == node_id and n["kind"] == MERGER for n in self.nodes) and             not any(b["from"] == node_id for b in self.belts)
 
@@ -243,7 +251,7 @@ def default_layout(spec: Dict, settings: Settings, is_fluid) -> Dict:
         if spec["side"] == "out":
             buildings = sorted(((f"{b}|{item}", rate) for b, rate in sub["sources"]), key=lambda b: -b[1])
             exits = sorted(((f"x|{target}|{item}", rate) for target, rate, _ in sub["sinks"]), key=lambda e: -e[1])
-            feeds: Dict[str, List[str]] = {exit_id: [] for exit_id, _ in exits}  # what each exit's belts take
+            feeds: Dict[str, List[List[str]]] = {exit_id: [] for exit_id, _ in exits}  # belt-loads for each exit
             short = []
             for exit_id, rate in exits:
                 group, total = [], 0.0
@@ -253,21 +261,23 @@ def default_layout(spec: Dict, settings: Settings, is_fluid) -> Dict:
                         total += building[1]
                         buildings.remove(building)
                 for chunk in _chunks(group, capacity):
-                    feeds[exit_id].append(builder.combine([b for b, _ in chunk], item))
+                    feeds[exit_id].append([b for b, _ in chunk])
                 if rate - total > EPSILON:
                     short.append(exit_id)
             if buildings and short:
                 for chunk in _chunks(buildings, capacity):
                     for exit_id, source in _fan_out(builder, builder.combine([b for b, _ in chunk], item), short, item):
-                        feeds[exit_id].append(source)
+                        feeds[exit_id].append([source])
             elif buildings and exits:
                 for chunk in _chunks(buildings, capacity):  # surplus: onto the largest exit, where it backs up
-                    feeds[exits[0][0]].append(builder.combine([b for b, _ in chunk], item))
-            for exit_id, rate in exits:  # one belt per belt-load of the exit's rate
+                    feeds[exits[0][0]].append([b for b, _ in chunk])
+            for exit_id, rate in exits:  # per belt-load of the exit's rate, up to JOIN belts into its merger
                 lines = belts_needed(rate, is_fluid(item), settings)["count"]
                 sources = feeds[exit_id]
                 for line in range(min(lines, len(sources))):
-                    builder.belt(builder.combine(sources[line::lines], item), exit_id)
+                    loads = [source for load in sources[line::lines] for source in load]
+                    for source in builder.combine_to(loads, JOIN, item):
+                        builder.belt(source, exit_id)
         else:
             entries = [(f"e|{source}|{item}", rate) for source, rate in sub["sources"]]
             buildings = [(f"{b}|{item}", rate) for b, rate, _ in sub["sinks"]]
@@ -357,9 +367,9 @@ def _ports(node: Dict, side: str) -> Tuple[Optional[int], Optional[int]]:
     if node["kind"] == BUILDING:  # one port for the item
         return (0, 1) if side == "out" else (1, 0)
     if node["kind"] == EXIT:
-        return node["lines"], 0
+        return node["lines"] * JOIN, 0
     if node["kind"] == ENTRY:
-        return 0, node["lines"]
+        return 0, node["lines"] * JOIN
     return PORTS[node["kind"]]
 
 
@@ -487,10 +497,23 @@ def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid) -> Dict:
     return {
         "nodes": list(nodes.values()),
         "belts": belts,
-        "complexity": sum(1 for n in nodes.values() if n["kind"] in (SPLITTER, MERGER, OVERFLOW)),
+        "complexity": _complexity(nodes, ins, outs),
         "warnings": warnings,
         "backed_up": max(0.0, backed_up),
     }
+
+
+def _complexity(nodes: Dict[str, Dict], ins: Dict[str, List], outs: Dict[str, List]) -> int:
+    """Splitters and mergers, counting an exit that merges belts or an entry that splits as one each per line."""
+    count = 0
+    for node_id, node in nodes.items():
+        if node["kind"] in (SPLITTER, MERGER, OVERFLOW):
+            count += 1
+        elif node["kind"] == EXIT and len(ins[node_id]) > node["lines"]:
+            count += len(ins[node_id]) - node["lines"] if node["lines"] > 1 else 1
+        elif node["kind"] == ENTRY and len(outs[node_id]) > node["lines"]:
+            count += len(outs[node_id]) - node["lines"] if node["lines"] > 1 else 1
+    return count
 
 
 def _name(node: Dict) -> str:

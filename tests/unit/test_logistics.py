@@ -52,11 +52,12 @@ def test_output_side_groups_buildings_by_destination(client):
     framework, encased = "x|Versatile Framework|Steel Beam", "x|Encased Industrial Beam|Steel Beam"
     assert flows_into(out, framework) == pytest.approx(30)
     assert flows_into(out, encased) == pytest.approx(36)
-    assert out["complexity"] == 2 and all(n["kind"] == MERGER for n in out["nodes"] if n["kind"] in (MERGER, SPLITTER))
+    # Each exit merges its buildings' belts itself (ticket 036): two mergers, no separate parts
+    assert out["complexity"] == 2 and not [n for n in out["nodes"] if n["kind"] in (MERGER, SPLITTER)]
     assert out["backed_up"] == pytest.approx(9)  # 75 made, 66 used: the buildings idle a little
     assert out["warnings"] == [] and not out["edited"]
-    # each exit takes one belt
-    assert [b["to"] for b in out["belts"]].count(framework) == 1
+    # Constructors 3 and 4 straight into the Versatile Framework exit
+    assert [b["to"] for b in out["belts"]].count(framework) == 2
 
 
 def test_input_side_is_a_manifold(client):
@@ -133,3 +134,17 @@ def test_overflow_splitter_fills_its_main_output_first():
     result = simulate(plain, spec, Settings(), not_fluid)
     assert flows_into(result, "x|Motor|Rotor") == pytest.approx(5)
     assert result["warnings"] == ["Exit to Motor gets 5.00 of 6.00/min"]
+
+
+def test_an_exit_merges_up_to_three_belts_per_line():
+    """Ticket 036: an exit has a merger built in, counted with the splitters and mergers."""
+    spec = {"side": "out", "items": {"Rotor": {"sources": [(f"b{i}", 4.0) for i in range(1, 5)],
+                                               "sinks": [("Motor", 16.0, "Motor")]}}}
+    fixed = [f"b{i}|Rotor" for i in range(1, 5)] + ["x|Motor|Rotor"]
+    three = {"fixed": fixed, "nodes": [], "belts": [{"from": f"b{i}|Rotor", "to": "x|Motor|Rotor"} for i in range(1, 4)]}
+    assert validate(three, spec, Settings(), not_fluid) is None
+    assert simulate(three, spec, Settings(), not_fluid)["complexity"] == 1
+    four = {**three, "belts": three["belts"] + [{"from": "b4|Rotor", "to": "x|Motor|Rotor"}]}
+    assert validate(four, spec, Settings(), not_fluid) == "too many belts into x|Motor|Rotor"
+    one = {**three, "belts": three["belts"][:1]}
+    assert simulate(one, spec, Settings(), not_fluid)["complexity"] == 0

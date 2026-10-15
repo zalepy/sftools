@@ -33,6 +33,16 @@ def lcy_position(page, node_id):
     }})()""")
 
 
+def dot_position(page, node_id):
+    """A free output dot of the node, where belts are dragged from."""
+    return lcy_position(page, f"__dot|{node_id}|0")
+
+
+def fit(page):
+    """The whole side in view, so every node can be reached with the mouse."""
+    page.js(f"void {LCY}.fit(undefined, 30)")
+
+
 def test_logistics_page_is_its_own_mode(page):
     open_logistics(page)
     assert page.js("document.body.dataset.mode") == "logistics"
@@ -65,12 +75,29 @@ def test_settings_change_the_belts(page):
     assert page.js(f"{edge}.hasClass('multi')")
 
 
+def click(page, position):
+    x, y = position
+    page.send("Input.dispatchMouseEvent", type="mouseMoved", x=x, y=y)
+    page.send("Input.dispatchMouseEvent", type="mousePressed", x=x, y=y, button="left", clickCount=1)
+    page.send("Input.dispatchMouseEvent", type="mouseReleased", x=x, y=y, button="left", clickCount=1)
+    page.wait(0.2)
+
+
+def belts_between(source, target):
+    return f"{LCY}.edges().filter(e => e.source().id() === {json.dumps(source)} && e.target().id() === {json.dumps(target)}).length"
+
+
 def test_editing_a_logistics_node(page):
+    framework, encased = "x|Versatile Framework|Steel Beam", "x|Encased Industrial Beam|Steel Beam"
     open_logistics(page)
     zoom_in(page)
     assert page.js("document.getElementById('lv-title').textContent").startswith("Output logistics: Steel Beam")
+    # Buildings on the left, exits on the right; the exits merge the buildings' belts themselves
+    xs = page.js(f"{LCY}.nodes('.real').map(n => [n.data('raw').kind, n.position().x])")
+    assert max(x for kind, x in xs if kind == "building") < min(x for kind, x in xs if kind == "exit")
+    assert page.js(belts_between("b5|Steel Beam", encased)) == 1
 
-    # Take Constructor 5 off the Encased Beam merger, onto a buffer
+    # Take Constructor 5 off the Encased Beam exit, onto a buffer: a belt from its output dot
     page.js(f"void {LCY}.edges().filter(e => e.source().id() === 'b5|Steel Beam').select()")
     page.js("document.getElementById('lv-delete').click()")
     page.wait_until(f"{LCY}.edges().filter(e => e.source().id() === 'b5|Steel Beam').length === 0")
@@ -78,23 +105,43 @@ def test_editing_a_logistics_node(page):
     page.js("document.querySelector('.lv-add[data-kind=buffer]').click()")
     page.wait_until(f"{LCY}.nodes('.buffer').length === 1")
     buffer = page.js(f"{LCY}.nodes('.buffer')[0].id()")
-    page.drag(lcy_position(page, "b5|Steel Beam"), lcy_position(page, buffer))
-    page.wait_until(f"{LCY}.edges().filter(e => e.source().id() === 'b5|Steel Beam').length === 1")
-
+    fit(page)
+    page.drag(dot_position(page, "b5|Steel Beam"), lcy_position(page, buffer))
+    page.wait_until(belts_between("b5|Steel Beam", buffer) + " === 1")
     assert page.js("document.getElementById('lv-warnings').textContent") == \
         "Exit to Encased Industrial Beam gets 30.00 of 36.00/min"  # Constructors 1 and 2 only
     assert page.js(f"{CY}.getElementById({json.dumps(BEAM + '|out')}).hasClass('warn')")
 
-    # A belt the parts can't take is refused, and nothing changes
-    page.drag(lcy_position(page, buffer), lcy_position(page, "b1|Steel Beam"))
-    page.wait_until("document.getElementById('toast').textContent === 'Constructor 1 takes no belts in.'")
-    assert page.js(f"{LCY}.edges().filter(e => e.source().id() === {json.dumps(buffer)}).length") == 0
+    # A part is selected by clicking it
+    click(page, lcy_position(page, buffer))
+    assert page.js(f"{LCY}.$(':selected').map(e => e.id())") == [buffer]
 
-    # Reset: back to the suggested layout
+    # Move a belt: drag the end of Constructor 1's belt to the Versatile Framework exit
+    fit(page)
+    page.js(f"void {LCY}.$(':selected').unselect(); void {LCY}.edges().filter(e => e.source().id() === 'b1|Steel Beam').select()")
+    page.drag(lcy_position(page, "__end|to"), lcy_position(page, framework))
+    page.wait_until(belts_between("b1|Steel Beam", framework) + " === 1")
+    # That exit now merges three belts, so a fourth is refused, and nothing changes
+    page.js(f"void {LCY}.$(':selected').unselect(); void {LCY}.edges().filter(e => e.source().id() === 'b2|Steel Beam').select()")
+    page.drag(lcy_position(page, "__end|to"), lcy_position(page, framework))
+    page.wait_until("document.getElementById('toast').textContent === "
+                    "'to Versatile Framework (demand) merges up to 3 belts, and has them all.'")
+    assert page.js(belts_between("b2|Steel Beam", encased)) == 1
+
+    # Nodes move, and stay where they're put
+    fit(page)
+    before = page.js(f"{LCY}.getElementById('b3|Steel Beam').position()")
+    x, y = lcy_position(page, "b3|Steel Beam")
+    page.drag((x, y), (x, y + 60))
+    stored = saved(page)["logistics"]["positions"][f"{BEAM}|out"]["b3|Steel Beam"]
+    assert stored["y"] > before["y"] + 20
+
+    # Reset: back to the suggested layout, drawn as suggested
     page.js("document.getElementById('lv-reset').click()")
     layouts = f"JSON.parse(localStorage.getItem({json.dumps(KEY)})).logistics.layouts"
     page.wait_until(f"!({json.dumps(BEAM + '|out')} in {layouts})")
     assert page.js("document.getElementById('lv-warnings').textContent") == ""
+    assert f"{BEAM}|out" not in saved(page)["logistics"]["positions"]
 
     page.send("Input.dispatchKeyEvent", type="keyDown", key="Escape", code="Escape", windowsVirtualKeyCode=27)
     page.wait_until("document.getElementById('logistics-view').hidden")
@@ -104,7 +151,7 @@ def test_a_change_that_breaks_an_edited_layout_resets_it(page):
     open_logistics(page)
     zoom_in(page)
     page.js("document.querySelector('.lv-add[data-kind=merger]').click()")  # an edit, so the layout is stored
-    page.wait_until(f"{LCY}.nodes('.merger').length === 3")
+    page.wait_until(f"{LCY}.nodes('.merger').length === 1")
     page.js("document.getElementById('lv-back').click()")
 
     rows = "document.querySelectorAll('#demand-rows input[name=rates]')"
@@ -126,4 +173,4 @@ def test_new_plan_keeps_the_settings(page):
     open_logistics(page, {**BEAMS, "logistics": {"settings": {"belt_tier": 2, "pipe_tier": 1, "smart": False}, "layouts": {}}})
     page.js("window.confirm = () => true; document.getElementById('new-plan-btn').click()")
     assert saved(page)["items"] == []
-    assert saved(page)["logistics"] == {"settings": {"belt_tier": 2, "pipe_tier": 1, "smart": False}, "layouts": {}}
+    assert saved(page)["logistics"] == {"settings": {"belt_tier": 2, "pipe_tier": 1, "smart": False}, "layouts": {}, "positions": {}}
