@@ -82,7 +82,10 @@ async function requestPlan({
     nodes.forEach(node => { node.clocks_set = Boolean(clocks[node.id]); });
     // Edited logistics nodes whose buildings or edges changed go back to the suggested layout
     if (logisticsResets.length) {
-        logisticsResets.forEach(reset => delete layouts[reset.key]);
+        logisticsResets.forEach(reset => {
+            delete layouts[reset.key];
+            delete state.logistics.positions[reset.key];
+        });
         const names = logisticsResets.map(reset => {
             const [nodeId, side] = reset.key.split('|');
             return `${panel.nodeLabel(nodeId)} (${side === 'out' ? 'output' : 'input'})`;
@@ -324,6 +327,7 @@ async function setLayout(nodeId, side, layout) {
     const key = `${nodeId}|${side}`;
     const layouts = { ...state.logistics.layouts };
     if (layout) layouts[key] = layout; else delete layouts[key];
+    if (!layout) delete state.logistics.positions[key];  // the suggested layout, drawn as suggested
     try {
         render(await requestPlan({ layouts }));
         state.logistics.layouts = layouts;
@@ -338,7 +342,7 @@ async function setLayout(nodeId, side, layout) {
 function zoomIn(nodeId, side) {
     const node = getNodeData(nodeId);
     if (!node) return;
-    logisticsView.openView(node, side, layout => setLayout(nodeId, side, layout), panel.nodeLabel);
+    logisticsView.openView(node, side, layout => setLayout(nodeId, side, layout), panel.nodeLabel, save);
 }
 
 function wireLogistics() {
