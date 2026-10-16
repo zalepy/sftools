@@ -7,8 +7,9 @@ const BOOK_KEY = MODE === 'logistics' ? 'sf_logistics_book' : 'sf_planner_book';
 
 const $ = id => document.getElementById(id);
 
-let book = null;  // { tabs: [{ id, name, plan }], active }
-let handlers = null;  // { onSwitch(id), onClose(id), onAdd(), onDuplicate() }
+let book = null;  // { tabs: [{ id, name, plan }], active, chain: { links, positions } }
+let chainShown = false;  // the chain tab (ticket 040) is shown instead of the active plan
+let handlers = null;  // { onSwitch(id), onClose(id), onAdd(), onDuplicate(), onChain() }
 
 export function newTabId() {
     return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -35,7 +36,21 @@ export function loadBook() {
         book = { tabs: [{ id, name: 'Plan 1', plan: loadSavedPlan() }], active: id };
     }
     if (!book.tabs.some(t => t.id === book.active)) book.active = book.tabs[0].id;
+    book.chain = cleanChain(book.chain);
     return book;
+}
+
+/** The chain tab's links between plans and where their boxes are (ticket 040), checked. */
+export function cleanChain(chain) {
+    const end = e => e && typeof e.tab === 'string' && typeof e.item === 'string';
+    return {
+        links: (chain && Array.isArray(chain.links) ? chain.links : []).filter(l => l && end(l.from) && end(l.to)),
+        positions: chain && chain.positions && typeof chain.positions === 'object' ? chain.positions : {}
+    };
+}
+
+export function saveBook() {
+    store();
 }
 
 function store() {
@@ -78,8 +93,8 @@ export function addTab(plan, name = freeName()) {
 }
 
 /** Replaces the whole book (Load Book). */
-export function replaceBook(tabs, active) {
-    book = { tabs, active: tabs.some(t => t.id === active) ? active : tabs[0].id };
+export function replaceBook(tabs, active, chain) {
+    book = { tabs, active: tabs.some(t => t.id === active) ? active : tabs[0].id, chain: cleanChain(chain) };
     store();
     render();
 }
@@ -88,6 +103,9 @@ export function replaceBook(tabs, active) {
 export function removeTab(id) {
     const at = book.tabs.findIndex(t => t.id === id);
     book.tabs.splice(at, 1);
+    // Its links go with it
+    book.chain.links = book.chain.links.filter(l => l.from.tab !== id && l.to.tab !== id);
+    delete book.chain.positions[id];
     if (book.active !== id) {
         store();
         render();
@@ -114,13 +132,14 @@ export function initTabs(callbacks) {
     strip.addEventListener('click', e => {
         const tab = e.target.closest('.plan-tab');
         if (e.target.closest('.plan-tab-close')) handlers.onClose(tab.dataset.id);
-        else if (tab && !e.target.closest('input') && tab.dataset.id !== book.active) handlers.onSwitch(tab.dataset.id);
+        else if (tab && !e.target.closest('input')) handlers.onSwitch(tab.dataset.id);
     });
     strip.addEventListener('dblclick', e => {
         const name = e.target.closest('.plan-tab-name');
         if (name) startRename(name.closest('.plan-tab').dataset.id);
     });
     $('add-tab-btn').addEventListener('click', () => handlers.onAdd());
+    $('chain-tab-btn').addEventListener('click', () => handlers.onChain());
     $('duplicate-tab-btn').addEventListener('click', () => handlers.onDuplicate());
     render();
 }
@@ -148,15 +167,25 @@ export function startRename(id) {
     input.select();
 }
 
+/** Marks the chain tab as shown (the active plan stays in the side panel, its tab marked as such). */
+export function setChainShown(shown) {
+    chainShown = shown;
+    render();
+}
+
 function render() {
     const list = $('plan-tab-list');
     if (!list || !book) return;
+    const chainButton = $('chain-tab-btn');
+    chainButton.classList.toggle('active', chainShown);
+    chainButton.setAttribute('aria-selected', String(chainShown));
     list.replaceChildren(...book.tabs.map(tab => {
+        const active = tab.id === book.active;
         const element = document.createElement('div');
-        element.className = 'plan-tab' + (tab.id === book.active ? ' active' : '');
+        element.className = 'plan-tab' + (active ? (chainShown ? ' behind' : ' active') : '');
         element.dataset.id = tab.id;
         element.setAttribute('role', 'tab');
-        element.setAttribute('aria-selected', String(tab.id === book.active));
+        element.setAttribute('aria-selected', String(active && !chainShown));
         element.title = 'Double-click to rename';
         const name = Object.assign(document.createElement('span'), { className: 'plan-tab-name', textContent: tab.name });
         const close = Object.assign(document.createElement('button'), {
@@ -166,6 +195,6 @@ function render() {
         element.append(name, close);
         return element;
     }));
-    const active = list.querySelector('.plan-tab.active');
-    if (active) active.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const shown = list.querySelector('.plan-tab.active');
+    if (shown) shown.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }

@@ -1,6 +1,8 @@
 # 040 — Chain tab: links between plans
 
-**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** [039](done/039-plan-tabs.md)
+**Type:** feature · **Priority:** P2 · **Status:** Done · **Related:** [039](039-plan-tabs.md)
+
+> **Done (2026-10-16).** A **Chain** button left of the plan tabs shows the chain view over the graph (`static/js/chain.js`); the side panel keeps the active plan, whose tab is marked. Boxes per tab (compound nodes), needs left, supplies right; drag from a supply to a need to link (needs that can take it turn green); select a link and Delete. Refused with a toast: another item, the same tab, already linked, many to many. Labels show the shortfall or spare ("3.00/m short", "7.00/m spare", "9.00/m more"). Boxes placed in columns by what feeds what, movable (positions kept in the book). Links saved in the book and Save Book; closing a tab drops its links (the confirmation says how many). Links whose items left a plan are kept and come back with the item. Tests: `test_the_chain_tab_links_plans`, `test_many_supplies_into_one_need`.
 
 ## Goal
 A special tab that shows how plans feed each other, as a graph, and records which of those connections exist (routed in game). Needs tabs (039). Discussed 2026-10-16.

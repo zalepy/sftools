@@ -339,6 +339,7 @@
         <div class="graph-column">
         <!-- Plan tabs (ticket 039) -->
         <div class="plan-tabs" id="plan-tabs">
+            <button type="button" id="chain-tab-btn" class="chain-tab-btn" role="tab" title="How the plans feed each other">Chain</button>
             <div class="plan-tab-list" id="plan-tab-list" role="tablist" aria-label="Plans"></div>
             <button type="button" id="add-tab-btn" class="icon-btn" title="New tab">+</button>
             <button type="button" id="duplicate-tab-btn" class="icon-btn" title="Duplicate this tab">&#x29C9;</button>
@@ -419,6 +420,17 @@
                 <div id="lcy"></div>
             </div>
             {% endif %}
+
+            <!-- Chain tab (ticket 040): how the plan tabs feed each other -->
+            <div id="chain-view" class="logistics-view" hidden>
+                <div class="logistics-toolbar">
+                    <strong>Chain: how the plans feed each other</strong>
+                    <button type="button" class="secondary" id="chain-fit">Fit</button>
+                    <button type="button" class="secondary" id="chain-delete" disabled title="Delete the selected link (Delete)">Delete</button>
+                </div>
+                <div class="hint lv-hint">Each tab is a box: inbound production on the left, demand targets on the right. Drag from a demand target to another tab's inbound of the same item to link them (routed in the game). Red: short; blue: spare, or more than needed; green: matches. Drag a box by its edge to move it; double-click it to open the tab.</div>
+                <div id="ccy"></div>
+            </div>
 
             <div id="plan-notice" class="plan-notice" role="status" hidden>
                 <button type="button" class="close" aria-label="Dismiss">✕</button>
