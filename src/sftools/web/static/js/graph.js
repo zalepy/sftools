@@ -126,9 +126,9 @@ const cy = cytoscape({
             // Using it would close a loop, so it goes to the Sink
             selector: 'edge.byproduct.loop',
             style: {
-                'line-color': '#f59e0b',
-                'target-arrow-color': '#f59e0b',
-                'color': '#fcd34d'
+                'line-color': '#f4511e',
+                'target-arrow-color': '#f4511e',
+                'color': '#fdba74'
             }
         },
         {

@@ -42,6 +42,8 @@ function createGraph() {
             { selector: '.part', style: { 'shape': 'diamond', 'width': 54, 'height': 54, 'font-size': '9px', 'background-color': '#475569' } },
             { selector: '.merger', style: { 'shape': 'rectangle', 'width': 44, 'height': 44 } },
             { selector: '.buffer', style: { 'shape': 'barrel', 'width': 70 } },
+            // Runs at another clock than the node's other buildings
+            { selector: '.building.odd', style: { 'border-color': '#22d3ee', 'border-width': 4 } },
             { selector: '.short', style: { 'border-color': '#ef4444', 'border-width': 4 } },
             {
                 selector: 'edge',
@@ -181,6 +183,7 @@ function render(fit) {
 
     const selected = lcy.$(':selected').map(e => e.id());
     const positions = placement();
+    const odd = oddBuildings();
     const elements = data.nodes.map(node => {
         const color = state.colors[node.item] || '#334155';
         const short = node.delivered !== undefined && node.delivered < node.rate - EPSILON;
@@ -188,7 +191,8 @@ function render(fit) {
             group: 'nodes',
             data: { id: node.id, label: label(node), raw: node, color, textColor: textColorOn(color) },
             position: positions[node.id],
-            classes: ['real', node.kind, PART_LABELS[node.kind] && node.kind !== 'buffer' && 'part', short && 'short'].filter(Boolean)
+            classes: ['real', node.kind, PART_LABELS[node.kind] && node.kind !== 'buffer' && 'part',
+                odd.has(node.building) && 'odd', short && 'short'].filter(Boolean)
         };
     });
     data.belts.forEach(belt => {
@@ -210,6 +214,15 @@ function render(fit) {
     if (fit) lcy.fit(undefined, 30);
     updateButtons();
     showEnds();
+}
+
+/** The buildings ('b3', ...) that run at another clock than most of the node's: buildings are numbered in clock-group order. */
+function oddBuildings() {
+    const clocks = (view.node.clocks || []).flatMap(group => Array(group.count).fill(group.clock));
+    const counts = {};
+    clocks.forEach(clock => { counts[clock] = (counts[clock] || 0) + 1; });
+    const usual = Object.keys(counts).reduce((a, b) => (counts[b] > counts[a] ? b : a), clocks[0]);
+    return new Set(clocks.map((clock, i) => String(clock) !== String(usual) && `b${i + 1}`).filter(Boolean));
 }
 
 // --- Placement ---
@@ -255,8 +268,15 @@ function placement() {
     };
     const mean = values => values.reduce((s, v) => s + v, 0) / values.length;
     const sinks = nodes.filter(isSink).map(n => ({ n, y: sourceY(n.id) })).map(({ n, y }) => ({ n, y: y.length ? mean(y) : Infinity }));
-    sinks.sort((a, b) => byY(a.y, b.y) || order(a.n, b.n));
-    spread(sinks.map(s => ({ id: s.n.id, y: s.y === Infinity ? null : s.y })), last * COLUMN, positions);
+    if (view.side === 'in') {
+        // Buildings in order, each with its inputs together
+        const building = n => parseInt(n.building.slice(1), 10);
+        sinks.sort((a, b) => building(a.n) - building(b.n) || a.n.item.localeCompare(b.n.item));
+        sinks.forEach((s, i) => { positions[s.n.id] = { x: last * COLUMN, y: i * ROW }; });
+    } else {
+        sinks.sort((a, b) => byY(a.y, b.y) || order(a.n, b.n));
+        spread(sinks.map(s => ({ id: s.n.id, y: s.y === Infinity ? null : s.y })), last * COLUMN, positions);
+    }
     Object.assign(positions, pick(saved, nodes.filter(isSink)));
 
     // Parts at the mean height of what they connect to; new ones, with no belts yet, below the others
