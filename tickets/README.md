@@ -5,8 +5,10 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
+| [039](039-plan-tabs.md) | Plan tabs and Save Book | feature | P2 | Open |
+| [040](040-chain-tab.md) | Chain tab: links between plans | feature | P2 | Open |
 
-Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next when wanted: 039, then 040 (needs 039); 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
