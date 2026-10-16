@@ -5,9 +5,8 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
-| [040](040-chain-tab.md) | Chain tab: links between plans | feature | P2 | Open |
 
-Next when wanted: 040; 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
@@ -53,3 +52,4 @@ Moved to [done/](done/).
 | [037](done/037-built-marks.md) | Mark buildings as built | feature | P3 | Done |
 | [038](done/038-node-tab.md) | Node tab in the side panel | feature | P3 | Done |
 | [039](done/039-plan-tabs.md) | Plan tabs and Save Book | feature | P2 | Done |
+| [040](done/040-chain-tab.md) | Chain tab: links between plans | feature | P2 | Done |

@@ -11,6 +11,7 @@ import {
 import * as panel from './panel.js';
 import * as history from './history.js';
 import * as tabs from './tabs.js';
+import { openChain, refreshChain, closeChain, isChainOpen } from './chain.js';
 // The zoomed-in logistics view exists only on the logistics page
 const logisticsView = MODE === 'logistics' ? await import('./logistics.js') : null;
 
@@ -26,6 +27,7 @@ function save() {
     tabs.saveActive(plan);
     history.record(plan);
     updateHistoryButtons();
+    refreshChain();
 }
 
 function updateHistoryButtons() {
@@ -66,7 +68,12 @@ function emptyPlan() {
  * Shows another tab, with its own undo history. Logistics settings (what's unlocked) are the game's, so
  * they stay as they are, except for a plan just imported, which brings its own.
  */
-async function switchTab(id, { ownSettings = false } = {}) {
+async function switchTab(id, { ownSettings = false, reload = false } = {}) {
+    if (isChainOpen()) {
+        closeChain();
+        tabs.setChainShown(false);
+    }
+    if (id === tabs.getBook().active && !reload) return;
     if (logisticsView && logisticsView.isOpen()) logisticsView.closeView();
     const settings = state.logistics.settings;
     tabs.setActive(id);
@@ -79,6 +86,14 @@ async function switchTab(id, { ownSettings = false } = {}) {
     const plan = tabs.activeTab().plan || emptyPlan();
     await showPlan(ownSettings ? plan : { ...plan, logistics: { ...plan.logistics, settings } }, 'Opening the tab failed');
     updateHistoryButtons();
+}
+
+/** Shows the chain tab (ticket 040) over the graph; the side panel keeps the active plan. */
+function showChain() {
+    if (isChainOpen()) return;
+    if (logisticsView && logisticsView.isOpen()) logisticsView.closeView();
+    tabs.setChainShown(true);
+    openChain(id => switchTab(id));
 }
 
 function addTab() {
@@ -94,11 +109,18 @@ async function closeTab(id) {
     const tab = tabs.getBook().tabs.find(t => t.id === id);
     if (!tab) return;
     const planned = tab.plan && tab.plan.items && tab.plan.items.length;
-    if (planned && !confirm(`Close "${tab.name}"? Its plan is removed from this browser; Export Plan or Save Book first to keep it.`)) return;
+    const links = tabs.getBook().chain.links.filter(l => l.from.tab === id || l.to.tab === id).length;
+    const linked = links ? ` Its ${links} link${links === 1 ? '' : 's'} in the chain tab go too.` : '';
+    if ((planned || links) && !confirm(`Close "${tab.name}"? Its plan is removed from this browser; Export Plan or Save Book first to keep it.${linked}`)) return;
     if (tabs.getBook().tabs.length === 1) tabs.addTab(emptyPlan());  // there's always a tab
+    const chainShown = isChainOpen();
     const next = tabs.removeTab(id);
     history.forget(id);
-    if (next) await switchTab(next.id);
+    if (next) {
+        await switchTab(next.id, { reload: true });
+        if (chainShown) showChain();
+    }
+    refreshChain();
 }
 
 /** Replaces all the tabs with a saved book's (Save Book, ticket 039). */
@@ -115,8 +137,8 @@ async function openBook(data) {
     const here = tabs.getBook().tabs.length;
     if (!confirm(`Load this book? Its ${list.length} tab(s) replace the ${here} here; Save Book first to keep them.`)) return;
     history.reset();
-    tabs.replaceBook(list, data.active);
-    await switchTab(tabs.getBook().active, { ownSettings: true });
+    tabs.replaceBook(list, data.active, data.chain);
+    await switchTab(tabs.getBook().active, { ownSettings: true, reload: true });
 }
 
 /**
@@ -599,6 +621,6 @@ onMergeDrop(mergeNodes);
 // Module scripts run after the document is parsed. Colors first, so the first render uses them.
 await loadColors();
 tabs.loadBook();
-tabs.initTabs({ onSwitch: switchTab, onClose: closeTab, onAdd: addTab, onDuplicate: duplicateTab });
+tabs.initTabs({ onSwitch: switchTab, onClose: closeTab, onAdd: addTab, onDuplicate: duplicateTab, onChain: showChain });
 history.useTab(tabs.activeTab().id);
 loadPlan(tabs.activeTab().plan);

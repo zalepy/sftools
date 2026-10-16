@@ -146,3 +146,124 @@ def test_a_logistics_book_is_refused_in_simple_mode(page):
     import_file(page, {"mode": "logistics", "tabs": [{"id": "t1", "name": "L", "plan": {"mode": "logistics", **ROTORS}}]})
     assert page.dialogs and page.dialogs[-1].startswith("This is a logistics mode plan")
     assert tab_names(page) == ["Plan 1"]
+
+
+# --- The chain tab (ticket 040) ---
+
+CCY = "document.getElementById('ccy')._cyreg.cy"
+
+
+def tab_plan(items=(), rates=(), inbound=()):
+    return {"mode": "simple", "items": list(items), "rates": list(rates), "inbound": list(inbound),
+            "merges": {}, "recipes": {}, "clocks": {}}
+
+
+# AW makes 13 Motors; ACU takes 6 and MFG 7 as inbound; XYZ makes 5 more
+CHAIN_BOOK = {"active": "aw", "tabs": [
+    {"id": "aw", "name": "AW", "plan": tab_plan(["Motor"], [13])},
+    {"id": "acu", "name": "ACU", "plan": tab_plan(inbound=[{"item": "Motor", "rate": 6}])},
+    {"id": "mfg", "name": "MFG", "plan": tab_plan(inbound=[{"item": "Motor", "rate": 7}])},
+    {"id": "xyz", "name": "XYZ", "plan": tab_plan(["Motor"], [5])},
+]}
+
+
+def open_book(page, book):
+    page.open(page.base_url)
+    page.js(f"localStorage.setItem('sf_planner_book', JSON.stringify({json.dumps(book)}))")
+    page.send("Page.reload")
+    page.wait(0.3)
+    page.wait_until(f"document.querySelectorAll('.plan-tab').length === {len(book['tabs'])}")
+
+
+def ccy_position(page, node_id):
+    return page.js(f"""(() => {{
+        const container = document.getElementById('ccy');
+        const box = container.getBoundingClientRect();
+        const p = container._cyreg.cy.getElementById({json.dumps(node_id)}).renderedPosition();
+        return [box.left + p.x, box.top + p.y];
+    }})()""")
+
+
+def link(page, supply, need):
+    page.drag(ccy_position(page, supply), ccy_position(page, need))
+    page.wait(0.2)
+
+
+def label_of(page, element_id):
+    return page.js(f"{CCY}.getElementById({json.dumps(element_id)}).data('label')")
+
+
+def classes(page, node_id):
+    return page.js(f"{CCY}.getElementById({json.dumps(node_id)}).classes()")
+
+
+def links(page):
+    return page.js(f"{BOOK}.chain.links.map(l => l.from.tab + '>' + l.to.tab + ':' + l.to.item)")
+
+
+def test_the_chain_tab_links_plans(page):
+    open_book(page, CHAIN_BOOK)
+    page.js("document.getElementById('chain-tab-btn').click()")
+    page.wait_until("!document.getElementById('chain-view').hidden")
+    assert page.js("document.querySelector('.plan-tab.behind .plan-tab-name').textContent") == "AW"
+    # Each tab a box: demand targets supply, inbound production needs; unlinked nodes are neutral
+    assert sorted(page.js(f"{CCY}.nodes('.supply, .need').map(n => n.id())")) == \
+        ["n|acu|Motor", "n|mfg|Motor", "s|aw|Motor", "s|xyz|Motor"]
+    assert classes(page, "s|aw|Motor") == ["supply"]
+
+    # One supply, two needs: each link carries what its need asks for
+    link(page, "s|aw|Motor", "n|acu|Motor")
+    assert links(page) == ["aw>acu:Motor"]
+    assert label_of(page, "l|aw|acu|Motor") == "6.00/m"
+    assert "surplus" in classes(page, "s|aw|Motor") and label_of(page, "s|aw|Motor").endswith("7.00/m spare")
+    assert "ok" in classes(page, "n|acu|Motor")
+    link(page, "s|aw|Motor", "n|mfg|Motor")
+    assert label_of(page, "l|aw|mfg|Motor") == "7.00/m"
+    assert "ok" in classes(page, "s|aw|Motor") and "ok" in classes(page, "n|mfg|Motor")
+
+    # Several supplies into a need that has one already, while AW feeds two: refused
+    link(page, "s|xyz|Motor", "n|mfg|Motor")
+    page.wait_until("document.getElementById('toast').textContent === "
+                    "'Motor: one plan can feed several, or several can feed one, not both.'")
+    assert len(links(page)) == 2
+
+    # A plan changed: the highlights follow, the other plans stay as they are
+    page.js(f"void {CCY}.getElementById('box|aw').emit('dbltap')")
+    page.wait_until("document.getElementById('chain-view').hidden")
+    page.js("""(() => {
+        document.querySelector('#demand-rows [name=rates]').value = '10';
+        document.querySelector('#demand-form button[type=submit]').click();
+    })()""")
+    page.wait_until(f"{BOOK}.tabs[0].plan.rates[0] === 10")
+    page.js("document.getElementById('chain-tab-btn').click()")
+    page.wait_until("!document.getElementById('chain-view').hidden")
+    assert "short" in classes(page, "s|aw|Motor") and label_of(page, "s|aw|Motor").endswith("3.00/m short")
+    assert page.js(f"{BOOK}.tabs[1].plan.inbound") == [{"item": "Motor", "rate": 6}]
+
+    # Delete a link
+    page.js(f"void {CCY}.getElementById('l|aw|mfg|Motor').select()")
+    page.js("document.getElementById('chain-delete').click()")
+    assert links(page) == ["aw>acu:Motor"]
+
+    # Saved with the book; closing a tab drops its links
+    capture_downloads(page)
+    page.js("document.getElementById('save-book-btn').click()")
+    saved_book = json.loads(page.js("window.__blob.text()"))
+    assert [l["to"]["tab"] for l in saved_book["chain"]["links"]] == ["acu"]
+    page.js("window.confirm = () => true; document.querySelector('.plan-tab[data-id=acu] .plan-tab-close').click()")
+    page.wait_until(f"{BOOK}.chain.links.length === 0")
+    assert not page.js("document.getElementById('chain-view').hidden")  # still shown
+
+
+def test_many_supplies_into_one_need(page):
+    open_book(page, {**CHAIN_BOOK, "tabs": CHAIN_BOOK["tabs"][:3]
+                     + [{"id": "xyz", "name": "XYZ", "plan": tab_plan(["Motor"], [3])}]})
+    page.js("document.getElementById('chain-tab-btn').click()")
+    page.wait_until("!document.getElementById('chain-view').hidden")
+    link(page, "s|aw|Motor", "n|mfg|Motor")
+    link(page, "s|xyz|Motor", "n|mfg|Motor")
+    # Each link carries what its supply makes: 13 + 3 for a need of 7
+    assert label_of(page, "l|aw|mfg|Motor") == "13.00/m" and label_of(page, "l|xyz|mfg|Motor") == "3.00/m"
+    assert "surplus" in classes(page, "n|mfg|Motor") and label_of(page, "n|mfg|Motor").endswith("9.00/m more")
+    # A link joins the same item only
+    assert page.js(f"{CCY}.getElementById('n|acu|Motor').length") == 1

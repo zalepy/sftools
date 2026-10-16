@@ -136,6 +136,29 @@ h1 {
     font-weight: 600;
 }
 
+/* The active plan, in the side panel while the chain tab is shown */
+.plan-tab.behind {
+    color: var(--accent);
+}
+
+.chain-tab-btn {
+    width: auto;
+    margin-right: 0.5rem;
+    padding: 0.3rem 0.75rem;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    font-size: 0.85rem;
+}
+
+.chain-tab-btn:hover,
+.chain-tab-btn.active {
+    background-color: var(--border);
+    color: var(--accent);
+}
+
 .plan-tab-close {
     width: auto;
     background: transparent;
@@ -633,7 +656,7 @@ body[data-mode="logistics"] #split-controls {
     padding: 0 1rem 0 2.1rem;
 }
 
-#lcy {
+#lcy, #ccy {
     flex: 1;
     min-height: 0;
 }

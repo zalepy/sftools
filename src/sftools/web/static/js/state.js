@@ -92,7 +92,7 @@ export function downloadPlan(plan, name) {
 
 /** Downloads every tab as one file (Save Book, ticket 039). */
 export function downloadBook(book) {
-    download({ mode: MODE, tabs: book.tabs, active: book.active }, fileName('book'));
+    download({ mode: MODE, tabs: book.tabs, active: book.active, chain: book.chain }, fileName('book'));
 }
 
 /** Whether a file is a book (all tabs) rather than one plan. */
