@@ -79,14 +79,35 @@ export function loadSavedPlan() {
     }
 }
 
-export function downloadPlan(plan) {
-    const data = { ...plan, exportedAt: new Date().toISOString() };
+/** A file name from a tab's name: letters, digits, '-' and '_' kept. */
+function fileName(name) {
+    const safe = (name || '').trim().replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '');
+    return `${MODE === 'logistics' ? 'sf_logistics' : 'sf_planner'}_${safe || 'save'}.json`;
+}
+
+/** Downloads one plan, named after its tab. */
+export function downloadPlan(plan, name) {
+    download({ ...plan, name }, fileName(name));
+}
+
+/** Downloads every tab as one file (Save Book, ticket 039). */
+export function downloadBook(book) {
+    download({ mode: MODE, tabs: book.tabs, active: book.active }, fileName('book'));
+}
+
+/** Whether a file is a book (all tabs) rather than one plan. */
+export function isBook(data) {
+    return Boolean(data) && Array.isArray(data.tabs);
+}
+
+function download(content, filename) {
+    const data = { ...content, exportedAt: new Date().toISOString() };
     // octet-stream makes the browser treat it as a download
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.setAttribute('download', MODE === 'logistics' ? 'sf_logistics_save.json' : 'sf_planner_save.json');
+    a.setAttribute('download', filename);
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();

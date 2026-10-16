@@ -78,11 +78,88 @@ h1 {
     color: var(--text-primary);
 }
 
-.graph-container {
+.graph-column {
     flex: 1;
     min-width: 0; /* may shrink below the canvas's last size, e.g. when the side panel opens */
+    display: flex;
+    flex-direction: column;
+}
+
+.graph-container {
+    flex: 1;
+    min-height: 0;
     background-color: var(--bg-color);
     position: relative;
+}
+
+/* Plan tabs (ticket 039) */
+.plan-tabs {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.25rem;
+    padding: 0.35rem 0.5rem 0;
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.plan-tab-list {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    min-width: 0;
+    scrollbar-width: thin;
+}
+
+.plan-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.4rem 0.3rem 0.75rem;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+}
+
+.plan-tab:hover {
+    color: var(--text-primary);
+}
+
+.plan-tab.active {
+    background-color: var(--bg-color);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.plan-tab-close {
+    width: auto;
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 0 0.25rem;
+    font-size: 0.75rem;
+    font-weight: normal;
+    line-height: 1.2;
+}
+
+.plan-tab-close:hover {
+    background-color: var(--border);
+    color: var(--text-primary);
+}
+
+.plan-tab-input {
+    width: auto;
+    padding: 0.1rem 0.3rem;
+    font-size: 0.85rem;
+}
+
+.plan-tabs .icon-btn {
+    margin-bottom: 0.3rem;
+    font-size: 0.9rem;
 }
 
 #cy {
