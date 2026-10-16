@@ -174,3 +174,15 @@ def test_new_plan_keeps_the_settings(page):
     page.js("window.confirm = () => true; document.getElementById('new-plan-btn').click()")
     assert saved(page)["items"] == []
     assert saved(page)["logistics"] == {"settings": {"belt_tier": 2, "pipe_tier": 1, "smart": False}, "layouts": {}, "positions": {}}
+
+
+def test_input_side_buildings_in_order_and_the_odd_clock_shows(page):
+    """Each building's inputs together, in building order; the partial last building has its own border."""
+    plates = {**BEAMS, "items": ["Reinforced Iron Plate"], "rates": [7], "merges": {},
+              "clocks": {"Reinforced Iron Plate": [{"clock": 1.0}, {"count": 1, "clock": 0.4}]}}
+    open_logistics(page, plates)
+    zoom_in(page, "Reinforced Iron Plate", side="in")
+    order = page.js(f"{LCY}.nodes('.building').sort((a, b) => a.position().y - b.position().y).map(n => n.id())")
+    assert order == ["b1|Iron Plate", "b1|Screws", "b2|Iron Plate", "b2|Screws"]
+    assert page.js(f"{LCY}.nodes('.odd').map(n => n.id())") == ["b2|Iron Plate", "b2|Screws"]
+    assert page.js(f"{LCY}.getElementById('b2|Screws').style('border-color')") == "rgb(34,211,238)"
