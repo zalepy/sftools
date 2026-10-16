@@ -1,6 +1,8 @@
 # 039 — Plan tabs and Save Book
 
-**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** [040](040-chain-tab.md)
+**Type:** feature · **Priority:** P2 · **Status:** Done · **Related:** [040](040-chain-tab.md)
+
+> **Done (2026-10-16).** Tabs above the graph (`static/js/tabs.js`): + adds, the second button duplicates, double-click renames, ✕ closes (asks when the tab has a plan; the last tab is replaced by an empty one). The book is saved under `sf_planner_book` / `sf_logistics_book`; the active plan is still mirrored to the old plan key, and an old saved plan becomes "Plan 1". Undo per tab (`history.useTab`). Planner tab: **Export Plan** (the shown tab, file named after it), **Save Book** (all tabs), **Import** (a plan opens in a new tab; a book replaces all the tabs, after asking; one button for both). New Plan clears the shown tab, as before. Logistics settings are shared: switching tabs keeps them; an imported plan or book brings its own. Tests: `tests/integration/test_tabs.py`, `test_tabs_share_what_is_unlocked`.
 
 ## Goal
 Several plans side by side, as tabs, like the sheets of the spreadsheet the user worked from, and a single file holding all of them (a "book"). Discussed 2026-10-16.

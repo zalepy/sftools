@@ -1,6 +1,6 @@
 # 040 — Chain tab: links between plans
 
-**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** [039](039-plan-tabs.md)
+**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** [039](done/039-plan-tabs.md)
 
 ## Goal
 A special tab that shows how plans feed each other, as a graph, and records which of those connections exist (routed in game). Needs tabs (039). Discussed 2026-10-16.

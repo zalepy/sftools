@@ -186,3 +186,13 @@ def test_input_side_buildings_in_order_and_the_odd_clock_shows(page):
     assert order == ["b1|Iron Plate", "b1|Screws", "b2|Iron Plate", "b2|Screws"]
     assert page.js(f"{LCY}.nodes('.odd').map(n => n.id())") == ["b2|Iron Plate", "b2|Screws"]
     assert page.js(f"{LCY}.getElementById('b2|Screws').style('border-color')") == "rgb(34,211,238)"
+
+
+def test_tabs_share_what_is_unlocked(page):
+    """Logistics settings are the game's: a new tab keeps them (ticket 039)."""
+    open_logistics(page, {**BEAMS, "logistics": {"settings": {"belt_tier": 3, "pipe_tier": 1, "smart": False}}})
+    page.js("document.getElementById('add-tab-btn').click()")
+    page.wait_until(f"{CY}.nodes().length === 0")
+    assert page.js("document.getElementById('belt-tier').value") == "3"
+    assert page.js(f"JSON.parse(localStorage.getItem('sf_logistics_book')).tabs.length") == 2
+    assert saved(page)["logistics"]["settings"] == {"belt_tier": 3, "pipe_tier": 1, "smart": False}

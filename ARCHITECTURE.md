@@ -29,7 +29,7 @@ sftools is a production planner for Satisfactory. A user enters target items and
 | `src/sftools/api/routes.py`, `schemas.py` | JSON API under `/api` and its request/response models |
 | `src/sftools/web/templates/index.html` | Page markup (Jinja: item list, asset version); Cytoscape + dagre from CDN |
 | `src/sftools/web/static/app.css` | Styles |
-| `src/sftools/web/static/js/` | ES modules: `main.js` (entry, plan actions), `api.js`, `state.js` (plan + localStorage), `graph.js` (Cytoscape), `panel.js` (sidebar) |
+| `src/sftools/web/static/js/` | ES modules: `main.js` (entry, plan actions), `api.js`, `state.js` (plan + localStorage), `tabs.js` (plan tabs, the book), `history.js` (undo), `graph.js` (Cytoscape), `panel.js` (sidebar) |
 | `src/sftools/data/` | Scraped game data and the default node color palette |
 | `scripts/scrape/` | Scrapers that regenerate `src/sftools/data/` |
 | `tests/unit/` | Fast tests: engine, graph, game data, API (in-process) |
@@ -73,7 +73,7 @@ Entries that no longer match the graph (typically from an older saved plan) are 
 
 **Built marks** (ticket 037) are browser-only: the plan keeps `built: {"<node id>": {count, recipe}}` and the server never sees it. Buildings needed are the node's whole buildings (with clocks) or its scale rounded up; a mark counts only while the node runs the recipe it was made for. `graph.builtStatus` computes it, and `refreshBuilt` redraws the badges (top left: a check, or "built/needed") and the `done` class (faded) without a request.
 
-Every saved change is also an undo step (`static/js/history.js`): the history holds plan snapshots as JSON strings, and undo or redo recalculates one like any other plan. The plan is saved in localStorage (`sf_planner_state`) and can be exported to or imported from a JSON file. User changes to node colors are kept in localStorage (`sf_planner_colors`) on top of the default palette from `GET /api/colors`.
+Every saved change is also an undo step (`static/js/history.js`): the history holds plan snapshots as JSON strings, and undo or redo recalculates one like any other plan; each plan tab has its own history (in memory). Plans live in tabs (ticket 039, `static/js/tabs.js`): the book `{tabs: [{id, name, plan}], active}` is saved in localStorage (`sf_planner_book`, `sf_logistics_book`); the active tab's plan is also kept under the plan's key (`sf_planner_state`), as before tabs, and a plan found there without a book becomes the first tab. Tab ids are stable (renaming keeps them). A plan can be exported to or imported from a JSON file (imported into a new tab); Save Book writes the book (`{mode, tabs, active}`), and importing one replaces all the tabs. Logistics settings are shared by the tabs: switching keeps them, an imported plan or book brings its own. The server only ever sees the active tab's plan. User changes to node colors are kept in localStorage (`sf_planner_colors`) on top of the default palette from `GET /api/colors`.
 
 Why stateless: on a shared deployment, a single server-side graph would be shared (and overwritten) by every visitor and lost whenever the instance restarts or the free tier spins down. Rebuilding the graph takes milliseconds, so replaying the whole plan on every request costs little.
 

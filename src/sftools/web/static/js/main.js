@@ -1,7 +1,7 @@
 // Entry point: plan actions and UI wiring.
 import * as api from './api.js';
 import {
-    state, snapshot, applySaved, savePlan, loadSavedPlan, downloadPlan, readPlanFile,
+    state, snapshot, applySaved, downloadPlan, downloadBook, isBook, readPlanFile,
     loadSavedColors, saveColors, dropIgnoredEntries, MODE, wrongMode
 } from './state.js';
 import {
@@ -10,6 +10,7 @@ import {
 } from './graph.js';
 import * as panel from './panel.js';
 import * as history from './history.js';
+import * as tabs from './tabs.js';
 // The zoomed-in logistics view exists only on the logistics page
 const logisticsView = MODE === 'logistics' ? await import('./logistics.js') : null;
 
@@ -19,10 +20,10 @@ function currentPlan() {
     return snapshot(panel.getDemands());
 }
 
-/** Saves the plan in the browser and records it as an undo step (if it changed). */
+/** Saves the plan in the browser (in its tab) and records it as an undo step (if it changed). */
 function save() {
     const plan = currentPlan();
-    savePlan(plan);
+    tabs.saveActive(plan);
     history.record(plan);
     updateHistoryButtons();
 }
@@ -32,9 +33,8 @@ function updateHistoryButtons() {
     $('redo-btn').disabled = !history.canRedo();
 }
 
-/** Shows an earlier (or later) plan from the history: the server recalculates it like any other. */
-async function showHistoryStep(plan) {
-    if (!plan) return;
+/** Shows a plan (from the history, or a tab's): the server recalculates it like any other. */
+async function showPlan(plan, failure = 'Undo/redo failed') {
     const selected = state.selectedNodeId;
     panel.setDemands(plan.items, plan.rates, plan.inbound);
     applySaved(plan);
@@ -44,13 +44,80 @@ async function showHistoryStep(plan) {
         save();
         if (selected && getNodeData(selected)) reselectNode(selected); else panel.hideNodeDetails();
     } catch (e) {
-        console.error("Undo/redo failed", e);
-        alert(`Undo/redo failed: ${e.message}`);
+        console.error(failure, e);
+        alert(`${failure}: ${e.message}`);
     }
+}
+
+async function showHistoryStep(plan) {
+    if (plan) await showPlan(plan);
 }
 
 const undo = () => showHistoryStep(history.undo());
 const redo = () => showHistoryStep(history.redo());
+
+// --- Plan tabs (ticket 039) ---
+
+function emptyPlan() {
+    return { mode: MODE, items: [], rates: [], inbound: [] };
+}
+
+/**
+ * Shows another tab, with its own undo history. Logistics settings (what's unlocked) are the game's, so
+ * they stay as they are, except for a plan just imported, which brings its own.
+ */
+async function switchTab(id, { ownSettings = false } = {}) {
+    if (logisticsView && logisticsView.isOpen()) logisticsView.closeView();
+    const settings = state.logistics.settings;
+    tabs.setActive(id);
+    history.useTab(id);
+    state.selectedNodeId = null;
+    panel.hideNodeDetails();
+    panel.hideByproductDetails();
+    panel.hideLogisticsDetails();
+    panel.hidePlanNotice();
+    const plan = tabs.activeTab().plan || emptyPlan();
+    await showPlan(ownSettings ? plan : { ...plan, logistics: { ...plan.logistics, settings } }, 'Opening the tab failed');
+    updateHistoryButtons();
+}
+
+function addTab() {
+    switchTab(tabs.addTab(emptyPlan()).id);
+}
+
+function duplicateTab() {
+    const copy = JSON.parse(JSON.stringify(currentPlan()));
+    switchTab(tabs.addTab(copy, `${tabs.activeTab().name} (copy)`).id);
+}
+
+async function closeTab(id) {
+    const tab = tabs.getBook().tabs.find(t => t.id === id);
+    if (!tab) return;
+    const planned = tab.plan && tab.plan.items && tab.plan.items.length;
+    if (planned && !confirm(`Close "${tab.name}"? Its plan is removed from this browser; Export Plan or Save Book first to keep it.`)) return;
+    if (tabs.getBook().tabs.length === 1) tabs.addTab(emptyPlan());  // there's always a tab
+    const next = tabs.removeTab(id);
+    history.forget(id);
+    if (next) await switchTab(next.id);
+}
+
+/** Replaces all the tabs with a saved book's (Save Book, ticket 039). */
+async function openBook(data) {
+    const list = data.tabs.filter(tab => tab && typeof tab === 'object').map((tab, i) => ({
+        id: typeof tab.id === 'string' && tab.id ? tab.id : tabs.newTabId(),
+        name: typeof tab.name === 'string' && tab.name.trim() ? tab.name.trim() : `Plan ${i + 1}`,
+        plan: tab.plan || null
+    }));
+    if (!list.length) {
+        alert('This book has no plans.');
+        return;
+    }
+    const here = tabs.getBook().tabs.length;
+    if (!confirm(`Load this book? Its ${list.length} tab(s) replace the ${here} here; Save Book first to keep them.`)) return;
+    history.reset();
+    tabs.replaceBook(list, data.active);
+    await switchTab(tabs.getBook().active, { ownSettings: true });
+}
 
 /**
  * Sends the plan (with optional candidate merges/recipes/splits/clocks/byproducts) and returns the graph
@@ -126,7 +193,7 @@ function loadPlan(saved) {
     const wrong = wrongMode(saved);
     if (wrong) {
         alert(wrong);
-        return false;
+        return;
     }
     panel.setDemands(saved.items, saved.rates, saved.inbound);
     applySaved(saved);
@@ -398,16 +465,30 @@ function clearBuilt() {
     }
 }
 
-async function importPlan(input) {
+/** Opens a plan file in a new tab, or a book file in place of all the tabs. */
+async function importFile(input) {
     const file = input.files[0];
     if (!file) return;
+    input.value = ''; // allow importing the same file again
+    let data;
     try {
-        if (loadPlan(await readPlanFile(file)) !== false) save();
+        data = await readPlanFile(file);
     } catch (err) {
         alert("Failed to parse JSON file.");
         console.error(err);
+        return;
     }
-    input.value = ''; // allow importing the same file again
+    const wrong = data && wrongMode(data);
+    if (wrong) {
+        alert(wrong);
+        return;
+    }
+    if (isBook(data)) {
+        await openBook(data);
+        return;
+    }
+    const name = typeof data.name === 'string' && data.name.trim() ? data.name.trim() : file.name.replace(/\.json$/i, '');
+    await switchTab(tabs.addTab(data, name).id, { ownSettings: true });
 }
 
 // --- Colors ---
@@ -456,9 +537,10 @@ $('demand-form').addEventListener('submit', e => {
 $('add-row-btn').addEventListener('click', panel.addRow);
 $('add-inbound-btn').addEventListener('click', panel.addInboundRow);
 $('new-plan-btn').addEventListener('click', newPlan);
-$('export-btn').addEventListener('click', () => downloadPlan(currentPlan()));
+$('export-btn').addEventListener('click', () => downloadPlan(currentPlan(), tabs.activeTab().name));
+$('save-book-btn').addEventListener('click', () => downloadBook(tabs.getBook()));
 $('import-btn').addEventListener('click', () => $('import-input').click());
-$('import-input').addEventListener('change', e => importPlan(e.target));
+$('import-input').addEventListener('change', e => importFile(e.target));
 $('clear-clocks-btn').addEventListener('click', clearAllClocks);
 $('clear-merges-btn').addEventListener('click', clearMerges);
 $('clear-built-btn').addEventListener('click', clearBuilt);
@@ -516,4 +598,7 @@ onMergeDrop(mergeNodes);
 
 // Module scripts run after the document is parsed. Colors first, so the first render uses them.
 await loadColors();
-loadPlan(loadSavedPlan());
+tabs.loadBook();
+tabs.initTabs({ onSwitch: switchTab, onClose: closeTab, onAdd: addTab, onDuplicate: duplicateTab });
+history.useTab(tabs.activeTab().id);
+loadPlan(tabs.activeTab().plan);
