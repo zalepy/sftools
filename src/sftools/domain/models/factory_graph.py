@@ -473,6 +473,8 @@ class FactoryGraph:
             data["constituent_ids"] = [c.id for c in constituents]
             data["constituent_derivations"] = [self.derivation(c) for c in constituents]
             data["byproducts"] = self._byproducts_of(node)
+            # What the user demands of the group (demand rows), even where inbound production covers it
+            data["external_demand"] = sum(self._external(member) for member in [node, *constituents])
 
             ui_nodes.append(data)
 

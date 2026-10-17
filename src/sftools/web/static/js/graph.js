@@ -70,9 +70,12 @@ const cy = cytoscape({
             }
         },
         {
-            // Demanded by the user (a demand row), alone or in a merge group
-            selector: '.external',
+            // A demand target (a demand row), fed by the node that makes it
+            selector: '.demand',
             style: {
+                'shape': 'ellipse',
+                'width': 110,
+                'height': 110,
                 'border-width': 3,
                 'border-color': '#a855f7'
             }
@@ -264,8 +267,10 @@ export function textColorOn(background) {
 
 /** Whether the user demands this node (or a node merged into it) directly. */
 export function isExternalDemand(node) {
-    return ((node.parent_demands || {})['External Demand'] || 0) > 0;
+    return (node.external_demand || 0) > EPSILON;
 }
+
+export const DEMAND_PREFIX = 'demand|';
 
 /**
  * Buildings needed and built (ticket 037), or null for nodes without buildings to build (inbound
@@ -356,7 +361,6 @@ export function renderGraph(nodesData) {
         const color = colorFor(node.output_item);
         const classes = [
             node.clocks_set && 'clocked',
-            isExternalDemand(node) && 'external',
             node.is_supplied && 'supplied',
             node.sink && 'sink',
             fluids && 'invalid',
@@ -373,6 +377,39 @@ export function renderGraph(nodesData) {
                 ...(badges && { backgroundImage: badges })
             },
             classes
+        });
+    });
+
+    // Demand targets: one circle per demanded item, fed by the nodes that make it
+    const demands = {};
+    nodesData.filter(isExternalDemand).forEach(node => {
+        const demand = demands[node.output_item] ||= { item: node.output_item, rate: 0, makers: [] };
+        demand.rate += node.external_demand;
+        demand.makers.push(node.id);
+    });
+    Object.values(demands).forEach(demand => {
+        const color = colorFor(demand.item);
+        elements.push({
+            group: 'nodes',
+            data: {
+                id: DEMAND_PREFIX + demand.item,
+                label: `${demand.item}\n${demand.rate.toFixed(2)}/m\n(demand)`,
+                raw: { id: DEMAND_PREFIX + demand.item, output_item: demand.item, demand },
+                backgroundColor: color,
+                textColor: textColorOn(color)
+            },
+            classes: ['demand'],
+            selectable: false
+        });
+        demand.makers.forEach(makerId => {
+            const maker = nodeMap[makerId];
+            const rate = (maker.parent_demands || {})['External Demand'] || 0;
+            const belts = (maker.edge_belts || {})['External Demand'];
+            elements.push({
+                group: 'edges',
+                data: { source: makerId, target: DEMAND_PREFIX + demand.item, label: rate > EPSILON ? `${rate.toFixed(2)}/m${beltText(belts)}` : '' },
+                classes: belts?.count > 1 ? ['multi'] : []
+            });
         });
     });
 
@@ -493,7 +530,7 @@ export function refreshNodeColors() {
 
 /** Redraws the built marks after state.built changed; nothing else needs the server. */
 export function refreshBuilt() {
-    cy.nodes().not('.lnode').forEach(node => {
+    cy.nodes().not('.lnode').not('.demand').forEach(node => {
         const raw = node.data('raw');
         const badges = badgeImage(raw);
         if (badges) node.data('backgroundImage', badges); else node.removeData('backgroundImage');
@@ -514,7 +551,17 @@ export function getNodeData(nodeId) {
 // --- Interaction ---
 
 export function onNodeSelected(callback) {
-    cy.on('tap', 'node[!logistics]', evt => callback(evt.target.data('raw')));
+    cy.on('tap', 'node[!logistics]', evt => {
+        const raw = evt.target.data('raw');
+        if (!raw.demand) return callback(raw);
+        // A demand target isn't a node of the plan: show the node that makes it
+        const maker = cy.getElementById(raw.demand.makers[0]);
+        setTimeout(() => {
+            cy.$(':selected').unselect();
+            maker.select();
+            callback(maker.data('raw'));
+        }, 0);
+    });
 }
 
 /** Calls callback(production node id, 'in' | 'out') when a logistics node is clicked. */
@@ -562,8 +609,8 @@ export function onMergeDrop(callback) {
 
         const targetNode = overlapping[0];
         if (dragData.output_item !== targetNode.data('raw').output_item) return;
-        // Inbound production and the Sink aren't nodes of the plan
-        if ([dragData, targetNode.data('raw')].some(data => data.inbound || data.sink)) return;
+        // Inbound production, the Sink and demand targets aren't nodes of the plan
+        if ([dragData, targetNode.data('raw')].some(data => data.inbound || data.sink || data.demand)) return;
 
         // Let Cytoscape finish the drag before the graph is re-rendered
         setTimeout(() => callback(dragNode.id(), targetNode.id()), 50);

@@ -368,6 +368,16 @@ def test_a_demand_covered_by_inbound_production_stays_shown(client):
     assert nodes["inbound:Rotor"]["parent_demands"] == {"Rotor": pytest.approx(4)}  # drawn to the demand node
 
 
+def test_nodes_carry_what_the_user_demands_of_them(client):
+    """external_demand: the demand rows of a merge group, also where inbound production covers them."""
+    merged = calculate(client, demands=[{"item": "Smart Plating", "rate": 2}, {"item": "Reinforced Iron Plate", "rate": 3}],
+                       merges={"Smart Plating__Reinforced Iron Plate": "Reinforced Iron Plate"}).json()["nodes"]
+    demanded = {n["id"]: n["external_demand"] for n in merged if n.get("external_demand")}
+    assert demanded == {"Smart Plating": pytest.approx(2), "Reinforced Iron Plate": pytest.approx(3)}
+    covered = calculate(client, demands=[{"item": "Rotor", "rate": 4}], inbound=[{"item": "Rotor", "rate": 10}]).json()
+    assert {n["id"]: n["external_demand"] for n in covered["nodes"] if n.get("external_demand")} == {"Rotor": pytest.approx(4)}
+
+
 def test_a_rounding_leftover_is_not_sunk(client):
     """Residual Fuel at 2 x 100% + 1 x 83.333% needs 169.9998 of the 170 Heavy Oil Residue its suppliers
     make: the 0.0002 left is rounding (the balance is 83 1/3 %), not a by-product for the Sink."""
