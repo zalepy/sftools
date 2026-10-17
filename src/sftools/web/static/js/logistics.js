@@ -50,6 +50,7 @@ function createGraph() {
             { selector: '.exit.sunk', style: { 'shape': 'ellipse', 'width': 200, 'height': 56, 'border-color': '#94a3b8', 'border-width': 3, 'text-max-width': 150 } },
             { selector: '.building.odd', style: { 'border-color': '#22d3ee', 'border-width': 4 } },
             { selector: '.short', style: { 'border-color': '#ef4444', 'border-width': 4 } },
+            { selector: '.over', style: { 'border-color': '#f59e0b', 'border-width': 4 } },
             {
                 selector: 'edge',
                 style: {
@@ -166,8 +167,7 @@ function label(node) {
             return `from ${view.describe(node.target)}${beltLine(node)}\n${rate(node.sent)}`;
         case 'exit': {
             const to = node.label === 'demand' ? 'the demand' : node.label === 'Sink' ? 'the Sink' : view.describe(node.target);
-            // What the other end takes on this belt, when it's known; the edge's rate on a single belt
-            const wanted = node.limit !== undefined ? Math.min(node.limit, node.rate) : node.belts > 1 ? null : node.rate;
+            const wanted = wantedOf(node);
             return `to ${to}${beltLine(node)}\n${rate(node.delivered)}${wanted === null ? '' : ` of ${rate(wanted)}`}`;
         }
         case 'buffer':
@@ -175,6 +175,12 @@ function label(node) {
         default:
             return PART_LABELS[node.kind];
     }
+}
+
+// What an exit's belt is wanted to carry: what the other end takes on it, when it's known; the edge's
+// rate on a single belt; null on a belt of several that share the edge's rate
+function wantedOf(node) {
+    return node.limit !== undefined ? Math.min(node.limit, node.rate) : node.belts > 1 ? null : node.rate;
 }
 
 /** An entry's or exit's second line: which belt of its edge, and the item when the side has several. */
@@ -207,12 +213,15 @@ function render(fit) {
         const color = state.colors[node.item] || '#334155';
         const short = node.kind === 'exit' ? node.pool_delivered < node.rate - SHORT
             : node.delivered !== undefined && node.delivered < node.rate - SHORT;
+        // Pushed onto it (ticket 042): more than the other end takes, which backs up there (the Sink takes all)
+        const over = node.kind === 'exit' && !short && node.label !== 'Sink' && (wantedOf(node) === null
+            ? node.pool_delivered > node.rate + SHORT : node.delivered > wantedOf(node) + SHORT);
         return {
             group: 'nodes',
             data: { id: node.id, label: label(node), raw: node, color, textColor: textColorOn(color) },
             position: positions[node.id],
             classes: ['real', node.kind, PART_LABELS[node.kind] && node.kind !== 'buffer' && 'part',
-                odd.has(node.building) && 'odd', short && 'short',
+                odd.has(node.building) && 'odd', short && 'short', over && 'over',
                 node.kind === 'exit' && node.label === 'demand' && 'demand', node.kind === 'exit' && node.label === 'Sink' && 'sunk'].filter(Boolean)
         };
     });

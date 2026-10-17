@@ -5,8 +5,9 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
+| [043](043-preferred-recipes.md) | Preferred recipes | feature | P2 | Open |
 
-Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next when wanted: 043, then 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
@@ -54,3 +55,4 @@ Moved to [done/](done/).
 | [039](done/039-plan-tabs.md) | Plan tabs and Save Book | feature | P2 | Done |
 | [040](done/040-chain-tab.md) | Chain tab: links between plans | feature | P2 | Done |
 | [041](done/041-belts-per-edge.md) | Belts per edge, matched across both ends (logistics mode) | feature | P2 | Done |
+| [042](done/042-push-output-sides.md) | Output sides pushed, input sides pulled (logistics mode) | feature | P2 | Done |

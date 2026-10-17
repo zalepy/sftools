@@ -15,10 +15,10 @@ to the default.
 Each edge of the production graph is a number of belts (ticket 041): by default the fewest its rate
 needs, or what the plan sets (`edges`, by `edge_key`). Each belt has an end on both sides: an exit on
 the producer's output side and an entry on the consumer's input side, belt k being the same belt at both
-ends. The sides are simulated together (`attach_logistics`). An edge whose count the plan sets is
-matched belt by belt: what each belt's entry lets through limits its exit, and what its exit gets is what
-the entry brings. An edge with the default count is a bundle: its belts share what the producer sends
-and what the consumer takes, as if balanced.
+ends. The sides are simulated together (`attach_logistics`): output sides push, input sides pull (ticket
+042). An edge whose count the plan sets is matched belt by belt: what its exit gets is what the entry
+brings. An edge with the default count is a bundle: its belts share what the producer sends over what the
+consumer takes, as if balanced.
 """
 import math
 from dataclasses import dataclass
@@ -589,28 +589,27 @@ def _fair(total: float, offers: List[float]) -> List[float]:
     return [offer + left for offer in offers]
 
 
-def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid,
-             supply: Optional[Dict] = None, limits: Optional[Dict] = None) -> Dict:
+def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid, supply: Optional[Dict] = None) -> Dict:
     """
-    Steady-state flows: sources (buildings out, entries in) push their rate; splitters share evenly among
-    the outputs that aren't backed up, mergers share what their output takes among their inputs, an
-    overflow splitter fills its main outputs first. Sinks take up to their rate (a buffer takes anything);
-    the exits of one edge share its rate, each up to what the consumer's side lets its belt take.
-    Repeated until the flows stop changing.
+    Steady-state flows: sources (buildings out, entries in) push their rate; mergers share what their
+    output takes among their inputs, an overflow splitter fills its main outputs first.
 
-    `supply` and `limits` ({(edge key, belt): rate}) come from the other ends of the belts: what an
-    entry's belt brings, and what an exit's belt can take (see attach_logistics); a limit with belt None
-    is on all the edge's belts together.
+    An input side is pulled: splitters share evenly among the outputs that aren't backed up, and its
+    buildings take up to their rate (a buffer takes anything). An output side is pushed (ticket 042): its
+    buildings put out all they make, splitters share it evenly among the outputs whose belts have room,
+    and exits take all they get, which shows how the layout splits it. Only an overflow splitter's main
+    outputs back up short of that, once the exits they reach have their edge's rate (the exits of one
+    edge share it). Repeated until the flows stop changing.
+
+    `supply` ({(edge key, belt): rate}) is what each entry's belt brings, from its exit (attach_logistics).
     """
     side = spec["side"]
-    supply, ends = supply or {}, limits or {}
+    push = side == "out"
+    supply = supply or {}
     nodes = {node["id"]: dict(node) for node in fixed_nodes(spec, settings, is_fluid)}
     for node in nodes.values():
-        end = (node.get("edge"), node.get("belt"))
-        if node["kind"] == ENTRY and end in supply:
-            node["rate"] = supply[end]
-        if node["kind"] == EXIT and end in ends:
-            node["limit"] = ends[end]
+        if node["kind"] == ENTRY and (node.get("edge"), node.get("belt")) in supply:
+            node["rate"] = supply[(node["edge"], node["belt"])]
     pools: Dict[str, List[str]] = {}  # edge key -> its exits
     for node_id, node in nodes.items():
         if node["kind"] == EXIT:
@@ -630,7 +629,8 @@ def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid,
         return {ENTRY: "source", EXIT: "sink", BUFFER: "sink"}.get(node["kind"], node["kind"])
 
     flow = {b["id"]: 0.0 for b in belts}
-    accept = {b["id"]: b["capacity"] for b in belts}
+    accept = {b["id"]: b["capacity"] for b in belts}  # what each belt can take, the sinks taking their rate
+    room = {b["id"]: b["capacity"] for b in belts}  # the same, every sink taking all it gets (push)
     for _ in range(MAX_ROUNDS):
         previous = dict(flow)
         for node_id in order:
@@ -642,6 +642,7 @@ def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid,
                 continue
             out = outs[node_id]
             limits = [accept[b["id"]] for b in out]
+            spaces = [room[b["id"]] for b in out] if push else limits
             if kind == OVERFLOW:
                 main = [i for i, b in enumerate(out) if not b.get("overflow")]
                 extra = [i for i, b in enumerate(out) if b.get("overflow")]
@@ -649,43 +650,44 @@ def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid,
                 for i, share in zip(main, _water_fill(inflow, [limits[i] for i in main])):
                     shares[i] = share
                 left = inflow - sum(shares)
-                for i, share in zip(extra, _water_fill(left, [limits[i] for i in extra])):
+                for i, share in zip(extra, _water_fill(left, [spaces[i] for i in extra])):
                     shares[i] = share
+                left = inflow - sum(shares)
+                if push and left > EPSILON:  # the overflow is full too: the main outputs take what they have room for
+                    for i, share in zip(main, _water_fill(left, [spaces[i] - shares[i] for i in main])):
+                        shares[i] += share
             else:
-                shares = _water_fill(inflow, limits)
+                shares = _water_fill(inflow, spaces)
             for belt, share in zip(out, shares):
                 flow[belt["id"]] = share
         # What each belt can take, from the end back. Inputs share it fairly: one that carries less than it
         # may (all its supply) keeps that, and the rest is split evenly among those that would send more.
-        def offer(belt, cap=math.inf):
-            wants = belt["capacity"] if flow[belt["id"]] >= accept[belt["id"]] - EPSILON else flow[belt["id"]]
-            return min(wants, cap)
+        def offer(belt, takes):
+            return belt["capacity"] if flow[belt["id"]] >= takes[belt["id"]] - EPSILON else flow[belt["id"]]
 
-        for members in pools.values():  # the exits of an edge share its rate
-            limit = {m: nodes[m].get("limit", math.inf) for m in members}
+        def back(takes, sink_total):
+            for node_id in reversed(order):
+                node = nodes[node_id]
+                total = sink_total(node) if role(node) == "sink" else sum(takes[b["id"]] for b in outs[node_id])
+                into = ins[node_id]
+                for belt, share in zip(into, _fair(total, [offer(b, takes) for b in into])):
+                    takes[belt["id"]] = min(belt["capacity"], share)
+
+        shared = {}  # each exit's share of its edge's rate
+        for members in pools.values():
             into = [(b, m) for m in members for b in ins[m]]
-            total = min(nodes[members[0]]["rate"], ends.get((nodes[members[0]]["edge"], None), math.inf))
-            shares = _fair(total, [offer(b, limit[m]) for b, m in into])
-            for (belt, member), share in zip(into, shares):
-                accept[belt["id"]] = min(belt["capacity"], limit[member], share)
-        for node_id in reversed(order):
-            node = nodes[node_id]
-            kind = role(node)
-            if node["kind"] == EXIT:
-                continue
-            if kind == "sink":
-                total = math.inf if node["kind"] == BUFFER else node["rate"]
-            else:
-                total = sum(accept[b["id"]] for b in outs[node_id])
-            into = ins[node_id]
-            for belt, share in zip(into, _fair(total, [offer(b) for b in into])):
-                accept[belt["id"]] = min(belt["capacity"], share)
+            for (belt, member), share in zip(into, _fair(nodes[members[0]]["rate"], [offer(b, accept) for b, m in into])):
+                shared[member] = shared.get(member, 0.0) + share
+        back(accept, lambda node: shared.get(node["id"], 0.0) if node["kind"] == EXIT
+             else math.inf if node["kind"] == BUFFER else node["rate"])
+        if push:
+            back(room, lambda node: math.inf)
         if all(abs(flow[k] - previous[k]) <= EPSILON for k in flow):
             break
 
     warnings = []
     for members in pools.values():
-        delivered = min(sum(nodes[m]["in"] for m in members), nodes[members[0]]["rate"])
+        delivered = sum(nodes[m]["in"] for m in members)
         for m in members:
             nodes[m]["pool_delivered"] = delivered
         if delivered < nodes[members[0]]["rate"] - SHORT:
@@ -695,8 +697,6 @@ def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid,
         kind = role(node)
         if node["kind"] == EXIT:
             node["delivered"] = node["in"]
-            if node.get("limit", math.inf) == math.inf:
-                node.pop("limit", None)
             if not ins[node_id]:
                 warnings.append(f"{_name(node)} isn't connected")
         elif kind == "sink" and node["kind"] != BUFFER:
@@ -823,36 +823,43 @@ def attach_logistics(nodes: List[Dict], is_fluid, settings: Settings, layouts: D
         if key not in chosen:
             chosen[key] = (default_layout(spec, settings, is_fluid, matched, targets), False)
 
-    # The belts between two sides: what each exit gets is what its entry brings, and what each entry
-    # lets through limits its exit (a bundle: shared). Repeated over all the sides until that settles.
-    supply: Dict[Tuple[str, int], float] = {}
-    limits: Dict[Tuple[str, Optional[int]], float] = {}
+    # The belts between two sides (ticket 042): the output sides push, so they come first; each entry then
+    # brings what its exit gets (a bundle: what its exits get together, over the entries as they take it,
+    # any more evenly, up to what a belt carries). Repeated over the input sides until what the bundles'
+    # entries take settles.
+    results = {key: simulate(layout, specs[key], settings, is_fluid)
+               for key, (layout, _) in chosen.items() if specs[key]["side"] == "out"}
+    sent: Dict[str, Dict[int, float]] = {}  # edge -> belt -> what its exit gets
+    for result in results.values():
+        for node in result["nodes"]:
+            if node["kind"] == EXIT and node["edge"] in linked:
+                sent.setdefault(node["edge"], {})[node["belt"]] = node["delivered"]
+    supply: Dict[Tuple[str, int], float] = {(edge, belt): rate for edge in matched for belt, rate in sent[edge].items()}
+    taken: Dict[str, Dict[int, float]] = {}  # edge -> belt -> what its entry lets through
     for _ in range(COUPLING_ROUNDS):
-        results = {key: simulate(layout, specs[key], settings, is_fluid, supply, limits)
-                   for key, (layout, _) in chosen.items()}
-        sent: Dict[str, Dict[int, float]] = {}  # edge -> belt -> what its exit gets
-        taken: Dict[str, Dict[int, float]] = {}  # edge -> belt -> what its entry lets through
-        for result in results.values():
-            for node in result["nodes"]:
-                if node.get("edge") in linked:
-                    if node["kind"] == EXIT:
-                        sent.setdefault(node["edge"], {})[node["belt"]] = node["delivered"]
-                    elif node["kind"] == ENTRY:
-                        taken.setdefault(node["edge"], {})[node["belt"]] = node["accepts"]
-        new_supply, new_limits = {}, {}
-        for edge in linked:
-            if edge in matched:
-                new_supply.update({(edge, belt): rate for belt, rate in sent[edge].items()})
-                new_limits.update({(edge, belt): rate for belt, rate in taken[edge].items()})
-            else:  # the bundle's total, over the entries as they take it
-                belts = sorted(taken[edge])
-                shares = _water_fill(sum(sent[edge].values()), [taken[edge][b] for b in belts])
-                new_supply.update({(edge, belt): share for belt, share in zip(belts, shares)})
-                new_limits[(edge, None)] = sum(taken[edge].values())
-        settled = _close(new_supply, supply) and _close(new_limits, limits)
-        supply, limits = new_supply, new_limits
-        if settled:
+        new_supply = dict(supply)
+        for edge in linked - matched:
+            belts = sorted(taken.get(edge) or sent[edge])
+            total = sum(sent[edge].values())
+            shares = _water_fill(total, [taken[edge][b] for b in belts] if edge in taken else [math.inf] * len(belts))
+            capacity = settings.capacity(is_fluid(edge.rsplit("|", 1)[1]))
+            more = _water_fill(total - sum(shares), [capacity - share for share in shares])
+            new_supply.update({(edge, belt): share + extra for belt, share, extra in zip(belts, shares, more)})
+        if taken and _close(new_supply, supply):
             break
+        supply = new_supply
+        inputs = {key: simulate(layout, specs[key], settings, is_fluid, supply)
+                  for key, (layout, _) in chosen.items() if specs[key]["side"] == "in"}
+        taken = {}
+        for result in inputs.values():
+            for node in result["nodes"]:
+                if node["kind"] == ENTRY and node["edge"] in linked:
+                    taken.setdefault(node["edge"], {})[node["belt"]] = node["accepts"]
+    for result in results.values():  # what a matched belt's entry takes, shown on its exit
+        for node in result["nodes"]:
+            if node["kind"] == EXIT and node["edge"] in matched:
+                node["limit"] = taken[node["edge"]][node["belt"]]
+    results.update(inputs)
 
     for key, result in results.items():
         layout, edited = chosen[key]

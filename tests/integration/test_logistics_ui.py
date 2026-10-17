@@ -224,6 +224,10 @@ def test_belts_per_edge(page):
     key = f"{BEAM}>Versatile Framework|Steel Beam"
     open_logistics(page)
     zoom_in(page)
+    # Pushed (ticket 042): the buildings' 9/min more lands on the Encased Beam belt, amber
+    encased = "x|Encased Industrial Beam|Steel Beam"
+    assert page.js(f"{LCY}.getElementById({json.dumps(encased)}).data('label')").endswith("45.00/m of 36.00/m")
+    assert page.js(f"{LCY}.getElementById({json.dumps(encased)}).hasClass('over')")
     page.js(f"void {LCY}.getElementById({json.dumps(framework)}).select()")
     assert page.js("document.getElementById('lv-belts').textContent") == "1 belt"
     assert page.js("document.getElementById('lv-belt-fewer').disabled")
