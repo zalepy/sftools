@@ -49,11 +49,12 @@ def test_belts_needed():
 def test_output_side_groups_buildings_by_destination(client):
     out = node(calculate(client, **BEAMS), STEEL_BEAM)["logistics"]["out"]
     framework, encased = "x|Versatile Framework|Steel Beam", "x|Encased Industrial Beam|Steel Beam"
+    # Pushed (ticket 042): all 75 made go out, the 9 more than Encased Beam takes on its belt too
     assert flows_into(out, framework) == pytest.approx(30)
-    assert flows_into(out, encased) == pytest.approx(36)
+    assert flows_into(out, encased) == pytest.approx(45)
     # Each edge is one belt (ticket 041): the buildings for each merged onto it
     assert out["complexity"] == 2 and sum(1 for n in out["nodes"] if n["kind"] == MERGER) == 2
-    assert out["backed_up"] == pytest.approx(9)  # 75 made, 66 used: the buildings idle a little
+    assert out["backed_up"] == pytest.approx(0)
     assert out["warnings"] == [] and not out["edited"]
     assert [b["to"] for b in out["belts"]].count(framework) == 1
 
@@ -74,11 +75,10 @@ def test_a_belt_tier_too_low_needs_more_belts(client):
     # Each edge comes as 3 belts (ticket 041), each its own entry
     assert sum(1 for n in side["nodes"] if n["kind"] == "entry") == 6
     assert all(b["flow"] <= BELTS[0] + 1e-6 for b in side["belts"])
+    # The two Steel Ingot nodes push all they make (330/min), each belt carrying up to 60: enough for all
+    assert all(n["rate"] <= BELTS[0] + 1e-6 for n in side["nodes"] if n["kind"] == "entry")
     delivered = sum(n["delivered"] for n in side["nodes"] if n["kind"] == "building")
-    assert delivered >= 0.9 * 300 - 1e-6
-    # Belts of 45-55/min merged onto 60/min buildings; a merger of two backed-up belts shares 50/50, as in
-    # the game: some buildings come up short
-    assert side["warnings"] and all(w.startswith("Building") and w.endswith("of 60.00/min") for w in side["warnings"])
+    assert delivered == pytest.approx(300) and side["warnings"] == []
 
 
 def edited(side):
@@ -139,16 +139,24 @@ def test_overflow_splitter_fills_its_main_output_first():
 
 def test_inputs_that_send_less_than_their_share_leave_the_rest_to_the_others():
     """A merger taking 20 from belts offering 10, 10 and 4: the 4 is all taken, the other two send 8 each."""
-    spec = {"side": "out", "items": {"Stator": {"sources": [("b1", 10.0), ("b2", 10.0), ("b3", 4.0)],
-                                                "sinks": [out_edge("Motor", 20.0, "Stator")]}}}
-    fixed = ["b1|Stator", "b2|Stator", "b3|Stator", "x|Motor|Stator"]
-    belts = [{"from": f"b{i}|Stator", "to": "m1"} for i in (1, 2, 3)] + [{"from": "m1", "to": "x|Motor|Stator"}]
+    spec = {"side": "in", "items": {"Stator": {"sources": [(f"p{i}", rate, 1, f"p{i}>Motor|Stator") for i, rate in ((1, 10.0), (2, 10.0), (3, 4.0))],
+                                               "sinks": [("b1", 20.0, None)]}}}
+    fixed = ["e|p1|Stator", "e|p2|Stator", "e|p3|Stator", "b1|Stator"]
+    belts = [{"from": f"e|p{i}|Stator", "to": "m1"} for i in (1, 2, 3)] + [{"from": "m1", "to": "b1|Stator"}]
     merger = [{"id": "m1", "kind": MERGER, "item": "Stator"}]
     result = simulate({"fixed": fixed, "nodes": merger, "belts": belts}, spec, Settings(), not_fluid)
-    assert flows_into(result, "x|Motor|Stator") == pytest.approx(20)
-    sent = {n["id"]: n["sent"] for n in result["nodes"] if n["kind"] == "building"}
-    assert sent == {"b1|Stator": pytest.approx(8), "b2|Stator": pytest.approx(8), "b3|Stator": pytest.approx(4)}
+    assert flows_into(result, "b1|Stator") == pytest.approx(20)
+    sent = {n["id"]: n["sent"] for n in result["nodes"] if n["kind"] == "entry"}
+    assert sent == {"e|p1|Stator": pytest.approx(8), "e|p2|Stator": pytest.approx(8), "e|p3|Stator": pytest.approx(4)}
     assert result["warnings"] == [] and result["backed_up"] == pytest.approx(4)
+
+    # An output side pushes instead: all 24 go out (ticket 042)
+    out = {"side": "out", "items": {"Stator": {"sources": [("b1", 10.0), ("b2", 10.0), ("b3", 4.0)],
+                                               "sinks": [out_edge("Motor", 20.0, "Stator")]}}}
+    fixed = ["b1|Stator", "b2|Stator", "b3|Stator", "x|Motor|Stator"]
+    belts = [{"from": f"b{i}|Stator", "to": "m1"} for i in (1, 2, 3)] + [{"from": "m1", "to": "x|Motor|Stator"}]
+    result = simulate({"fixed": fixed, "nodes": merger, "belts": belts}, out, Settings(), not_fluid)
+    assert flows_into(result, "x|Motor|Stator") == pytest.approx(24) and result["warnings"] == []
 
 
 def test_each_belt_end_takes_one_belt():
@@ -165,10 +173,6 @@ def test_each_belt_end_takes_one_belt():
     assert result["warnings"] == [] and result["complexity"] == 1
     two = {**layout, "belts": layout["belts"][:2] + [{"from": "m1", "to": "x|Motor|Rotor|2"}, {"from": "b3|Rotor", "to": "x|Motor|Rotor|2"}]}
     assert validate(two, spec, Settings(), not_fluid) == "too many belts into x|Motor|Rotor|2"
-    # The consumer's side takes 5 on belt 1: the merger backs up, belt 2 can't make up for it
-    limited = simulate(layout, spec, Settings(), not_fluid, limits={("p>Motor|Rotor", 1): 5.0})
-    assert flows_into(limited, "x|Motor|Rotor") == pytest.approx(5)
-    assert limited["warnings"] == ["Exit to Motor gets 9.00 of 12.00/min"]
 
 
 # Motor 13.5/min on 2 buildings at 100% and one at 70% (10, 10 and 7 Stator/min), from a Stator node
@@ -179,13 +183,15 @@ STATOR_TO_MOTOR = "Motor__Stator>Motor|Stator"
 
 
 def test_an_edge_of_several_belts_follows_the_consumers_buildings(client):
-    """Ticket 041: 3 belts to Motor, each feeding one Motor: they carry 10, 10 and 7."""
+    """Ticket 041: 3 belts to Motor, each feeding one Motor: they carry 10, 10 and 7 (the third gets 7.5, half
+    of a building split with the demand, ticket 042)."""
     body = calculate(client, **MOTORS, logistics={"edges": {STATOR_TO_MOTOR: 3}})
     stator, motor = node(body, "Motor__Stator"), node(body, "Motor")
     assert stator["edge_belts"]["Motor"] == {"kind": "belt", "count": 3, "tier": 1, "needed": 1, "key": STATOR_TO_MOTOR}
     out, into = stator["logistics"]["out"], motor["logistics"]["in"]
-    exits = [f"x|Motor|Stator{suffix}" for suffix in ("", "|2", "|3")]
-    assert [flows_into(out, e) for e in exits] == [pytest.approx(10), pytest.approx(10), pytest.approx(7)]
+    exits = {n["id"]: n for n in out["nodes"] if n["kind"] == "exit" and n["target"] == "Motor"}
+    assert [(exits[e]["delivered"], exits[e]["limit"]) for e in ("x|Motor|Stator", "x|Motor|Stator|2", "x|Motor|Stator|3")] == [
+        (pytest.approx(10), pytest.approx(10)), (pytest.approx(10), pytest.approx(10)), (pytest.approx(7.5), pytest.approx(7))]
     entries = {n["id"]: n["sent"] for n in into["nodes"] if n["kind"] == "entry" and n["item"] == "Stator"}
     assert entries == {"e|Motor__Stator|Stator": pytest.approx(10), "e|Motor__Stator|Stator|2": pytest.approx(10),
                        "e|Motor__Stator|Stator|3": pytest.approx(7)}
@@ -193,25 +199,23 @@ def test_an_edge_of_several_belts_follows_the_consumers_buildings(client):
     assert not [n for n in into["nodes"] if n["item"] == "Stator" and n["kind"] in (SPLITTER, MERGER)]
     assert out["warnings"] == [] and into["warnings"] == []
 
-    # One belt (the default): pooled, all 27 still arrive
+    # One belt (the default): pooled, all 27 arrive (and the half building more)
     body = calculate(client, **MOTORS)
     assert node(body, "Motor__Stator")["edge_belts"]["Motor"]["count"] == 1
-    assert flows_into(node(body, "Motor__Stator")["logistics"]["out"], "x|Motor|Stator") == pytest.approx(27)
+    assert flows_into(node(body, "Motor__Stator")["logistics"]["out"], "x|Motor|Stator") == pytest.approx(27.5)
 
 
-def test_what_the_consumer_takes_limits_the_producer(client):
-    """An input side that takes less on a belt than it's offered: the producer's exit backs up."""
+def test_the_producer_pushes_whatever_the_consumer_takes(client):
+    """Ticket 042: an input side that takes less on a belt than it's brought doesn't change the producer's side."""
     body = calculate(client, **MOTORS, logistics={"edges": {STATOR_TO_MOTOR: 3}})
-    into = node(body, "Motor")["logistics"]["in"]
-    # Belt 3 left unconnected on the Motor side: it takes nothing, so its exit gets nothing
-    layout = {"fixed": into["fixed"],
-              "nodes": [{"id": n["id"], "kind": n["kind"], "item": n["item"]} for n in into["nodes"] if n["kind"] in (SPLITTER, MERGER)],
-              "belts": [{"from": b["from"], "to": b["to"], "overflow": b.get("overflow", False)} for b in into["belts"]
-                        if not b["from"].startswith("e|Motor__Stator|Stator|3")]}
-    body = calculate(client, **MOTORS, logistics={"edges": {STATOR_TO_MOTOR: 3}, "layouts": {"Motor|in": layout}})
-    out = node(body, "Motor__Stator")["logistics"]["out"]
-    assert flows_into(out, "x|Motor|Stator|3") == pytest.approx(0)
-    assert "Exit to Motor gets 20.00 of 27.00/min" in out["warnings"]
+    out = edited(node(body, "Motor__Stator")["logistics"]["out"])
+    into = edited(node(body, "Motor")["logistics"]["in"])
+    # Belt 3 left unconnected on the Motor side: it takes nothing, its exit still gets 7.5
+    into["belts"] = [b for b in into["belts"] if not b["from"].startswith("e|Motor__Stator|Stator|3")]
+    body = calculate(client, **MOTORS, logistics={"edges": {STATOR_TO_MOTOR: 3},
+                                                  "layouts": {"Motor|in": into, "Motor__Stator|out": out}})
+    third = next(n for n in node(body, "Motor__Stator")["logistics"]["out"]["nodes"] if n["id"] == "x|Motor|Stator|3")
+    assert third["delivered"] == pytest.approx(7.5) and third["limit"] == pytest.approx(0)
     assert "Entry from Motor__Stator (belt 3/3) isn't connected" in node(body, "Motor")["logistics"]["in"]["warnings"]
 
 
