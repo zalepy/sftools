@@ -52,6 +52,21 @@ def default_recipe_for(item: Item) -> Optional[Recipe]:
     return min(candidates, key=rank)[1]
 
 
+def recipe_for(item: Item, preferred: Optional[Dict[str, Recipe]] = None) -> Optional[Recipe]:
+    """The recipe a new node of `item` runs: the user's preferred one for the item (ticket 043), else the default."""
+    return (preferred or {}).get(item.name) or default_recipe_for(item)
+
+
+def resolve_preferred(items_map: Dict, recipes_map: Dict[str, Recipe], preferred: Optional[Dict[str, str]]) -> Dict[str, Recipe]:
+    """{item: recipe name} to {item: Recipe}, leaving out unknown recipes and those that don't make the item."""
+    resolved = {}
+    for item_name, recipe_name in (preferred or {}).items():
+        recipe = recipes_map.get(recipe_name)
+        if item_name in items_map and recipe is not None and recipe.produces(item_name) and recipe.rate_of(item_name):
+            resolved[item_name] = recipe
+    return resolved
+
+
 def root_node_ids(item_names: List[str]) -> List[str]:
     """Root nodes are keyed by item; a repeated item gets '#2', '#3', ... in order."""
     seen: Dict[str, int] = {}
@@ -70,7 +85,8 @@ def child_node_id(parent: ProductionNode, item_name: str, items_map: Dict = None
     return f"{parent.id}__{item_name}"
 
 
-def calculate_demands(items_map, root_demands_list: List[Demand], round_up: bool = True) -> FactoryGraph:
+def calculate_demands(items_map, root_demands_list: List[Demand], round_up: bool = True,
+                      preferred: Optional[Dict[str, Recipe]] = None) -> FactoryGraph:
 
     graph = FactoryGraph()
 
@@ -99,7 +115,7 @@ def calculate_demands(items_map, root_demands_list: List[Demand], round_up: bool
         if not item or not item.recipes:
             continue
 
-        recipe = default_recipe_for(item)
+        recipe = recipe_for(item, preferred)
         if recipe is None:
             continue
 
@@ -151,7 +167,8 @@ def _ancestor_items(node: ProductionNode) -> frozenset:
     return frozenset(items)
 
 
-def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_map: Dict, round_up: bool = True):
+def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_map: Dict, round_up: bool = True,
+                       preferred: Optional[Dict[str, Recipe]] = None):
     """
     Expands a new subtree from an existing node that just had its recipe changed.
     Checks for existing dormant nodes before creating new ones.
@@ -183,7 +200,7 @@ def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_m
         if not item or not item.recipes:
             continue
 
-        recipe = default_recipe_for(item)
+        recipe = recipe_for(item, preferred)
         if recipe is None:
             continue
 
@@ -219,7 +236,8 @@ def expand_new_subtree(graph: FactoryGraph, parent_node: ProductionNode, items_m
         processed_count += 1
 
 
-def switch_recipe_in_graph(graph: FactoryGraph, node_id: str, new_recipe: Recipe, items_map: Dict, round_up: bool = True):
+def switch_recipe_in_graph(graph: FactoryGraph, node_id: str, new_recipe: Recipe, items_map: Dict, round_up: bool = True,
+                           preferred: Optional[Dict[str, Recipe]] = None):
     """
     Switches the recipe for a node, proactively deactivating its current subtree
     and activating/expanding the new one.
@@ -238,7 +256,7 @@ def switch_recipe_in_graph(graph: FactoryGraph, node_id: str, new_recipe: Recipe
     node.is_dormant = False # Ensure it's active
 
     # 3. Activate/Expand New Subtree
-    expand_new_subtree(graph, node, items_map, round_up)
+    expand_new_subtree(graph, node, items_map, round_up, preferred)
 
     # 4. Recalculate everything
     graph.recalculate(round_up=round_up)
@@ -324,6 +342,7 @@ def build_plan(
     inbound: Optional[List[Tuple[str, float]]] = None,
     byproducts: Optional[Dict[str, str]] = None,
     byproducts_default: str = SINK,
+    preferred: Optional[Dict[str, str]] = None,
 ) -> FactoryGraph:
     """
     Builds a FactoryGraph from the full plan description.
@@ -339,7 +358,8 @@ def build_plan(
     for the item before anything is produced (see FactoryGraph.recalculate). `byproducts` says per node
     whether its by-products cover demand elsewhere (USE, or SOLVE to solve a loop they'd close) or go to
     the Sink (SINK); nodes not listed get
-    `byproducts_default` (USE for Calculate, ticket 031).
+    `byproducts_default` (USE for Calculate, ticket 031). `preferred` ({item: recipe name}, ticket 043) is the
+    recipe new nodes of an item run instead of the default; a node's own entry in `recipes` still wins.
 
     Entries that can't apply are skipped and listed in `graph.ignored` as
     {"kind": "recipe" | "merge" | "clock", "node_id", "reason"}. Entries on dropped
@@ -351,7 +371,8 @@ def build_plan(
     ignored = []
 
     root_demands = [Demand(name, items_map[name], rate, DemandType.PRODUCE) for name, rate in demands]
-    graph = calculate_demands(items_map, root_demands, round_up=round_up)
+    preferred_recipes = resolve_preferred(items_map, recipes_map, preferred)
+    graph = calculate_demands(items_map, root_demands, round_up=round_up, preferred=preferred_recipes)
 
     def report(kind: str, node_id: str, state: str, **extra):
         if state == DROPPED:
@@ -379,7 +400,7 @@ def build_plan(
                             "reason": f"{recipe_name!r} does not produce {node.output_item_name}"})
             continue
         if node.recipe is not recipe:
-            switch_recipe_in_graph(graph, node_id, recipe, items_map, round_up=round_up)
+            switch_recipe_in_graph(graph, node_id, recipe, items_map, round_up=round_up, preferred=preferred_recipes)
 
     # Merging can drop inputs (of the absorbed nodes), which can drop nodes other merges refer to:
     # apply the merges again until nothing more is dropped.

@@ -327,6 +327,7 @@ export function showNodeDetails(data) {
 
     renderBuilt(data);
     if (!fixed) populateRecipeSelector(data.output_item, data.recipe_name || data.name);
+    renderPreferred(fixed ? null : data);
 
     $('node-details').style.display = 'block';
     updateNodeEmpty();
@@ -486,6 +487,58 @@ export function getClockInputs() {
 export function clearClockInputs() {
     $('clock-all').value = '';
     $('clock-last').value = '';
+}
+
+// --- Preferred recipes (ticket 043) ---
+
+/** Nodes of `item` in the plan shown that run a recipe of their own, other than the preferred one. */
+export function ownRecipeNodes(item) {
+    return Object.entries(state.recipes)
+        .filter(([id, recipe]) => getNodeData(id)?.output_item === item && recipe !== state.preferred[item])
+        .map(([id]) => id);
+}
+
+/** Prefer / Use Default Recipe for the node's item, and what's preferred now. */
+function renderPreferred(data) {
+    const recipe = data && (data.recipe_name || data.name);
+    $('preferred-controls').style.display = !recipe || recipe === OUTSIDE_SUPPLY ? 'none' : '';
+    if (!recipe || recipe === OUTSIDE_SUPPLY) return;
+    const item = data.output_item;
+    const preferred = state.preferred[item];
+    const own = ownRecipeNodes(item).length;
+    const keep = own ? ` ${own} node${own === 1 ? '' : 's'} here keep${own === 1 ? 's' : ''} a recipe of ${own === 1 ? 'its' : 'their'} own.` : '';
+    $('prefer-btn').textContent = `Prefer for ${item}`;
+    $('prefer-btn').style.display = preferred === recipe ? 'none' : '';
+    $('unprefer-btn').style.display = preferred ? '' : 'none';
+    $('preferred-hint').innerText = preferred === recipe
+        ? `Preferred for ${item}: new ${item} nodes run it, in every tab.${keep}`
+        : preferred
+            ? `Preferred for ${item}: ${preferred}.${keep}`
+            : `${item} nodes run the default recipe unless switched. Prefer this one to run it in every new ${item} node, in every tab.`;
+}
+
+/** The Preferred Recipes list on the colors tab; `onRemove(item)` when one is removed. */
+export function renderPreferredList(onRemove) {
+    const items = Object.keys(state.preferred).sort();
+    const list = $('preferred-list');
+    if (!items.length) {
+        list.replaceChildren(Object.assign(document.createElement('p'), { className: 'hint', textContent: 'None: every item runs its default recipe.' }));
+        return;
+    }
+    list.replaceChildren(...items.map(item => {
+        const row = document.createElement('div');
+        row.className = 'stat-row';
+        const label = Object.assign(document.createElement('span'), { className: 'stat-label', textContent: item });
+        const value = Object.assign(document.createElement('span'), { className: 'stat-value', textContent: `${state.preferred[item]} ` });
+        const remove = Object.assign(document.createElement('button'), {
+            type: 'button', className: 'secondary preferred-remove', textContent: '✕', title: 'Back to the default recipe'
+        });
+        remove.dataset.item = item;
+        remove.addEventListener('click', () => onRemove(item));
+        value.appendChild(remove);
+        row.append(label, value);
+        return row;
+    }));
 }
 
 // --- Colors tab ---

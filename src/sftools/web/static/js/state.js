@@ -5,6 +5,7 @@
 export const PLAN_MODE = 'logistics';
 const PLAN_KEY = 'sf_logistics_state';
 const COLORS_KEY = 'sf_planner_colors';
+const PREFERRED_KEY = 'sf_planner_recipes';
 export const DEFAULT_LOGISTICS_SETTINGS = { belt_tier: 6, pipe_tier: 2, smart: true };
 
 // Mutable shared state; modules read and replace its fields.
@@ -19,6 +20,7 @@ export const state = {
     // belts ('<producer>><consumer>|<item>' -> count, ticket 041)
     logistics: { settings: { ...DEFAULT_LOGISTICS_SETTINGS }, layouts: {}, positions: {}, edges: {} },
     colors: {},         // item -> color
+    preferred: {},      // item -> recipe new nodes of it run (ticket 043); global, like the colors
     selectedNodeId: null
 };
 
@@ -87,9 +89,10 @@ export function downloadPlan(plan, name) {
     download({ ...plan, name }, fileName(name));
 }
 
-/** Downloads every tab as one file (Save Book, ticket 039). */
+/** Downloads every tab as one file (Save Book, ticket 039), with the preferred recipes and colors (ticket 043). */
 export function downloadBook(book) {
-    download({ mode: PLAN_MODE, tabs: book.tabs, active: book.active, chain: book.chain }, fileName('book'));
+    download({ mode: PLAN_MODE, tabs: book.tabs, active: book.active, chain: book.chain,
+        preferred: state.preferred, colors: loadSavedColors() }, fileName('book'));
 }
 
 /** Whether a file is a book (all tabs) rather than one plan. */
@@ -141,6 +144,26 @@ export function loadSavedColors() {
 export function saveColors(colors) {
     localStorage.setItem(COLORS_KEY, JSON.stringify(colors));
     state.colors = colors;
+}
+
+/** The preferred recipes (ticket 043): {item: recipe name}, shared by every tab in this browser. */
+export function loadPreferred() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(PREFERRED_KEY));
+        state.preferred = saved && typeof saved === 'object' ? saved : {};
+    } catch (e) {
+        console.warn("Could not read preferred recipes", e);
+        state.preferred = {};
+    }
+}
+
+export function savePreferred(preferred) {
+    state.preferred = preferred;
+    try {
+        localStorage.setItem(PREFERRED_KEY, JSON.stringify(preferred));
+    } catch (e) {
+        console.warn("Could not save preferred recipes", e);
+    }
 }
 
 // Entries the server could not apply are removed from the plan that was sent; callers save it after

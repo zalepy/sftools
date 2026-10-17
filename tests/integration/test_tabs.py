@@ -121,6 +121,7 @@ def test_save_book_and_import(page):
     assert page.js("window.__files") == ["sf_planner_book.json"]
     assert [t["name"] for t in book["tabs"]] == ["Plan 1", "Plan 2"]
     assert [t["plan"]["items"] for t in book["tabs"]] == [["Rotor"], ["Reinforced Iron Plate"]]
+    assert book["preferred"] == {} and book["colors"] == {}  # this browser's (ticket 043): none set
 
     # Export Plan: the active tab, named after it
     page.js("document.getElementById('export-btn').click()")
@@ -133,12 +134,16 @@ def test_save_book_and_import(page):
     page.wait_until(has_node(page, "Modular Frame"))
     assert tab_names(page) == ["Plan 1", "Plan 2", "Frames"]
 
-    # Importing a book replaces all the tabs (after asking)
+    # Importing a book replaces all the tabs (after asking); its preferred recipes and colors are this browser's
     page.js("window.confirm = () => true")
-    import_file(page, book)
+    import_file(page, {**book, "preferred": {"Screws": "Alternate: Cast Screws"}, "colors": {"Screws": "#123456"}})
     page.wait_until("document.querySelectorAll('.plan-tab').length === 2")
     assert tab_names(page) == ["Plan 1", "Plan 2"]
     page.wait_until(has_node(page, "Reinforced Iron Plate"))
+    assert page.js("JSON.parse(localStorage.getItem('sf_planner_recipes'))") == {"Screws": "Alternate: Cast Screws"}
+    assert page.js("JSON.parse(localStorage.getItem('sf_planner_colors'))")["Screws"] == "#123456"
+    screws = "Reinforced Iron Plate__Screws"
+    assert page.js(f"import('/static/js/graph.js').then(g => g.getNodeData({json.dumps(screws)}).recipe_name)") == "Alternate: Cast Screws"
 
 
 def test_simple_mode_files_are_refused(page):

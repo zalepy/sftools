@@ -265,6 +265,16 @@ button:disabled {
     padding: 0.1rem 0.6rem;
 }
 
+#preferred-controls button {
+    margin-bottom: 0.4rem;
+}
+
+.preferred-remove {
+    width: auto;
+    padding: 0 0.4rem;
+    margin-left: 0.3rem;
+}
+
 .stat-row {
     display: flex;
     justify-content: space-between;

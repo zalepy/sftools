@@ -12,6 +12,7 @@ class PlanRequest(BaseModel):
     """Full description of a plan. The server keeps no state between requests."""
     demands: List[DemandIn]
     recipes: Dict[str, str] = {}  # node_id -> recipe name
+    preferred: Dict[str, str] = {}  # item -> the recipe new nodes of it run (ticket 043); `recipes` wins
     merges: Dict[str, str] = {}  # source node_id -> target node_id
     clocks: Dict[str, List[Dict[str, Any]]] = {}  # node_id -> [{"clock": 1.0}, {"count": 1, "clock": 0.6}]
     inbound: List[DemandIn] = []  # production supplied from outside the plan, used before producing anything
