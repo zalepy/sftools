@@ -5,7 +5,7 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
-| [041](041-belts-to-the-consumers-buildings.md) | Belts matched to the consumer's input side (logistics mode) | feature | P2 | Open |
+| [041](041-belts-per-edge.md) | Belts per edge, matched across both ends (logistics mode) | feature | P2 | Open |
 
 Next when wanted: 041, then 034. Smaller ideas live in [TODO.md](../TODO.md).
 
