@@ -410,6 +410,22 @@ def _water_fill(amount: float, limits: List[float]) -> List[float]:
     return shares
 
 
+def _level(total: float, offers: List[float]) -> float:
+    """
+    How much each of several inputs may send when they share `total` fairly: the level where the offers,
+    each cut at it, add up to `total` (infinite when all the offers fit).
+    """
+    if total == math.inf:
+        return math.inf
+    left = total
+    for i, offer in enumerate(sorted(offers)):
+        share = left / (len(offers) - i)
+        if offer >= share:
+            return share
+        left -= offer
+    return math.inf
+
+
 def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid) -> Dict:
     """
     Steady-state flows: sources (buildings out, entries in) push their rate; splitters share evenly among
@@ -466,10 +482,13 @@ def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid) -> Dict:
                 total = math.inf if node["kind"] == BUFFER else node["rate"]
             else:
                 total = sum(accept[b["id"]] for b in outs[node_id])
+            # Inputs share it fairly: one that carries less than it may (all its supply) keeps that, and
+            # the rest is split evenly among those that would send more
             into = ins[node_id]
+            level = _level(total, [b["capacity"] if flow[b["id"]] >= accept[b["id"]] - EPSILON else flow[b["id"]]
+                                   for b in into])
             for belt in into:
-                others = sum(flow[b["id"]] for b in into if b is not belt)
-                accept[belt["id"]] = min(belt["capacity"], max(total / len(into), total - others))
+                accept[belt["id"]] = min(belt["capacity"], level)
         if all(abs(flow[k] - previous[k]) <= EPSILON for k in flow):
             break
 
