@@ -162,8 +162,10 @@ class Page:
             raise RuntimeError(result["exceptionDetails"].get("exception", {}).get("description"))
         return result["result"].get("value")
 
-    def open(self, url, plan=None, key="sf_planner_state"):
+    def open(self, url, plan=None, key="sf_logistics_state"):
         """Loads the app with an empty browser state, or with `plan` as the saved plan (under `key`)."""
+        if plan is not None:
+            plan = {"mode": "logistics", **plan}  # the only mode (simple mode plans are refused)
         self.send("Page.navigate", url=url)
         self.wait_until("document.readyState === 'complete'")
         self.js("localStorage.clear()")
@@ -177,7 +179,7 @@ class Page:
 
     # --- App helpers ---
 
-    def saved_plan(self, key="sf_planner_state"):
+    def saved_plan(self, key="sf_logistics_state"):
         return self.js(f"JSON.parse(localStorage.getItem({json.dumps(key)}))")
 
     def node_ids(self):

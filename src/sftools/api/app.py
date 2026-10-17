@@ -2,6 +2,7 @@ import hashlib
 import mimetypes
 
 from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -44,20 +45,16 @@ def create_app() -> FastAPI:
     # Load game data at startup so the first request is fast and bad data fails the deploy.
     get_game_data()
 
-    def page(request: Request, mode: str):
-        return templates.TemplateResponse(
-            request, "index.html",
-            {"all_items": sorted(get_game_data().items), "asset_version": version, "mode": mode},
-        )
-
     @app.get("/", include_in_schema=False)
     def index(request: Request):
-        return page(request, "simple")
+        return templates.TemplateResponse(
+            request, "index.html", {"all_items": sorted(get_game_data().items), "asset_version": version},
+        )
 
     @app.get("/logistics", include_in_schema=False)
-    def logistics(request: Request):
-        """Logistics mode (ticket 033): the same page, with belts, splitters and mergers; its own plans."""
-        return page(request, "logistics")
+    def logistics():
+        """The old address of logistics mode, the only mode since simple mode was removed."""
+        return RedirectResponse("/", status_code=301)
 
     @app.get("/healthz", include_in_schema=False)
     def healthz():

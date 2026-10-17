@@ -1,9 +1,9 @@
 // Plan tabs (ticket 039): a book of plans, one shown at a time, and the tab strip above the graph.
 // The book is kept in the browser under its own key; the active tab's plan is also kept under the plan's
 // key, as before tabs, so older versions of the page still find it.
-import { MODE, savePlan, loadSavedPlan } from './state.js';
+import { savePlan, loadSavedPlan } from './state.js';
 
-const BOOK_KEY = MODE === 'logistics' ? 'sf_logistics_book' : 'sf_planner_book';
+const BOOK_KEY = 'sf_logistics_book';
 
 const $ = id => document.getElementById(id);
 

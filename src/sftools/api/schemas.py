@@ -13,18 +13,16 @@ class PlanRequest(BaseModel):
     demands: List[DemandIn]
     recipes: Dict[str, str] = {}  # node_id -> recipe name
     merges: Dict[str, str] = {}  # source node_id -> target node_id
-    splits: Dict[str, int] = {}  # node_id -> number of equal parts
     clocks: Dict[str, List[Dict[str, Any]]] = {}  # node_id -> [{"clock": 1.0}, {"count": 1, "clock": 0.6}]
     inbound: List[DemandIn] = []  # production supplied from outside the plan, used before producing anything
     byproducts: Dict[str, Literal["use", "sink", "solve"]] = {}  # node_id -> what its by-products do
     byproducts_default: Literal["use", "sink"] = "sink"  # for nodes not in `byproducts`: "use" for Calculate
-    mode: Literal["simple", "logistics"] = "simple"  # logistics mode (ticket 033): no splits, logistics per node
     logistics: Dict[str, Any] = {}  # {"settings": {belt_tier, pipe_tier, smart}, "layouts": {"<id>|in|out": ...}}
 
 
 class IgnoredEntry(BaseModel):
     """A plan entry that no longer matches the graph (usually a stale saved plan)."""
-    kind: Literal["recipe", "merge", "split", "clock"]
+    kind: Literal["recipe", "merge", "clock"]
     node_id: str
     reason: str
     dropped: bool = False  # on an input the current recipe doesn't use; the UI removes it quietly

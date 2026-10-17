@@ -1,8 +1,9 @@
 // Client-side plan state and its persistence (localStorage, JSON export/import).
 
-// The page's mode: 'simple', or 'logistics' (ticket 033). Each keeps its own plan and files.
-export const MODE = document.body.dataset.mode || 'simple';
-const PLAN_KEY = MODE === 'logistics' ? 'sf_logistics_state' : 'sf_planner_state';
+// Plans and files are marked as logistics mode plans (ticket 033), the only mode since simple mode was
+// removed; simple mode plans (also those without a mode) are refused.
+export const PLAN_MODE = 'logistics';
+const PLAN_KEY = 'sf_logistics_state';
 const COLORS_KEY = 'sf_planner_colors';
 export const DEFAULT_LOGISTICS_SETTINGS = { belt_tier: 6, pipe_tier: 2, smart: true };
 
@@ -11,7 +12,6 @@ export const state = {
     clocks: {},         // node_id -> [{clock}, {count, clock}...]: see clock groups in ticket 023
     merges: {},         // absorbed node_id -> target node_id
     recipes: {},        // node_id -> recipe name
-    splits: {},         // node_id -> number of parts
     byproducts: {},     // node_id -> 'use' | 'sink' | 'solve': what its by-products do (tickets 031, 032)
     built: {},          // node_id -> {count, recipe}: buildings already built in the game (ticket 037)
     // Logistics mode: what's unlocked, the logistics nodes the user edited ('<node id>|in' / '|out'), and
@@ -24,17 +24,16 @@ export const state = {
 /** Plan in its saved/exported shape; demands and inbound production come from the form. */
 export function snapshot({ items, rates, inbound }) {
     return {
-        mode: MODE,
+        mode: PLAN_MODE,
         items,
         rates,
         inbound,
         clocks: state.clocks,
         merges: state.merges,
         recipes: state.recipes,
-        splits: state.splits,
         byproducts: state.byproducts,
         built: state.built,
-        ...(MODE === 'logistics' && { logistics: state.logistics })
+        logistics: state.logistics
     };
 }
 
@@ -42,7 +41,6 @@ export function applySaved(saved) {
     state.clocks = saved.clocks || {};
     state.merges = saved.merges || {};
     state.recipes = saved.recipes || {};
-    state.splits = saved.splits || {};
     state.byproducts = saved.byproducts || {};
     state.built = saved.built || {};
     const logistics = saved.logistics || {};
@@ -53,13 +51,10 @@ export function applySaved(saved) {
     };
 }
 
-/** Why a plan can't be opened on this page (another mode's), or null. Plans without a mode are simple ones. */
+/** Why a plan can't be opened, or null: a simple mode plan (plans without a mode are simple ones). */
 export function wrongMode(plan) {
-    const mode = plan.mode || 'simple';
-    if (mode === MODE) return null;
-    return mode === 'logistics'
-        ? 'This is a logistics mode plan: open it in Logistics mode.'
-        : "This is a simple mode plan: open it in Simple mode. Plans don't convert between modes.";
+    if (plan.mode === PLAN_MODE) return null;
+    return "This is a simple mode plan. Simple mode was removed, and its plans don't convert.";
 }
 
 export function savePlan(plan) {
@@ -82,7 +77,7 @@ export function loadSavedPlan() {
 /** A file name from a tab's name: letters, digits, '-' and '_' kept. */
 function fileName(name) {
     const safe = (name || '').trim().replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '');
-    return `${MODE === 'logistics' ? 'sf_logistics' : 'sf_planner'}_${safe || 'save'}.json`;
+    return `sf_planner_${safe || 'save'}.json`;
 }
 
 /** Downloads one plan, named after its tab. */
@@ -92,7 +87,7 @@ export function downloadPlan(plan, name) {
 
 /** Downloads every tab as one file (Save Book, ticket 039). */
 export function downloadBook(book) {
-    download({ mode: MODE, tabs: book.tabs, active: book.active, chain: book.chain }, fileName('book'));
+    download({ mode: PLAN_MODE, tabs: book.tabs, active: book.active, chain: book.chain }, fileName('book'));
 }
 
 /** Whether a file is a book (all tabs) rather than one plan. */
@@ -148,8 +143,8 @@ export function saveColors(colors) {
 
 // Entries the server could not apply are removed from the plan that was sent; callers save it after
 // a successful request. A merge whose target was dropped can name a new target (`replacement`).
-export function dropIgnoredEntries(ignored, { merges, recipes, splits, clocks }) {
-    const byKind = { recipe: recipes, merge: merges, split: splits, clock: clocks };
+export function dropIgnoredEntries(ignored, { merges, recipes, clocks }) {
+    const byKind = { recipe: recipes, merge: merges, clock: clocks };
     ignored.forEach(entry => {
         const target = byKind[entry.kind];
         if (!target) return;

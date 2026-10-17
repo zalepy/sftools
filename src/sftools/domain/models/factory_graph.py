@@ -1,7 +1,5 @@
-from collections import Counter
 from typing import Dict, List, Optional, Set, Tuple
 import math
-import re
 from sftools.domain.enums.item_categories import ItemCategory
 from sftools.domain.enums.recipe_type import RecipeType
 from sftools.domain.models.production_node import ProductionNode
@@ -34,7 +32,6 @@ class FactoryGraph:
         self.merges: Dict[str, str] = {} # source_id -> target_id
         self._initial_structure: Dict[str, Dict[str, List[str]]] = {}
         self.ignored: List[Dict] = []  # plan entries build_plan could not apply
-        self.splits: Dict[str, int] = {}  # node_id -> number of parts (see calculator.split_parts)
         # node_id -> (clock for the rest, [(count, clock), ...] fixed groups such as the last building)
         self.clocks: Dict[str, Tuple[float, List[Tuple[int, float]]]] = {}
         # item -> rate supplied from outside the plan, used before anything is produced (see recalculate)
@@ -275,12 +272,7 @@ class FactoryGraph:
                 for child in self._original_children(parent_member)
                 if child.id in active and child.output_item_name == member.output_item_name
             ]
-            # A split input is several nodes under one parent: they divide that parent's share
-            parts = Counter(self._original_parent(child).id for child in suppliers)
-            weights = {
-                child.id: share(parent_rep.id, self._original_parent(child)) / parts[self._original_parent(child).id]
-                for child in suppliers
-            }
+            weights = {child.id: share(parent_rep.id, self._original_parent(child)) for child in suppliers}
             total = sum(weights.values())
             fraction = weights[member.id] / total if total > 0 else 1 / len(suppliers)
             return parent_rep.id, need * fraction
@@ -552,7 +544,7 @@ class FactoryGraph:
             "scaled_inputs": [{"item": item, "rate": rate} for item, rate in sorted(by_item.items())],
             "base_output_rate": 0, "base_inputs": [], "base_power": -SINK_POWER,
             "is_dormant": False, "is_alternate": False, "is_supplied": False,
-            "derivation": [], "split": None, "is_merged": False, "constituent_ids": [], "constituent_derivations": [],
+            "derivation": [], "is_merged": False, "constituent_ids": [], "constituent_derivations": [],
             "sink": {"inputs": inputs, "fluids": sorted({e["item"] for e in inputs if e["fluid"]})},
         }
 
@@ -571,7 +563,7 @@ class FactoryGraph:
             "scaled_inputs": [], "parent_demands": consumers, "base_output_rate": 1, "base_inputs": [],
             "base_power": 0, "is_dormant": False, "is_alternate": False, "is_supplied": True,
             "derivation": [{"id": node_id, "item": item, "recipe": "Inbound production", "building": "Outside the plan"}],
-            "split": None, "is_merged": False, "constituent_ids": [], "constituent_derivations": [],
+            "is_merged": False, "constituent_ids": [], "constituent_derivations": [],
             "inbound": {"rate": self.inbound[item], "used": total},
         }
 
@@ -597,15 +589,6 @@ class FactoryGraph:
             if end == -1:
                 return steps
             end += 2
-
-    def split_info(self, node_id: str) -> Optional[Dict]:
-        """{"of": split node id, "part": n, "count": k} for a part of a split node, else None."""
-        if node_id in self.splits:
-            return {"of": node_id, "part": 1, "count": self.splits[node_id]}
-        match = re.fullmatch(r"(.*)~(\d+)", node_id)
-        if match and match[1] in self.splits:
-            return {"of": match[1], "part": int(match[2]), "count": self.splits[match[1]]}
-        return None
 
     def _serialize_node(self, node: ProductionNode) -> Dict:
         return {
@@ -633,5 +616,4 @@ class FactoryGraph:
             "is_alternate": node.recipe is not None and node.recipe.type == RecipeType.ALTERNATE,
             "is_supplied": node.is_supplied,
             "derivation": self.derivation(node),
-            "split": self.split_info(node.id),
         }

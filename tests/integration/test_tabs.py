@@ -3,9 +3,9 @@ import json
 import os
 import tempfile
 
-ROTORS = {"items": ["Rotor"], "rates": [4], "merges": {}, "recipes": {}, "clocks": {}}
-PLATES = {"items": ["Reinforced Iron Plate"], "rates": [5], "merges": {}, "recipes": {}, "clocks": {}}
-BOOK = "JSON.parse(localStorage.getItem('sf_planner_book'))"
+ROTORS = {"mode": "logistics", "items": ["Rotor"], "rates": [4], "merges": {}, "recipes": {}, "clocks": {}}
+PLATES = {"mode": "logistics", "items": ["Reinforced Iron Plate"], "rates": [5], "merges": {}, "recipes": {}, "clocks": {}}
+BOOK = "JSON.parse(localStorage.getItem('sf_logistics_book'))"
 
 
 def tab_names(page):
@@ -141,10 +141,13 @@ def test_save_book_and_import(page):
     page.wait_until(has_node(page, "Reinforced Iron Plate"))
 
 
-def test_a_logistics_book_is_refused_in_simple_mode(page):
+def test_simple_mode_files_are_refused(page):
+    """Simple mode was removed: its plans and books (marked "simple", or without a mode) don't open."""
     page.open(page.base_url, ROTORS)
-    import_file(page, {"mode": "logistics", "tabs": [{"id": "t1", "name": "L", "plan": {"mode": "logistics", **ROTORS}}]})
-    assert page.dialogs and page.dialogs[-1].startswith("This is a logistics mode plan")
+    simple = {**ROTORS, "mode": "simple"}
+    import_file(page, {"mode": "simple", "tabs": [{"id": "t1", "name": "S", "plan": simple}]})
+    import_file(page, {key: value for key, value in ROTORS.items() if key != "mode"})
+    assert page.dialogs[-2:] == ["This is a simple mode plan. Simple mode was removed, and its plans don't convert."] * 2
     assert tab_names(page) == ["Plan 1"]
 
 
@@ -154,7 +157,7 @@ CCY = "document.getElementById('ccy')._cyreg.cy"
 
 
 def tab_plan(items=(), rates=(), inbound=()):
-    return {"mode": "simple", "items": list(items), "rates": list(rates), "inbound": list(inbound),
+    return {"mode": "logistics", "items": list(items), "rates": list(rates), "inbound": list(inbound),
             "merges": {}, "recipes": {}, "clocks": {}}
 
 
@@ -169,7 +172,7 @@ CHAIN_BOOK = {"active": "aw", "tabs": [
 
 def open_book(page, book):
     page.open(page.base_url)
-    page.js(f"localStorage.setItem('sf_planner_book', JSON.stringify({json.dumps(book)}))")
+    page.js(f"localStorage.setItem('sf_logistics_book', JSON.stringify({json.dumps(book)}))")
     page.send("Page.reload")
     page.wait(0.3)
     page.wait_until(f"document.querySelectorAll('.plan-tab').length === {len(book['tabs'])}")

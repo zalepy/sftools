@@ -13,7 +13,6 @@ def client():
 
 
 def calculate(client, **plan):
-    plan.setdefault("mode", "logistics")
     return client.post("/api/calculate", json=plan).json()
 
 
@@ -40,11 +39,6 @@ def test_belts_needed():
     assert belts_needed(36, False, settings) == {"kind": "belt", "count": 1, "tier": 1}
     assert belts_needed(600, False, settings) == {"kind": "belt", "count": 2, "tier": 4}  # 2 x 300: more than Mk.3
     assert belts_needed(300, True, Settings(pipe_tier=1)) == {"kind": "pipe", "count": 1, "tier": 1}
-
-
-def test_simple_mode_has_no_logistics(client):
-    body = calculate(client, mode="simple", **BEAMS)
-    assert "logistics" not in node(body, STEEL_BEAM)
 
 
 def test_output_side_groups_buildings_by_destination(client):

@@ -7,11 +7,16 @@ RIP_SP = "Smart Plating__Reinforced Iron Plate"
 RIP_MF = "Modular Frame__Reinforced Iron Plate"
 TWO_ROOTS = {"items": ["Smart Plating", "Modular Frame"], "rates": [2, 2],
              "clocks": {}, "merges": {}, "recipes": {}}
-SAVED = "JSON.parse(localStorage.getItem('sf_planner_state'))"
+SAVED = "JSON.parse(localStorage.getItem('sf_logistics_state'))"
 
 
 def plan(**changes):
     return {**TWO_ROOTS, **changes}
+
+
+# The graph's edges, and the production node at an end of one: edges run between logistics nodes
+# ('<id>|out' to '<id>|in')
+EDGES = r"(globalThis.end = n => n.id().replace(/\|(in|out)$/, ''), document.getElementById('cy')._cyreg.cy.edges())"
 
 
 def label(node_id):
@@ -44,7 +49,7 @@ def test_calculate_from_the_form_saves_the_plan(page):
         inputs[1].value = '2';
         document.getElementById('demand-form').requestSubmit();
     })()""")
-    page.wait_until("localStorage.getItem('sf_planner_state') !== null")
+    page.wait_until("localStorage.getItem('sf_logistics_state') !== null")
     assert page.saved_plan()["items"] == ["Smart Plating"]
     assert "Smart Plating" in page.node_ids()
 
@@ -120,7 +125,7 @@ def test_old_plans_with_building_overrides_still_load(page):
 def test_merge_by_drag_and_unmerge(page):
     page.open(page.base_url, plan())
     page.drag(page.node_position(RIP_MF), page.node_position(RIP_SP))
-    page.wait_until(f"JSON.parse(localStorage.getItem('sf_planner_state')).merges[{json.dumps(RIP_MF)}] !== undefined")
+    page.wait_until(f"JSON.parse(localStorage.getItem('sf_logistics_state')).merges[{json.dumps(RIP_MF)}] !== undefined")
     assert page.saved_plan()["merges"] == {RIP_MF: RIP_SP}
     assert RIP_MF not in page.node_ids()
     assert page.js("document.getElementById('toast').hidden")  # same recipe: no warning
@@ -129,7 +134,7 @@ def test_merge_by_drag_and_unmerge(page):
     assert page.js("document.getElementById('unmerge-btn').style.display") == "block"
     assert page.js("document.querySelectorAll('#detail-merged .derivation').length") == 1
     page.js("document.getElementById('unmerge-btn').click()")
-    page.wait_until("Object.keys(JSON.parse(localStorage.getItem('sf_planner_state')).merges).length === 0")
+    page.wait_until("Object.keys(JSON.parse(localStorage.getItem('sf_logistics_state')).merges).length === 0")
     assert RIP_MF in page.node_ids()
 
 
@@ -161,48 +166,6 @@ def test_colors_are_saved_in_the_browser(page):
     assert page.dialogs == ["Colors saved in this browser."]
 
 
-def test_split_set_parts_and_unsplit(page):
-    page.open(page.base_url, plan())
-    page.select_node(RIP_SP)
-    assert page.js("document.getElementById('split-btn').textContent") == "Split"
-    page.js("document.getElementById('split-count').value = '3'; document.getElementById('split-btn').click()")
-    page.wait_until(f"JSON.parse(localStorage.getItem('sf_planner_state')).splits[{json.dumps(RIP_SP)}] === 3")
-    assert {f"{RIP_SP}~2", f"{RIP_SP}~3", f"{RIP_SP}~3__Screws"} <= set(page.node_ids())
-    assert page.js(f"document.getElementById('cy')._cyreg.cy.getElementById({json.dumps(RIP_SP + '~3')}).data('label')"
-                   ).startswith("Reinforced Iron Plate [3/3]")
-
-    # A part has its own clocks; reducing the number of parts drops what belonged to removed parts
-    page.select_node(f"{RIP_SP}~3")
-    assert "Part 3 of 3" in page.js("document.getElementById('split-hint').textContent")
-    page.js("document.getElementById('clock-all').value = '50'; document.getElementById('apply-clocks-btn').click()")
-    page.wait_until(f"{SAVED}.clocks[{json.dumps(RIP_SP + '~3')}] !== undefined")
-    page.select_node(f"{RIP_SP}~2")
-    page.js("document.getElementById('split-count').value = '2'; document.getElementById('split-btn').click()")
-    page.wait_until(f"JSON.parse(localStorage.getItem('sf_planner_state')).splits[{json.dumps(RIP_SP)}] === 2")
-    assert page.saved_plan()["clocks"] == {}
-    assert f"{RIP_SP}~3" not in page.node_ids()
-    assert page.js("document.getElementById('detail-id').textContent") == f"{RIP_SP}~2"
-
-    page.js("document.getElementById('unsplit-btn').click()")
-    page.wait_until("Object.keys(JSON.parse(localStorage.getItem('sf_planner_state')).splits).length === 0")
-    assert f"{RIP_SP}~2" not in page.node_ids()
-    assert page.js("document.getElementById('detail-id').textContent") == RIP_SP
-
-
-def test_merged_node_cannot_be_split(page):
-    page.open(page.base_url, plan(merges={RIP_MF: RIP_SP}))
-    page.select_node(RIP_SP)
-    assert page.js("document.getElementById('split-btn').disabled")
-    assert "Unmerge first" in page.js("document.getElementById('split-hint').textContent")
-
-
-def test_dragging_a_part_onto_another_merges_them(page):
-    page.open(page.base_url, plan(splits={RIP_SP: 2}))
-    page.drag(page.node_position(f"{RIP_SP}~2"), page.node_position(RIP_SP))
-    page.wait_until(f"JSON.parse(localStorage.getItem('sf_planner_state')).merges[{json.dumps(RIP_SP + '~2')}] !== undefined")
-    assert page.saved_plan()["merges"] == {f"{RIP_SP}~2": RIP_SP}
-
-
 def test_mouse_wheel_zooms_in_small_steps(page):
     page.open(page.base_url, plan())
     page.wait(1)  # layout and fit
@@ -222,10 +185,10 @@ def test_mouse_wheel_zooms_in_small_steps(page):
 def test_edges_show_what_each_supplier_provides(page):
     """A merged plate line needs 60 Screws/min: 24 from the Smart Plating branch, 36 from Modular Frame."""
     page.open(page.base_url, plan(merges={RIP_MF: RIP_SP}))
-    labels = page.js(f"""document.getElementById('cy')._cyreg.cy.edges('[target = {json.dumps(json.dumps(RIP_SP))[1:-1]}]')
-        .map(e => [e.source().id(), e.data('label')])""")
-    assert dict(labels)[f"{RIP_SP}__Screws"] == "24.00/m"
-    assert dict(labels)[f"{RIP_MF}__Screws"] == "36.00/m"
+    labels = page.js(f"""{EDGES}.filter(e => end(e.target()) === {json.dumps(RIP_SP)})
+        .map(e => [end(e.source()), e.data('label')])""")
+    assert dict(labels)[f"{RIP_SP}__Screws"].startswith("24.00/m")
+    assert dict(labels)[f"{RIP_MF}__Screws"].startswith("36.00/m")
 
 
 def test_selecting_a_node_keeps_its_color(page):
@@ -385,7 +348,7 @@ def test_inbound_production(page):
     assert RIP_SP not in page.node_ids()
     assert page.js(node_style(inbound, "border-color")) == "rgb(56,189,248)"
     page.select_node(inbound)
-    for section in ("details-recipe-collapsible", "split-controls", "clock-controls"):
+    for section in ("details-recipe-collapsible", "clock-controls"):
         assert page.js(f"document.getElementById('{section}').style.display") == "none"
 
     # Edited in the side panel and applied with Calculate, like the demands
@@ -400,7 +363,7 @@ def test_inbound_production(page):
 
 def edge_classes(source, target):
     cy = "document.getElementById('cy')._cyreg.cy"
-    return f"{cy}.edges().filter(e => e.source().id() === {json.dumps(source)} && e.target().id() === {json.dumps(target)}).classes()"
+    return f"{EDGES}.filter(e => end(e.source()) === {json.dumps(source)} && end(e.target()) === {json.dumps(target)}).classes()"
 
 
 def test_byproducts_go_to_the_sink(page):
@@ -414,7 +377,7 @@ def test_byproducts_go_to_the_sink(page):
     page.select_node("sink")
     assert page.js("document.getElementById('detail-surplus-value').textContent") == "Fluids can't be sunk: Water"
     assert page.js("document.getElementById('detail-power').textContent") == "-30.00 MW"
-    for section in ("details-recipe-collapsible", "split-controls", "clock-controls"):
+    for section in ("details-recipe-collapsible", "clock-controls"):
         assert page.js(f"document.getElementById('{section}').style.display") == "none"
 
 
@@ -432,7 +395,7 @@ def test_calculate_uses_byproducts_and_an_edge_sends_them_to_the_sink(page):
     assert page.js(edge_classes(ALU_ALUMINA, "sink")) == ["byproduct"]  # 25 left over
 
     cy = "document.getElementById('cy')._cyreg.cy"
-    page.js(f"void {cy}.edges().filter(e => e.source().id() === {json.dumps(ALU_ALUMINA)} && e.target().id() === 'Aluminum Ingot').emit('tap')")
+    page.js(f"void {EDGES}.filter(e => end(e.source()) === {json.dumps(ALU_ALUMINA)} && end(e.target()) === 'Aluminum Ingot').emit('tap')")
     assert page.js("document.getElementById('byproduct-details').style.display") == "block"
     assert page.js("document.getElementById('node-details').style.display") == "none"
     assert page.js("document.getElementById('byproduct-used').textContent") == "75.00/min"
@@ -440,7 +403,7 @@ def test_calculate_uses_byproducts_and_an_edge_sends_them_to_the_sink(page):
 
     page.js("document.getElementById('byproduct-toggle-btn').click()")
     page.wait_until(f"{SAVED}.byproducts[{json.dumps(ALU_ALUMINA)}] === 'sink'")
-    cy_edges = f"{cy}.edges().filter(e => e.source().id() === {json.dumps(ALU_ALUMINA)} && e.target().id() === 'Aluminum Ingot')"
+    cy_edges = f"{EDGES}.filter(e => end(e.source()) === {json.dumps(ALU_ALUMINA)} && end(e.target()) === 'Aluminum Ingot')"
     assert page.js(f"{cy_edges}.length") == 0  # no by-product edge any more
     assert "Aluminum Ingot__Silica" in page.node_ids()
     assert page.js("document.getElementById('byproduct-sunk').textContent") == "100.00/min"
@@ -453,12 +416,12 @@ def test_solving_a_byproduct_loop(page):
     assert page.js(edge_classes(scrap, "sink")) == ["byproduct", "invalid", "loop"]
 
     cy = "document.getElementById('cy')._cyreg.cy"
-    page.js(f"void {cy}.edges().filter(e => e.source().id() === {json.dumps(scrap)} && e.target().id() === 'sink').emit('tap')")
+    page.js(f"void {EDGES}.filter(e => end(e.source()) === {json.dumps(scrap)} && end(e.target()) === 'sink').emit('tap')")
     assert page.js("document.getElementById('byproduct-solve-btn').textContent") == "Solve Loop"
     page.js("document.getElementById('byproduct-solve-btn').click()")
     page.wait_until(f"{SAVED}.byproducts[{json.dumps(scrap)}] === 'solve'")
     assert page.js(edge_classes(scrap, "Water")) == ["byproduct", "used", "loop"]
-    assert "(loop, solved)" in page.js(f"{cy}.edges().filter(e => e.source().id() === {json.dumps(scrap)} && e.target().id() === 'Water').data('label')")
+    assert "(loop, solved)" in page.js(f"{EDGES}.filter(e => end(e.source()) === {json.dumps(scrap)} && end(e.target()) === 'Water').data('label')")
     assert page.js("document.getElementById('byproduct-hint').textContent").startswith("Loop solved")
     assert page.js("document.getElementById('byproduct-solve-btn').textContent") == "Stop Solving"
 
@@ -469,7 +432,7 @@ def test_legend_toggles_and_is_remembered(page):
     page.js("document.getElementById('legend-toggle').click()")
     assert not page.js("document.getElementById('legend').hidden")
     assert "Demanded by you" in page.js("document.getElementById('legend').textContent")
-    assert "Logistics node" not in page.js("document.getElementById('legend').textContent")  # logistics mode only
+    assert "Logistics node" in page.js("document.getElementById('legend').textContent")
 
     page.send("Page.reload")
     page.wait(0.3)
@@ -477,11 +440,6 @@ def test_legend_toggles_and_is_remembered(page):
     assert not page.js("document.getElementById('legend').hidden")
     page.js("document.getElementById('legend-toggle').click()")
     assert page.js("document.getElementById('legend').hidden")
-
-    page.open(page.base_url + "logistics")
-    page.js("document.getElementById('legend-toggle').click()")
-    assert "Logistics node" in page.js("document.getElementById('legend').textContent")
-
 
 
 def badges(node_id):

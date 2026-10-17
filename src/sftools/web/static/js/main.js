@@ -2,7 +2,7 @@
 import * as api from './api.js';
 import {
     state, snapshot, applySaved, downloadPlan, downloadBook, isBook, readPlanFile,
-    loadSavedColors, saveColors, dropIgnoredEntries, MODE, wrongMode
+    loadSavedColors, saveColors, dropIgnoredEntries, PLAN_MODE, wrongMode
 } from './state.js';
 import {
     renderGraph, refreshNodeColors, refreshBuilt, hasNodes, fitView, resizeGraph, getNodeData, onNodeSelected, reselectNode, onMergeDrop,
@@ -12,8 +12,7 @@ import * as panel from './panel.js';
 import * as history from './history.js';
 import * as tabs from './tabs.js';
 import { openChain, refreshChain, closeChain, isChainOpen } from './chain.js';
-// The zoomed-in logistics view exists only on the logistics page
-const logisticsView = MODE === 'logistics' ? await import('./logistics.js') : null;
+import * as logisticsView from './logistics.js';
 
 const $ = id => document.getElementById(id);
 
@@ -40,7 +39,7 @@ async function showPlan(plan, failure = 'Undo/redo failed') {
     const selected = state.selectedNodeId;
     panel.setDemands(plan.items, plan.rates, plan.inbound);
     applySaved(plan);
-    if (MODE === 'logistics') showLogisticsSettings();
+    showLogisticsSettings();
     try {
         render(plan.items && plan.items.length ? await requestPlan() : []);
         save();
@@ -61,7 +60,7 @@ const redo = () => showHistoryStep(history.redo());
 // --- Plan tabs (ticket 039) ---
 
 function emptyPlan() {
-    return { mode: MODE, items: [], rates: [], inbound: [] };
+    return { mode: PLAN_MODE, items: [], rates: [], inbound: [] };
 }
 
 /**
@@ -74,7 +73,7 @@ async function switchTab(id, { ownSettings = false, reload = false } = {}) {
         tabs.setChainShown(false);
     }
     if (id === tabs.getBook().active && !reload) return;
-    if (logisticsView && logisticsView.isOpen()) logisticsView.closeView();
+    if (logisticsView.isOpen()) logisticsView.closeView();
     const settings = state.logistics.settings;
     tabs.setActive(id);
     history.useTab(id);
@@ -91,7 +90,7 @@ async function switchTab(id, { ownSettings = false, reload = false } = {}) {
 /** Shows the chain tab (ticket 040) over the graph; the side panel keeps the active plan. */
 function showChain() {
     if (isChainOpen()) return;
-    if (logisticsView && logisticsView.isOpen()) logisticsView.closeView();
+    if (logisticsView.isOpen()) logisticsView.closeView();
     tabs.setChainShown(true);
     openChain(id => switchTab(id));
 }
@@ -142,29 +141,26 @@ async function openBook(data) {
 }
 
 /**
- * Sends the plan (with optional candidate merges/recipes/splits/clocks/byproducts) and returns the graph
+ * Sends the plan (with optional candidate merges/recipes/clocks/byproducts) and returns the graph
  * nodes. Entries the server ignored are dropped from the candidate objects; callers keep them on success.
  * By-product choices are the server's (see resolved_byproduct_choices): Calculate passes
  * byproductsDefault 'use', so by-products are used unless set otherwise; other changes leave new ones
  * going to the Sink (ticket 031).
  */
 async function requestPlan({
-    merges = state.merges, recipes = state.recipes, splits = state.splits, clocks = state.clocks,
+    merges = state.merges, recipes = state.recipes, clocks = state.clocks,
     byproducts = state.byproducts, byproductsDefault = 'sink', layouts = state.logistics.layouts
 } = {}) {
     const { items, rates, inbound } = panel.getDemands();
-    const logistics = MODE === 'logistics';
     const { nodes, ignored, byproducts: resolved, logisticsResets } = await api.calculate({
         demands: items.map((item, i) => ({ item, rate: rates[i] })),
         inbound,
         recipes,
         merges,
-        splits: logistics ? {} : splits,  // no splits in logistics mode (ticket 033)
         clocks,
         byproducts,
         byproducts_default: byproductsDefault,
-        mode: MODE,
-        ...(logistics && { logistics: { settings: state.logistics.settings, layouts } })
+        logistics: { settings: state.logistics.settings, layouts }
     });
     state.byproducts = resolved;
     // The dashed border shows the clocks of the plan just calculated; callers keep them in state afterwards
@@ -182,7 +178,7 @@ async function requestPlan({
         panel.showToast(`Logistics reset to the suggested layout: ${names.join(', ')}. Undo to get yours back.`, 6000);
     }
     if (ignored.length) {
-        dropIgnoredEntries(ignored, { merges, recipes, splits, clocks });
+        dropIgnoredEntries(ignored, { merges, recipes, clocks });
         // Entries on inputs a recipe no longer uses go quietly: that is what the switch (or merge) asked for
         const stale = ignored.filter(entry => !entry.dropped);
         if (stale.length) panel.showPlanNotice(stale);
@@ -193,7 +189,7 @@ async function requestPlan({
 /** Draws the graph, and the zoomed-in logistics view if it's open. */
 function render(nodes) {
     renderGraph(nodes);
-    if (logisticsView && logisticsView.isOpen()) {
+    if (logisticsView.isOpen()) {
         const view = logisticsView.current();
         logisticsView.refreshView(nodes.find(n => n.id === view.nodeId));
     }
@@ -219,7 +215,7 @@ function loadPlan(saved) {
     }
     panel.setDemands(saved.items, saved.rates, saved.inbound);
     applySaved(saved);
-    if (MODE === 'logistics') showLogisticsSettings();
+    showLogisticsSettings();
     recalculate();
 }
 
@@ -343,53 +339,7 @@ async function unmergeSelectedNode() {
     }
 }
 
-/**
- * Splits the selected node into `count` equal parts, or changes the number of parts of the split it
- * belongs to. Parts are '<id>~2', '<id>~3', ... (part 1 keeps the ID); see split_parts on the server.
- */
-async function splitSelectedNode(count) {
-    const data = getNodeData(state.selectedNodeId);
-    if (!data || !(count >= 2)) return;
-    const nodeId = data.split ? data.split.of : data.id;
-    await changeSplit(nodeId, count, data.id);
-}
-
-async function unsplitSelectedNode() {
-    const data = getNodeData(state.selectedNodeId);
-    if (!data || !data.split) return;
-    await changeSplit(data.split.of, 1, data.split.of);
-}
-
-// Entries for an ID or anything derived from it: its inputs ('__') and its own parts ('~')
-function isUnder(id, nodeId) {
-    return id === nodeId || id.startsWith(nodeId + '__') || id.startsWith(nodeId + '~');
-}
-
-async function changeSplit(nodeId, count, selectAfter) {
-    const oldCount = state.splits[nodeId] || 1;
-    const removed = [];
-    for (let part = count + 1; part <= oldCount; part++) removed.push(`${nodeId}~${part}`);
-    const keep = id => !removed.some(partId => isUnder(id, partId));
-    const filter = entries => Object.fromEntries(Object.entries(entries).filter(([id]) => keep(id)));
-
-    const splits = filter(state.splits);
-    if (count >= 2) splits[nodeId] = count; else delete splits[nodeId];
-    const clocks = filter(state.clocks);
-    const recipes = filter(state.recipes);
-    const merges = Object.fromEntries(Object.entries(state.merges).filter(([id, target]) => keep(id) && keep(target)));
-
-    try {
-        render(await requestPlan({ splits, clocks, recipes, merges }));
-        Object.assign(state, { splits, clocks, recipes, merges });
-        save();
-        if (getNodeData(selectAfter)) reselectNode(selectAfter); else panel.hideNodeDetails();
-    } catch (e) {
-        console.error("Split failed", e);
-        alert(`Split failed: ${e.message}`);
-    }
-}
-
-// --- Logistics mode (ticket 033) ---
+// --- Logistics (ticket 033) ---
 
 function readLogisticsSettings() {
     return {
@@ -466,7 +416,7 @@ function clearMerges() {
 /** Starts a fresh plan: no demands, inbound production or adjustments. Logistics settings stay; undo brings it back. */
 function newPlan() {
     if (!confirm("Start a new plan? This clears the demands, inbound production and every adjustment. Undo brings the plan back.")) return;
-    if (logisticsView && logisticsView.isOpen()) logisticsView.closeView();
+    if (logisticsView.isOpen()) logisticsView.closeView();
     panel.setDemands();
     applySaved({ logistics: { settings: state.logistics.settings } });
     panel.hideNodeDetails();
@@ -591,8 +541,6 @@ document.addEventListener('keydown', e => {
         redo();
     }
 });
-$('split-btn').addEventListener('click', () => splitSelectedNode(panel.getSplitCount()));
-$('unsplit-btn').addEventListener('click', unsplitSelectedNode);
 $('recipe-select').addEventListener('change', e => switchRecipe(e.target.value));
 $('save-colors-btn').addEventListener('click', saveColorChanges);
 $('fit-view-btn').addEventListener('click', fitView);
@@ -609,7 +557,7 @@ onByproductSelected(makerId => {
     panel.showByproductDetails(getNodeData(makerId));
     panel.showTab('node');
 });
-if (logisticsView) wireLogistics();
+wireLogistics();
 ['byproduct-toggle-btn', 'byproduct-solve-btn'].forEach(id => $(id).addEventListener('click', e => {
     const { maker, choice } = e.target.dataset;
     setByproductChoice(maker, choice);
