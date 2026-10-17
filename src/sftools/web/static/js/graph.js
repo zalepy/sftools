@@ -1,6 +1,6 @@
 // Cytoscape graph: rendering, zoom controls, node selection and drag-to-merge.
 // cytoscape and cytoscapeDagre are globals from the CDN scripts in index.html.
-import { state, MODE } from './state.js';
+import { state } from './state.js';
 
 const DEFAULT_NODE_COLOR = '#334155';
 const LIGHT_TEXT = '#f8fafc';
@@ -342,7 +342,6 @@ export function renderGraph(nodesData) {
 
     nodesData.forEach(node => {
         const badges = badgeImage(node);
-        const part = node.split ? ` [${node.split.part}/${node.split.count}]` : '';
         const alternate = node.is_alternate ? ' (A)' : '';
         // A fourth line only when some building runs at another clock than 100%
         const clocks = clocksText(node, '×');
@@ -353,7 +352,7 @@ export function renderGraph(nodesData) {
             : node.is_supplied ? 'supplied from outside' : `${buildingsText(node)}× ${node.building}`;
         const of = node.inbound ? ` of ${parseFloat(node.inbound.rate).toFixed(2)}` : '';
         const fluids = node.sink && node.sink.fluids.length ? '\nfluids can\'t be sunk!' : '';
-        const label = `${node.output_item}${alternate}${part}\n${parseFloat(node.throughput).toFixed(2)}${of}/m\n(${made})${clockLine}${fluids}`;
+        const label = `${node.output_item}${alternate}\n${parseFloat(node.throughput).toFixed(2)}${of}/m\n(${made})${clockLine}${fluids}`;
         const color = colorFor(node.output_item);
         const classes = [
             node.clocks_set && 'clocked',
@@ -429,10 +428,9 @@ export function renderGraph(nodesData) {
     cy.add(elements);
 
     // Logistics nodes stand beside their production node: wider spacing, then attached after the layout
-    const logistics = MODE === 'logistics';
-    const layout = cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 50, rankSep: logistics ? 160 : 100 });
+    const layout = cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 50, rankSep: 160 });
     layout.one('layoutstop', () => {
-        if (logistics) attachLogistics(nodesData);
+        attachLogistics(nodesData);
         fitView();
     });
     layout.run();
@@ -484,9 +482,7 @@ function positionLogistics(nodes) {
 }
 
 // Logistics nodes follow their production node when it's dragged
-cy.on('position', 'node[!logistics]', evt => {
-    if (MODE === 'logistics') positionLogistics(evt.target);
-});
+cy.on('position', 'node[!logistics]', evt => positionLogistics(evt.target));
 
 export function refreshNodeColors() {
     cy.nodes().not('.lnode').forEach(node => {

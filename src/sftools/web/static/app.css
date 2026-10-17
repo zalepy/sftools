@@ -532,33 +532,7 @@ details[open] summary::after {
     display: none;
 }
 
-/* --- Logistics mode (ticket 033) --- */
-
-.mode-link {
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-size: 0.9rem;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 0.35rem 0.75rem;
-}
-
-.mode-link:hover {
-    color: var(--text-primary);
-    border-color: var(--accent);
-}
-
-.mode-name {
-    font-size: 0.9rem;
-    color: #38bdf8;
-    font-weight: 600;
-    margin-left: 0.25rem;
-}
-
-/* No splits in logistics mode: separate groups of buildings inside a logistics node do that */
-body[data-mode="logistics"] #split-controls {
-    display: none !important;
-}
+/* --- Logistics (ticket 033) --- */
 
 #logistics-settings {
     border-top: 1px solid var(--border);

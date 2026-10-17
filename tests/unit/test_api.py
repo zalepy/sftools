@@ -203,25 +203,6 @@ def test_merged_node_lists_constituent_derivations(client):
     assert [step["item"] for step in rip["constituent_derivations"][0]] == [source.split("__")[0], "Reinforced Iron Plate"]
 
 
-def test_splits_are_replayed(client):
-    rip = "Smart Plating__Reinforced Iron Plate"
-    body = calculate(client, splits={rip: 2}, clocks={f"{rip}~2": [{"clock": 0.5}]}).json()
-    assert body["ignored"] == []
-    parts = {n["id"]: n for n in nodes_by_item(body["nodes"], "Reinforced Iron Plate") if n["id"].startswith(rip)}
-    assert sorted(parts) == [rip, f"{rip}~2"]
-    assert parts[f"{rip}~2"]["split"] == {"of": rip, "part": 2, "count": 2}
-    assert parts[f"{rip}~2"]["clocks"] == [{"count": 1, "clock": 0.5}]
-    assert parts[rip]["clocks"] == [{"count": 1, "clock": 1.0}]
-    assert parts[rip]["split"]["part"] == 1
-
-
-def test_split_with_too_few_parts_is_reported(client):
-    rip = "Smart Plating__Reinforced Iron Plate"
-    body = calculate(client, splits={rip: 1}).json()
-    assert body["ignored"] == [{"kind": "split", "node_id": rip, "reason": "needs at least 2 parts, got 1",
-                                "dropped": False, "replacement": None}]
-
-
 SUPPLIED = "Supplied from outside"
 
 
@@ -397,3 +378,11 @@ def test_a_rounding_leftover_is_not_sunk(client):
                      byproducts_default="use").json()
     assert not any(i["item"] == "Heavy Oil Residue" for i in (sink_of(body) or {"sink": {"inputs": []}})["sink"]["inputs"])
 
+
+
+def test_the_page_and_the_old_logistics_address(client):
+    """Logistics is the only mode: the page at /, and the old /logistics address leads there."""
+    page = client.get("/")
+    assert page.status_code == 200 and 'id="logistics-view"' in page.text and "split-controls" not in page.text
+    old = client.get("/logistics", follow_redirects=False)
+    assert old.status_code == 301 and old.headers["location"] == "/"

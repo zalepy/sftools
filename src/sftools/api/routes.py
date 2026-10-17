@@ -25,7 +25,6 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
             [(d.item, d.rate) for d in plan.demands],
             recipes=plan.recipes,
             merges=plan.merges,
-            splits={} if plan.mode == "logistics" else plan.splits,  # no splits in logistics mode
             clocks=plan.clocks,
             inbound=[(d.item, d.rate) for d in plan.inbound],
             byproducts=plan.byproducts,
@@ -36,10 +35,8 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
         raise HTTPException(status_code=400, detail=str(ex))
 
     nodes = graph.get_ui_data()
-    resets = []
-    if plan.mode == "logistics":
-        resets = attach_logistics(nodes, lambda item: data.items[item].category in FLUIDS,
-                                  Settings.parse(plan.logistics.get("settings")), plan.logistics.get("layouts") or {})
+    resets = attach_logistics(nodes, lambda item: data.items[item].category in FLUIDS,
+                              Settings.parse(plan.logistics.get("settings")), plan.logistics.get("layouts") or {})
     return {"nodes": nodes, "ignored": graph.ignored, "byproducts": graph.resolved_byproduct_choices(),
             "logistics_resets": resets}
 

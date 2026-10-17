@@ -105,12 +105,8 @@ export function setDemands(items = [], rates = [], inbound = []) {
 
 // --- Selected node ---
 
-// IDs are item paths ('Smart Plating__Rotor__Screws', see child_node_id), with '~n' for the parts
-// of a split node: name a consumer by its item and the item it feeds, which tells apart several
-// nodes making the same item.
-function itemOf(segment) {
-    return segment.replace(/~\d+$/, '');
-}
+// IDs are item paths ('Smart Plating__Rotor__Screws', see child_node_id): name a consumer by its item
+// and the item it feeds, which tells apart several nodes making the same item.
 
 /** One line per step, e.g. "Reinforced Iron Plate ← Alternate: Bolted Iron Plate (Assembler)". */
 export function derivationText(derivation) {
@@ -145,7 +141,7 @@ function parentLabel(parentId) {
     const raw = getNodeData(parentId);
     if (!raw) return parentId;
     const path = parentId.split('__');
-    return path.length > 1 ? `${raw.output_item} (in ${itemOf(path.at(-2))})` : `${raw.output_item} (demand)`;
+    return path.length > 1 ? `${raw.output_item} (in ${path.at(-2)})` : `${raw.output_item} (demand)`;
 }
 
 function statRow(label, value, { className = 'stat-row', style = '' } = {}) {
@@ -323,14 +319,12 @@ export function showNodeDetails(data) {
     // Inbound production is set in the Inbound Production rows, not on the node; the Sink only receives
     const fixed = data.inbound || data.sink;
     $('details-recipe-collapsible').style.display = fixed ? 'none' : '';
-    $('split-controls').style.display = fixed ? 'none' : '';
     if (data.sink) $('clock-controls').style.display = 'none';
 
     // Unmerge is offered on merge targets
     const isMergeTarget = Object.values(state.merges).includes(data.id);
     $('unmerge-btn').style.display = isMergeTarget ? 'block' : 'none';
 
-    renderSplit(data);
     renderBuilt(data);
     if (!fixed) populateRecipeSelector(data.output_item, data.recipe_name || data.name);
 
@@ -359,24 +353,6 @@ export function getBuiltCount() {
     return isNaN(count) || count < 0 ? 0 : count;
 }
 
-// Merged nodes can't be split: which branch's demand would go to which part?
-function renderSplit(data) {
-    const merged = data.is_merged;
-    $('split-count').value = data.split ? data.split.count : 2;
-    $('split-count').disabled = merged;
-    $('split-btn').disabled = merged;
-    $('split-btn').textContent = data.split ? 'Set Parts' : 'Split';
-    $('split-hint').textContent = merged
-        ? 'Unmerge first to split this node.'
-        : data.split
-            ? `Part ${data.split.part} of ${data.split.count}. Each part has its own inputs, clocks and recipe.`
-            : 'Equal parts, each with its own inputs, clocks and recipe.';
-    $('unsplit-btn').style.display = data.split ? 'block' : 'none';
-}
-
-export function getSplitCount() {
-    return parseInt($('split-count').value, 10);
-}
 
 // --- Selected logistics node (logistics mode) ---
 
@@ -605,7 +581,7 @@ export function showPlanNotice(ignored) {
         `${count} saved adjustment${count === 1 ? '' : 's'} no longer match${count === 1 ? 'es' : ''} this plan and ${count === 1 ? 'was' : 'were'} removed.`;
     notice.querySelector('ul').replaceChildren(...ignored.map(entry => {
         const li = document.createElement('li');
-        li.textContent = `${entry.kind} on ${itemOf(entry.node_id.split('__').pop())}: ${entry.reason}`;
+        li.textContent = `${entry.kind} on ${entry.node_id.split('__').pop()}: ${entry.reason}`;
         li.title = entry.node_id;
         return li;
     }));

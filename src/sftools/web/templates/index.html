@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% if mode == 'logistics' %}Satisfactory Planner: Logistics{% else %}Satisfactory Demand Planner{% endif %}</title>
+    <title>Satisfactory Planner</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23f59e0b'/%3E%3C/svg%3E">
     <!-- Cytoscape.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="/static/app.css?v={{ asset_version }}">
 </head>
 
-<body data-mode="{{ mode }}">
+<body>
     <header>
         <div style="display: flex; align-items: center; gap: 1rem;">
             <button type="button" id="panel-toggle" class="icon-btn" aria-controls="sidebar" aria-expanded="true"
@@ -23,16 +23,11 @@
                 <button type="button" id="undo-btn" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>&#x21B6;</button>
                 <button type="button" id="redo-btn" class="icon-btn" title="Redo (Ctrl+Y)" aria-label="Redo" disabled>&#x21B7;</button>
             </div>
-            <h1>Satisfactory Planner{% if mode == 'logistics' %} <span class="mode-name">Logistics</span>{% endif %}</h1>
+            <h1>Satisfactory Planner</h1>
         </div>
         <div class="header-right">
         <button type="button" id="legend-toggle" class="icon-btn" aria-controls="legend" aria-expanded="false"
             title="Show the legend">Legend</button>
-        {% if mode == 'logistics' %}
-        <a class="mode-link" href="/" title="The planner without belts; its plans are separate">&larr; Simple mode</a>
-        {% else %}
-        <a class="mode-link" href="/logistics" title="Plan belts, splitters and mergers too; its plans are separate">Logistics mode &rarr;</a>
-        {% endif %}
         </div>
     </header>
 
@@ -94,7 +89,6 @@
                     </datalist>
                 </section>
 
-                {% if mode == 'logistics' %}
                 <section id="logistics-settings">
                     <h3>Logistics</h3>
                     <div class="hint" style="margin-bottom: 0.5rem;">What you have unlocked. Belts and pipes are planned with these.</div>
@@ -118,14 +112,12 @@
                     </div>
                     <label class="settings-check"><input type="checkbox" id="smart-splitters" checked> Smart and programmable splitters</label>
                 </section>
-                {% endif %}
             </div>
 
             <!-- Node Tab: what's selected in the graph (ticket 038) -->
             <div id="node-tab" class="tab-content">
-                <p id="node-empty" class="hint">Click a node, a by-product edge{% if mode == 'logistics' %} or a logistics node{% endif %} in the graph to see and change it here.</p>
+                <p id="node-empty" class="hint">Click a node, a by-product edge or a logistics node in the graph to see and change it here.</p>
 
-                {% if mode == 'logistics' %}
                 <!-- Logistics side details (a selected logistics node) -->
                 <section id="logistics-details">
                     <h3 id="logistics-title">Logistics</h3>
@@ -148,7 +140,6 @@
                     <ul class="logistics-warnings" id="logistics-warnings"></ul>
                     <button type="button" id="logistics-zoom-btn" style="margin-top: 0.5rem;">Zoom In</button>
                 </section>
-                {% endif %}
 
                 <!-- Node Details Panel (Appears on Selection) -->
                 <section id="node-details">
@@ -281,17 +272,6 @@
                     </div>
                     <button type="button" id="unmerge-btn" class="secondary" style="margin-top: 0.5rem; display: none;">Unmerge Node</button>
 
-                    <div id="split-controls">
-                    <div class="form-group" style="margin-top: 1rem;">
-                        <label for="split-count">Split Into Parts</label>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <input type="number" id="split-count" min="2" step="1" value="2">
-                            <button type="button" id="split-btn" class="secondary" style="width: auto; white-space: nowrap;">Split</button>
-                        </div>
-                        <div class="hint" id="split-hint"></div>
-                    </div>
-                    <button type="button" id="unsplit-btn" class="secondary" style="display: none;">Unsplit Node</button>
-                    </div>
                 </section>
 
                 <!-- By-product details (appear when a by-product edge is selected) -->
@@ -380,7 +360,6 @@
                 <h4>Labels</h4>
                 <ul>
                     <li><span class="swatch text">(A)</span>Runs an alternate recipe</li>
-                    <li><span class="swatch text">[1/2]</span>Part of a split node</li>
                     <li><span class="swatch text">8×100%</span>Buildings by clock speed, and power shards</li>
                 </ul>
                 <h4>Built, top left</h4>
@@ -388,7 +367,6 @@
                     <li><span class="swatch check">&#x2713;</span>All its buildings are built (the node fades)</li>
                     <li><span class="swatch text">6/8</span>Buildings built, of those needed</li>
                 </ul>
-                {% if mode == 'logistics' %}
                 <h4>Logistics</h4>
                 <ul>
                     <li><span class="swatch lnode" style="--c: #94a3b8">2</span>Logistics node: inputs left, outputs right; splitters and mergers inside</li>
@@ -397,10 +375,8 @@
                     <li><span class="swatch line thick" style="--c: #f59e0b"></span>Needs more than one belt (or pipe) of the highest tier</li>
                     <li><span class="swatch text">Mk.3</span>The belt (or pipe) tier an edge needs</li>
                 </ul>
-                {% endif %}
             </aside>
 
-            {% if mode == 'logistics' %}
             <!-- Zoomed-in logistics node: the whole graph area -->
             <div id="logistics-view" class="logistics-view" hidden>
                 <div class="logistics-toolbar">
@@ -419,7 +395,6 @@
                 <ul class="logistics-warnings lv-warnings" id="lv-warnings"></ul>
                 <div id="lcy"></div>
             </div>
-            {% endif %}
 
             <!-- Chain tab (ticket 040): how the plan tabs feed each other -->
             <div id="chain-view" class="logistics-view" hidden>

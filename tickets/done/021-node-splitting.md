@@ -2,6 +2,8 @@
 
 **Type:** feature · **Priority:** P3 · **Status:** Done · **Related:** 016, 018, 020
 
+> **Update:** Splitting was removed with simple mode on 2026-10-17 (logistics mode never had it); it's on the branch `backup/simple-mode`.
+
 > **Done (2026-10-12).** Replaces `SPLIT_PLAN.md`. Decisions from the user: equal parts only for now; merged nodes can't be split; Split/Set Parts and Unsplit buttons in the node panel, with the part number on the graph.
 
 ## Goal
