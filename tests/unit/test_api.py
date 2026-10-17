@@ -72,6 +72,25 @@ def test_recipe_switch_is_replayed(client):
     assert new_root["recipe_name"] == alternates[0]
 
 
+def test_preferred_recipes_are_used_for_new_nodes(client):
+    """Ticket 043: Screws run Cast Screws everywhere, but a node's own choice still wins."""
+    cast = {"Screws": "Alternate: Cast Screws"}
+    screws = nodes_by_item(calculate(client, preferred=cast).json()["nodes"], "Screws")
+    assert len(screws) == 3 and {n["recipe_name"] for n in screws} == {"Alternate: Cast Screws"}
+    # Cast Screws take Iron Ingot: no Iron Rod under them
+    assert not [n for n in calculate(client, preferred=cast).json()["nodes"] if n["id"].endswith("__Screws__Iron Rod")]
+    first, *others = sorted(n["id"] for n in screws)
+    own = nodes_by_item(calculate(client, preferred=cast, recipes={first: "Screws"}).json()["nodes"], "Screws")
+    assert {n["id"]: n["recipe_name"] for n in own} == {first: "Screws", **{o: "Alternate: Cast Screws" for o in others}}
+    # A recipe switch that brings a new branch: it follows them too
+    bolted = calculate(client, demands=[{"item": "Modular Frame", "rate": 2}], preferred=cast,
+                       recipes={"Modular Frame": "Alternate: Bolted Frame"}).json()["nodes"]
+    assert next(n for n in bolted if n["id"] == "Modular Frame__Screws")["recipe_name"] == "Alternate: Cast Screws"
+    # Unknown recipes, and recipes for another item, are left out
+    plain = calculate(client, preferred={"Screws": "Iron Rod", "Iron Rod": "Nope"}).json()["nodes"]
+    assert {n["recipe_name"] for n in nodes_by_item(plain, "Screws")} == {"Screws"}
+
+
 def test_requests_do_not_share_state(client):
     expected = calculate(client).json()["nodes"]
     calculate(client, demands=[{"item": "Rotor", "rate": 4}], clocks={"Rotor": [{"clock": 2.0}]})

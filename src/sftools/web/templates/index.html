@@ -182,6 +182,13 @@
                                 <div class="hint">Inputs both recipes use keep their adjustments. Inputs the new recipe doesn't use are removed, with everything under them. "Supplied from outside" takes the item from outside the plan (e.g. another factory): no buildings or inputs.</div>
                             </div>
 
+                            <!-- Preferred recipe for the item (ticket 043) -->
+                            <div class="form-group" id="preferred-controls">
+                                <button type="button" class="secondary" id="prefer-btn">Prefer</button>
+                                <button type="button" class="secondary" id="unprefer-btn">Use Default Recipe</button>
+                                <div class="hint" id="preferred-hint"></div>
+                            </div>
+
                             <div id="base-recipe-details"
                                 style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">
                                 <!-- Base rates at 100% -->
@@ -328,6 +335,11 @@
 
             <!-- Colors Tab -->
             <div id="colors-tab" class="tab-content">
+                <section>
+                    <h3>Preferred Recipes</h3>
+                    <p class="hint" style="margin-bottom: 1rem;">New nodes of these items run these recipes, in every tab; a recipe switched on a node still wins. Set one on a node (Recipe Details, Prefer).</p>
+                    <div id="preferred-list"></div>
+                </section>
                 <section>
                     <h3>Node Color Mapping</h3>
                     <p class="hint" style="margin-bottom: 1rem;">Colors are based on the output item of the node.</p>

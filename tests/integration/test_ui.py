@@ -166,6 +166,47 @@ def test_colors_are_saved_in_the_browser(page):
     assert page.dialogs == ["Colors saved in this browser."]
 
 
+SCREWS = ["Smart Plating__Reinforced Iron Plate__Screws", "Smart Plating__Rotor__Screws",
+          "Modular Frame__Reinforced Iron Plate__Screws"]
+CAST = "Alternate: Cast Screws"
+
+
+def recipes_of(node_ids):
+    return f"import('/static/js/graph.js').then(g => {json.dumps(node_ids)}.map(id => g.getNodeData(id)?.recipe_name))"
+
+
+def test_preferred_recipes(page):
+    """Ticket 043: a recipe preferred for an item runs in every node of it that has no recipe of its own."""
+    page.open(page.base_url, plan(merges={SCREWS[2]: SCREWS[1]}))
+    shown = SCREWS[:2]
+    switch_recipe(page, SCREWS[0], CAST)
+    assert page.js("document.getElementById('prefer-btn').textContent") == "Prefer for Screws"
+    page.js("document.getElementById('prefer-btn').click()")
+    page.wait_until(f"{recipes_of(shown)}.then(r => r.every(name => name === {json.dumps(CAST)}))")
+    # Kept in the browser for every tab, not in the plan; the node's own choice went (it's the preferred one)
+    assert page.js("JSON.parse(localStorage.getItem('sf_planner_recipes'))") == {"Screws": CAST}
+    assert page.saved_plan()["recipes"] == {}
+    page.wait_until("document.getElementById('prefer-btn').style.display === 'none'")
+    assert page.js("document.getElementById('preferred-hint').textContent").startswith("Preferred for Screws")
+
+    # A node's own choice still wins
+    switch_recipe(page, SCREWS[1], "Screws")
+    assert page.js(recipes_of(shown)) == [CAST, "Screws"]
+
+    # Unmerged: the node split back out keeps the merged node's recipe
+    assert page.js("document.getElementById('unmerge-btn').style.display") == "block"
+    page.js("document.getElementById('unmerge-btn').click()")
+    page.wait_until(f"{recipes_of(SCREWS)}.then(r => r[2] === 'Screws')")
+    assert page.saved_plan()["recipes"] == {SCREWS[1]: "Screws", SCREWS[2]: "Screws"}
+
+    # Removed on the colors tab: back to the default recipe
+    page.js("document.querySelector('.tab[data-tab=colors]').click()")
+    assert page.js("document.getElementById('preferred-list').textContent").startswith("Screws")
+    page.js("document.querySelector('.preferred-remove').click()")
+    page.wait_until(f"{recipes_of(SCREWS)}.then(r => r[0] === 'Screws')")
+    assert page.js("JSON.parse(localStorage.getItem('sf_planner_recipes'))") == {}
+
+
 def test_mouse_wheel_zooms_in_small_steps(page):
     page.open(page.base_url, plan())
     page.wait(1)  # layout and fit
