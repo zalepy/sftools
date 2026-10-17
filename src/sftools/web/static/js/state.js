@@ -14,9 +14,10 @@ export const state = {
     recipes: {},        // node_id -> recipe name
     byproducts: {},     // node_id -> 'use' | 'sink' | 'solve': what its by-products do (tickets 031, 032)
     built: {},          // node_id -> {count, recipe}: buildings already built in the game (ticket 037)
-    // Logistics mode: what's unlocked, the logistics nodes the user edited ('<node id>|in' / '|out'), and
-    // where the nodes inside them are drawn (browser only, ticket 036)
-    logistics: { settings: { ...DEFAULT_LOGISTICS_SETTINGS }, layouts: {}, positions: {} },
+    // Logistics mode: what's unlocked, the logistics nodes the user edited ('<node id>|in' / '|out'),
+    // where the nodes inside them are drawn (browser only, ticket 036), and the edges given a number of
+    // belts ('<producer>><consumer>|<item>' -> count, ticket 041)
+    logistics: { settings: { ...DEFAULT_LOGISTICS_SETTINGS }, layouts: {}, positions: {}, edges: {} },
     colors: {},         // item -> color
     selectedNodeId: null
 };
@@ -47,7 +48,8 @@ export function applySaved(saved) {
     state.logistics = {
         settings: { ...DEFAULT_LOGISTICS_SETTINGS, ...logistics.settings },
         layouts: logistics.layouts || {},
-        positions: logistics.positions || {}
+        positions: logistics.positions || {},
+        edges: logistics.edges || {}
     };
 }
 

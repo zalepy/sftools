@@ -11,6 +11,14 @@ Layouts are stored by key '<node id>|in' / '<node id>|out' as {"fixed": [ids], "
 item}], "belts": [{from, to, overflow}]}. `fixed` lists the nodes the plan gives the side (buildings,
 entries, exits): when they change (e.g. a building more), the stored layout no longer fits and is reset
 to the default.
+
+Each edge of the production graph is a number of belts (ticket 041): by default the fewest its rate
+needs, or what the plan sets (`edges`, by `edge_key`). Each belt has an end on both sides: an exit on
+the producer's output side and an entry on the consumer's input side, belt k being the same belt at both
+ends. The sides are simulated together (`attach_logistics`). An edge whose count the plan sets is
+matched belt by belt: what each belt's entry lets through limits its exit, and what its exit gets is what
+the entry brings. An edge with the default count is a bundle: its belts share what the producer sends
+and what the consumer takes, as if balanced.
 """
 import math
 from dataclasses import dataclass
@@ -32,7 +40,9 @@ PARTS = (SPLITTER, MERGER, OVERFLOW, BUFFER)  # what the user can add
 PORTS = {  # (max belts in, max belts out); None: any number
     SPLITTER: (1, 3), OVERFLOW: (1, 3), MERGER: (3, 1), BUFFER: (None, 0),
 }  # buildings: one belt for each item; entries and exits: see _ports
-JOIN = 3  # an exit merges up to 3 belts onto each of its lines, an entry splits each line into up to 3 (ticket 036)
+MAX_BELTS = 12  # per edge
+SHORT = 0.005  # a shortfall below this shows as 0.00/min: not warned about (e.g. a clock of 166.666% for 5/3)
+COUPLING_ROUNDS = 60  # passes over the sides until the belts between them settle
 
 
 @dataclass
@@ -64,6 +74,28 @@ def belts_needed(rate: float, fluid: bool, settings: Settings) -> Dict:
     return {"kind": "pipe" if fluid else "belt", "count": count, "tier": tier}
 
 
+def belts_for(rate: float, fluid: bool, settings: Settings, count: int) -> Dict:
+    """`count` belts for a rate: {kind, count, tier}, the lowest tier that carries each one's share (the
+    highest unlocked if none does: then `over` is set)."""
+    tiers = PIPES[:settings.pipe_tier] if fluid else BELTS[:settings.belt_tier]
+    share = rate / count
+    tier = next((i for i, cap in enumerate(tiers, 1) if cap >= share - EPSILON), len(tiers))
+    result = {"kind": "pipe" if fluid else "belt", "count": count, "tier": tier}
+    if share > tiers[-1] + EPSILON:
+        result["over"] = True
+    return result
+
+
+def edge_key(producer: str, consumer: str, item: str) -> str:
+    """How the plan names an edge for its belt count: consumer 'External Demand' or 'sink' for those ends."""
+    return f"{producer}>{consumer}|{item}"
+
+
+def _end_id(prefix: str, other: str, item: str, belt: int) -> str:
+    """An exit ('x') or entry ('e') for belt k of an edge: the first keeps the id of a single belt."""
+    return f"{prefix}|{other}|{item}" + (f"|{belt}" if belt > 1 else "")
+
+
 # --- The sides of a node, as the plan gives them ---
 
 def _building_clocks(node: Dict) -> List[float]:
@@ -73,21 +105,31 @@ def _building_clocks(node: Dict) -> List[float]:
 def side_specs(nodes: List[Dict], is_fluid) -> Dict[str, Dict]:
     """
     For each production node with buildings, its sides: {'<id>|out': spec, '<id>|in': spec}. A spec maps
-    each item to {"sources": [(id, rate)], "sinks": [(id, rate, label)]}, buildings numbered from 1 in
-    clock-group order. Entries come from the graph's edges into the node; exits from its consumers, the
-    user's demand, and its by-products (used elsewhere, or to the Sink).
+    each item to {"sources": [...], "sinks": [...]}, buildings numbered from 1 in clock-group order:
+    on the output side sources are buildings (id, rate) and sinks the edges out (consumer, rate, label,
+    belts, edge key); on the input side sources are the edges in (supplier, rate, belts, edge key) and
+    sinks the buildings (id, rate, None). Entries come from the graph's edges into the node; exits from
+    its consumers, the user's demand, and its by-products (used elsewhere, or to the Sink). The number of
+    belts of each edge is the producer's `edge_belts` (see attach_logistics); 1 without it.
     """
-    by_id = {node["id"]: node for node in nodes}
-    entries: Dict[str, Dict[str, List[Tuple[str, float]]]] = {}  # consumer -> item -> [(supplier, rate)]
+    def belts(node: Dict, consumer: str, byproduct: Optional[Dict] = None) -> int:
+        edge_belts = (byproduct if byproduct is not None else node).get("edge_belts") or {}
+        return (edge_belts.get(consumer) or {}).get("count", 1)
+
+    entries: Dict[str, Dict[str, List[Tuple]]] = {}  # consumer -> item -> [(supplier, rate, belts, key)]
     for node in nodes:
         for consumer in node.get("parents", []):
             rate = (node.get("parent_demands") or {}).get(consumer, 0)
             if rate > EPSILON:
-                entries.setdefault(consumer, {}).setdefault(node["output_item"], []).append((node["id"], rate))
+                item = node["output_item"]
+                entries.setdefault(consumer, {}).setdefault(item, []).append(
+                    (node["id"], rate, belts(node, consumer), edge_key(node["id"], consumer, item)))
         for byproduct in node.get("byproducts") or []:
             for consumer, rate in byproduct["used"].items():
                 if rate > EPSILON:
-                    entries.setdefault(consumer, {}).setdefault(byproduct["item"], []).append((node["id"], rate))
+                    item = byproduct["item"]
+                    entries.setdefault(consumer, {}).setdefault(item, []).append(
+                        (node["id"], rate, belts(node, consumer, byproduct), edge_key(node["id"], consumer, item)))
 
     specs = {}
     for node in nodes:
@@ -99,16 +141,19 @@ def side_specs(nodes: List[Dict], is_fluid) -> Dict[str, Dict]:
         main = node["output_item"]
         out[main] = {
             "sources": [(f"b{i}", node["base_output_rate"] * clock) for i, clock in enumerate(clocks, 1)],
-            "sinks": [(consumer, rate, "demand" if consumer == "External Demand" else consumer)
+            "sinks": [(consumer, rate, "demand" if consumer == "External Demand" else consumer,
+                       belts(node, consumer), edge_key(node["id"], consumer, main))
                       for consumer, rate in (node.get("parent_demands") or {}).items() if rate > EPSILON],
         }
         for byproduct in node.get("byproducts") or []:
             per_building = byproduct["rate"] / scale if scale else 0
+            item = byproduct["item"]
             used = {k: v for k, v in byproduct["used"].items() if v > EPSILON}
-            sinks = [(consumer, rate, consumer) for consumer, rate in used.items()]
+            sinks = [(consumer, rate, consumer, belts(node, consumer, byproduct), edge_key(node["id"], consumer, item))
+                     for consumer, rate in used.items()]
             left = byproduct["rate"] - sum(used.values())
             if left >= NEGLIGIBLE:
-                sinks.append(("sink", left, "Sink"))
+                sinks.append(("sink", left, "Sink", belts(node, "sink", byproduct), edge_key(node["id"], "sink", item)))
             out[byproduct["item"]] = {
                 "sources": [(f"b{i}", per_building * clock) for i, clock in enumerate(clocks, 1)],
                 "sinks": sinks,
@@ -119,7 +164,7 @@ def side_specs(nodes: List[Dict], is_fluid) -> Dict[str, Dict]:
         for base in node.get("base_inputs") or []:
             item = base["item"]
             inputs[item] = {
-                "sources": [(supplier, rate) for supplier, rate in entries.get(node["id"], {}).get(item, [])],
+                "sources": entries.get(node["id"], {}).get(item, []),
                 "sinks": [(f"b{i}", base["rate"] * clock, None) for i, clock in enumerate(clocks, 1)],
             }
         if inputs:
@@ -129,22 +174,22 @@ def side_specs(nodes: List[Dict], is_fluid) -> Dict[str, Dict]:
 
 def fixed_nodes(spec: Dict, settings: Settings, is_fluid) -> List[Dict]:
     """
-    The nodes the plan gives a side: buildings, and entries (in) or exits (out), per item. An entry or
-    exit is an edge of the production graph: `lines` is how many belts it is (see belts_needed). An exit
-    has a merger built in, so it takes up to JOIN belts per line; an entry a splitter, with as many out.
+    The nodes the plan gives a side: buildings, and entries (in) or exits (out), per item: one for each
+    belt of an edge (`belt` k of `belts`), taking one belt. An exit's `rate` is the edge's (its belts share
+    it); an entry's is its belt's share, until the producer's side says what the belt brings (simulate).
     """
     result = []
     for item, sub in spec["items"].items():
-        def lines(rate):
-            return belts_needed(rate, is_fluid(item), settings)["count"]
         if spec["side"] == "out":
             result += [{"id": f"{b}|{item}", "kind": BUILDING, "item": item, "rate": rate, "building": b}
                        for b, rate in sub["sources"]]
-            result += [{"id": f"x|{target}|{item}", "kind": EXIT, "item": item, "rate": rate, "target": target,
-                        "label": label, "lines": lines(rate)} for target, rate, label in sub["sinks"]]
+            result += [{"id": _end_id("x", target, item, k), "kind": EXIT, "item": item, "rate": rate, "target": target,
+                        "label": label, "belt": k, "belts": count, "edge": key}
+                       for target, rate, label, count, key in sub["sinks"] for k in range(1, count + 1)]
         else:
-            result += [{"id": f"e|{source}|{item}", "kind": ENTRY, "item": item, "rate": rate, "target": source,
-                        "lines": lines(rate)} for source, rate in sub["sources"]]
+            result += [{"id": _end_id("e", source, item, k), "kind": ENTRY, "item": item, "rate": rate / count,
+                        "total": rate, "target": source, "belt": k, "belts": count, "edge": key}
+                       for source, rate, count, key in sub["sources"] for k in range(1, count + 1)]
             result += [{"id": f"{b}|{item}", "kind": BUILDING, "item": item, "rate": rate, "building": b}
                        for b, rate, _ in sub["sinks"]]
     return result
@@ -157,6 +202,7 @@ class _Builder:
         self.nodes: List[Dict] = []
         self.belts: List[Dict] = []
         self.count = 0
+        self.mains: Dict[str, str] = {}  # smart splitter -> the exit prefix its main output leads to (_priority)
 
     def part(self, kind: str, item: str) -> str:
         self.count += 1
@@ -237,12 +283,16 @@ def _chunks(entries: List[Tuple[str, float]], capacity: float) -> List[List[Tupl
     return chunks
 
 
-def default_layout(spec: Dict, settings: Settings, is_fluid) -> Dict:
+def default_layout(spec: Dict, settings: Settings, is_fluid, matched: frozenset = frozenset(),
+                   targets: Optional[Dict[Tuple[str, int], float]] = None) -> Dict:
     """
-    Output side: buildings grouped by destination. Each exit gets whole buildings while they fit its
-    rate (merged, one belt per belt-load); the buildings left over are merged and split over the exits
-    still short. Surplus backs up (the buildings idle part of the time).
-    Input side: the entries merged onto one belt per belt-load of buildings, each feeding a manifold.
+    Output side: buildings grouped by destination. Each edge gets whole buildings while they fit its
+    rate; the buildings left over are merged and split over the edges still short. Surplus backs up (the
+    buildings idle part of the time). An edge of several belts gets its sources spread over them: up to
+    `targets` ({(edge key, belt): rate}, what the consumer's side takes on each), or evenly.
+    Input side: the entries merged onto one belt per belt-load of buildings, each feeding a manifold. The
+    belts of a `matched` edge (and of one whose belts each carry a building's need or more) each feed
+    their own buildings, in order.
     """
     fixed = fixed_nodes(spec, settings, is_fluid)
     builder = _Builder()
@@ -250,40 +300,83 @@ def default_layout(spec: Dict, settings: Settings, is_fluid) -> Dict:
         capacity = settings.capacity(is_fluid(item))
         if spec["side"] == "out":
             buildings = sorted(((f"{b}|{item}", rate) for b, rate in sub["sources"]), key=lambda b: -b[1])
-            exits = sorted(((f"x|{target}|{item}", rate) for target, rate, _ in sub["sinks"]), key=lambda e: -e[1])
-            feeds: Dict[str, List[List[str]]] = {exit_id: [] for exit_id, _ in exits}  # belt-loads for each exit
+            edges = sorted(sub["sinks"], key=lambda e: -e[1])
+            feeds: Dict[str, List[Tuple[str, float]]] = {e[0]: [] for e in edges}  # (source, rate) for each edge
             short = []
-            for exit_id, rate in exits:
-                group, total = [], 0.0
+            for target, rate, *_ in edges:
+                total = 0.0
                 for building in list(buildings):
                     if total + building[1] <= rate + EPSILON:
-                        group.append(building)
+                        feeds[target].append(building)
                         total += building[1]
                         buildings.remove(building)
-                for chunk in _chunks(group, capacity):
-                    feeds[exit_id].append([b for b, _ in chunk])
                 if rate - total > EPSILON:
-                    short.append(exit_id)
+                    short.append((target, rate - total))
             if buildings and short:
+                # With smart splitters, edges that get no whole building are filled first (they take just
+                # what they miss); the rest is shared evenly by the others, which take more than they miss
+                # when their buildings' belts merge with it
+                missing = dict(short)
+                empty = sorted((t for t, _ in short if not feeds[t]), key=lambda t: -missing[t])
+                others = [t for t, _ in short if feeds[t]]
                 for chunk in _chunks(buildings, capacity):
-                    for exit_id, source in _fan_out(builder, builder.combine([b for b, _ in chunk], item), short, item):
-                        feeds[exit_id].append([source])
-            elif buildings and exits:
-                for chunk in _chunks(buildings, capacity):  # surplus: onto the largest exit, where it backs up
-                    feeds[exits[0][0]].append([b for b, _ in chunk])
-            for exit_id, rate in exits:  # per belt-load of the exit's rate, up to JOIN belts into its merger
-                lines = belts_needed(rate, is_fluid(item), settings)["count"]
-                sources = feeds[exit_id]
-                for line in range(min(lines, len(sources))):
-                    loads = [source for load in sources[line::lines] for source in load]
-                    for source in builder.combine_to(loads, JOIN, item):
-                        builder.belt(source, exit_id)
+                    source = builder.combine([b for b, _ in chunk], item)
+                    if settings.smart and empty and len(short) > 1:
+                        pairs = _priority(builder, source, empty, others, item)
+                    else:
+                        pairs = _fan_out(builder, source, empty + others, item)
+                    for target, node in pairs:
+                        feeds[target].append((node, missing[target]))
+            elif buildings and edges:
+                feeds[edges[0][0]] += buildings  # surplus: onto the largest edge, where it backs up
+            for target, rate, _, count, key in edges:
+                shares = [(targets or {}).get((key, k)) for k in range(1, count + 1)]
+                if None in shares:
+                    shares = [rate / count] * count
+                loads = _spread(builder, feeds[target], shares, item) if count > 1 else [feeds[target]]
+                for belt, load in enumerate(loads, 1):
+                    if load:
+                        builder.belt(builder.combine([source for source, _ in load], item), _end_id("x", target, item, belt))
         else:
-            entries = [(f"e|{source}|{item}", rate) for source, rate in sub["sources"]]
+            entries = [(_end_id("e", source, item, k), rate / count)
+                       for source, rate, count, _ in sub["sources"] for k in range(1, count + 1)]
             buildings = [(f"{b}|{item}", rate) for b, rate, _ in sub["sinks"]]
-            if entries:
+            chosen = any(key in matched and count > 1 for _, _, count, key in sub["sources"])
+            whole = len(entries) > len(sub["sources"]) and min(r for _, r in entries) >= max(r for _, r in buildings) - EPSILON
+            if chosen or whole:
+                _belt_shares(builder, entries, buildings, item)
+            elif entries:
                 _input_lines(builder, entries, buildings, item, capacity)
+    # A smart splitter's main output is the one toward its edge; the others take the overflow
+    for splitter, prefix in builder.mains.items():
+        for belt in builder.belts:
+            if belt["from"] == splitter:
+                belt["overflow"] = not _reaches(builder.belts, belt["to"], prefix)
     return {"fixed": sorted(node["id"] for node in fixed), "nodes": builder.nodes, "belts": builder.belts}
+
+
+def _reaches(belts: List[Dict], node: str, prefix: str) -> bool:
+    """Whether belts from `node` lead to an exit of the edge `prefix` ('x|<target>|<item>', any belt)."""
+    if node == prefix or node.startswith(prefix + "|"):
+        return True
+    return any(_reaches(belts, b["to"], prefix) for b in belts if b["from"] == node)
+
+
+def _priority(builder: "_Builder", source: str, firsts: List[str], rest: List[str], item: str) -> List[Tuple[str, str]]:
+    """
+    Source to `firsts` in order, through a chain of smart (overflow) splitters, each filling its target
+    first and passing the overflow on; what's left is split evenly over `rest`. [(target, node that feeds it)].
+    """
+    result, current = [], source
+    for index, target in enumerate(firsts):
+        if index == len(firsts) - 1 and not rest:
+            return result + [(target, current)]
+        splitter = builder.part(OVERFLOW, item)
+        builder.belt(current, splitter)
+        builder.mains[splitter] = f"x|{target}|{item}"
+        result.append((target, splitter))
+        current = splitter
+    return result + _fan_out(builder, current, rest, item)
 
 
 def _input_lines(builder: "_Builder", entries: List[Tuple[str, float]], buildings: List[Tuple[str, float]],
@@ -291,28 +384,98 @@ def _input_lines(builder: "_Builder", entries: List[Tuple[str, float]], building
     """
     Entries onto belts, each feeding a manifold. On one belt if it carries them all: the merger then takes
     exactly what each entry brings. Otherwise the buildings are grouped into belt-loads, and entries are
-    given to the groups in order, an entry split over two groups where needed. A merger shares evenly
-    between inputs that both back up, so such a split can leave a building short (a warning shows); the
-    user can rework it.
+    given to the groups in order, an entry split (with a splitter) over two groups where needed. A merger
+    shares evenly between inputs that both back up, so such a split can leave a building short (a warning
+    shows); the user can rework it.
     """
     if sum(rate for _, rate in entries) <= capacity + EPSILON:
         builder.split(builder.combine([e for e, _ in entries], item), [b for b, _ in buildings], item)
         return
+    chunks = _chunks(buildings, capacity)
     left = [rate for _, rate in entries]  # what each entry has left to give
-    for chunk in _chunks(buildings, capacity):
+    feeds: List[List[int]] = []  # for each chunk, the entries feeding it
+    for chunk in chunks:
         need = sum(rate for _, rate in chunk)
-        feeds = []
-        for index, (entry_id, _) in enumerate(entries):  # until the chunk's need is covered
+        feeds.append([])
+        for index in range(len(entries)):  # until the chunk's need is covered
             if need <= EPSILON:
                 break
             if left[index] > EPSILON:
-                feeds.append(entry_id)
+                feeds[-1].append(index)
                 taken = min(left[index], need)
                 left[index] -= taken
                 need -= taken
-        if not feeds:
-            feeds = [entries[-1][0]]
-        builder.split(builder.combine(feeds, item), [b for b, _ in chunk], item)
+        if not feeds[-1]:
+            feeds[-1].append(len(entries) - 1)
+    for index in range(len(entries)):  # more than the buildings need: with the last group, where it backs up
+        if not any(index in feed for feed in feeds):
+            feeds[-1].append(index)
+    sources: Dict[Tuple[int, int], str] = {}  # (entry, chunk) -> what brings the entry's share to the chunk
+    for index, (entry_id, _) in enumerate(entries):
+        for chunk, source in _fan_out(builder, entry_id, [c for c, feed in enumerate(feeds) if index in feed], item):
+            sources[(index, chunk)] = source
+    for chunk, feed in enumerate(feeds):
+        builder.split(builder.combine([sources[(index, chunk)] for index in feed], item), [b for b, _ in chunks[chunk]], item)
+
+
+def _spread(builder: "_Builder", sources: List[Tuple[str, float]], shares: List[float],
+            item: str) -> List[List[Tuple[str, float]]]:
+    """
+    Sources over the belts of an edge, each up to its share: whole ones, largest first onto the belt with
+    the most room that takes them; the ones left merged and split evenly over the belts still short (or
+    onto the one with the most room).
+    """
+    count = len(shares)
+    loads: List[List[Tuple[str, float]]] = [[] for _ in range(count)]
+    totals = [0.0] * count
+    left = []
+    for source in sorted(sources, key=lambda s: -s[1]):
+        room = [shares[i] - totals[i] for i in range(count)]
+        belt = room.index(max(room))
+        if source[1] <= room[belt] + EPSILON:
+            loads[belt].append(source)
+            totals[belt] += source[1]
+        else:
+            left.append(source)
+    if left:
+        room = [shares[i] - totals[i] for i in range(count)]
+        short = [i for i in range(count) if room[i] > EPSILON] or [room.index(max(room))]
+        merged = builder.combine([s for s, _ in left], item)
+        for belt, node in _fan_out(builder, merged, short, item):
+            loads[belt].append((node, 0.0))
+    return loads
+
+
+def _belt_shares(builder: "_Builder", entries: List[Tuple[str, float]], buildings: List[Tuple[str, float]], item: str):
+    """
+    Edges of several belts: the buildings in order, each fed by the belt whose share of the supply covers
+    the middle of its need (e.g. three belts of 9 to buildings needing 10, 10 and 7: one each). A belt that
+    covers no building's middle joins the belt before it (or after, for the first).
+    """
+    bounds, total = [], 0.0
+    for _, rate in entries:
+        bounds.append((total, total + rate))
+        total += rate
+    groups: List[List[str]] = [[] for _ in entries]
+    need = 0.0
+    for building, rate in buildings:
+        middle = need + rate / 2
+        need += rate
+        index = next((i for i, (lo, hi) in enumerate(bounds) if lo - EPSILON <= middle < hi), len(entries) - 1)
+        groups[index].append(building)
+    feeders: Dict[int, List[str]] = {}  # first entry of each group of buildings -> the entries feeding it
+    owner = None
+    for index, (entry, _) in enumerate(entries):
+        if groups[index]:
+            owner = index
+            feeders[index] = feeders.pop(-1, []) + [entry]
+        elif owner is None:
+            feeders.setdefault(-1, []).append(entry)  # before the first group: joins it
+        else:
+            feeders[owner].append(entry)
+    for index, sources in feeders.items():
+        if index >= 0:
+            builder.split(builder.combine(sources, item), groups[index], item)
 
 
 def _fan_out(builder: _Builder, source: str, targets: List[str], item: str) -> List[Tuple[str, str]]:
@@ -366,10 +529,10 @@ def validate(layout: Dict, spec: Dict, settings: Settings, is_fluid) -> Optional
 def _ports(node: Dict, side: str) -> Tuple[Optional[int], Optional[int]]:
     if node["kind"] == BUILDING:  # one port for the item
         return (0, 1) if side == "out" else (1, 0)
-    if node["kind"] == EXIT:
-        return node["lines"] * JOIN, 0
+    if node["kind"] == EXIT:  # one belt each (ticket 041)
+        return 1, 0
     if node["kind"] == ENTRY:
-        return 0, node["lines"] * JOIN
+        return 0, 1
     return PORTS[node["kind"]]
 
 
@@ -410,31 +573,48 @@ def _water_fill(amount: float, limits: List[float]) -> List[float]:
     return shares
 
 
-def _level(total: float, offers: List[float]) -> float:
+def _fair(total: float, offers: List[float]) -> List[float]:
     """
     How much each of several inputs may send when they share `total` fairly: the level where the offers,
-    each cut at it, add up to `total` (infinite when all the offers fit).
+    each cut at it, add up to `total`. When all the offers fit, each may send its offer and the room left.
     """
     if total == math.inf:
-        return math.inf
+        return [math.inf] * len(offers)
     left = total
     for i, offer in enumerate(sorted(offers)):
         share = left / (len(offers) - i)
         if offer >= share:
-            return share
+            return [share] * len(offers)
         left -= offer
-    return math.inf
+    return [offer + left for offer in offers]
 
 
-def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid) -> Dict:
+def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid,
+             supply: Optional[Dict] = None, limits: Optional[Dict] = None) -> Dict:
     """
     Steady-state flows: sources (buildings out, entries in) push their rate; splitters share evenly among
     the outputs that aren't backed up, mergers share what their output takes among their inputs, an
-    overflow splitter fills its main outputs first. Sinks take up to their rate (a buffer takes anything).
+    overflow splitter fills its main outputs first. Sinks take up to their rate (a buffer takes anything);
+    the exits of one edge share its rate, each up to what the consumer's side lets its belt take.
     Repeated until the flows stop changing.
+
+    `supply` and `limits` ({(edge key, belt): rate}) come from the other ends of the belts: what an
+    entry's belt brings, and what an exit's belt can take (see attach_logistics); a limit with belt None
+    is on all the edge's belts together.
     """
     side = spec["side"]
+    supply, ends = supply or {}, limits or {}
     nodes = {node["id"]: dict(node) for node in fixed_nodes(spec, settings, is_fluid)}
+    for node in nodes.values():
+        end = (node.get("edge"), node.get("belt"))
+        if node["kind"] == ENTRY and end in supply:
+            node["rate"] = supply[end]
+        if node["kind"] == EXIT and end in ends:
+            node["limit"] = ends[end]
+    pools: Dict[str, List[str]] = {}  # edge key -> its exits
+    for node_id, node in nodes.items():
+        if node["kind"] == EXIT:
+            pools.setdefault(node["edge"], []).append(node_id)
     for node in layout["nodes"]:
         nodes[node["id"]] = {**node}
     belts = [{**belt, "id": f"{belt['from']}>{belt['to']}"} for belt in layout["belts"]]
@@ -475,34 +655,60 @@ def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid) -> Dict:
                 shares = _water_fill(inflow, limits)
             for belt, share in zip(out, shares):
                 flow[belt["id"]] = share
-        for node_id in reversed(order):  # what each belt can take, from the end back
+        # What each belt can take, from the end back. Inputs share it fairly: one that carries less than it
+        # may (all its supply) keeps that, and the rest is split evenly among those that would send more.
+        def offer(belt, cap=math.inf):
+            wants = belt["capacity"] if flow[belt["id"]] >= accept[belt["id"]] - EPSILON else flow[belt["id"]]
+            return min(wants, cap)
+
+        for members in pools.values():  # the exits of an edge share its rate
+            limit = {m: nodes[m].get("limit", math.inf) for m in members}
+            into = [(b, m) for m in members for b in ins[m]]
+            total = min(nodes[members[0]]["rate"], ends.get((nodes[members[0]]["edge"], None), math.inf))
+            shares = _fair(total, [offer(b, limit[m]) for b, m in into])
+            for (belt, member), share in zip(into, shares):
+                accept[belt["id"]] = min(belt["capacity"], limit[member], share)
+        for node_id in reversed(order):
             node = nodes[node_id]
             kind = role(node)
+            if node["kind"] == EXIT:
+                continue
             if kind == "sink":
                 total = math.inf if node["kind"] == BUFFER else node["rate"]
             else:
                 total = sum(accept[b["id"]] for b in outs[node_id])
-            # Inputs share it fairly: one that carries less than it may (all its supply) keeps that, and
-            # the rest is split evenly among those that would send more
             into = ins[node_id]
-            level = _level(total, [b["capacity"] if flow[b["id"]] >= accept[b["id"]] - EPSILON else flow[b["id"]]
-                                   for b in into])
-            for belt in into:
-                accept[belt["id"]] = min(belt["capacity"], level)
+            for belt, share in zip(into, _fair(total, [offer(b) for b in into])):
+                accept[belt["id"]] = min(belt["capacity"], share)
         if all(abs(flow[k] - previous[k]) <= EPSILON for k in flow):
             break
 
     warnings = []
+    for members in pools.values():
+        delivered = min(sum(nodes[m]["in"] for m in members), nodes[members[0]]["rate"])
+        for m in members:
+            nodes[m]["pool_delivered"] = delivered
+        if delivered < nodes[members[0]]["rate"] - SHORT:
+            first = {**nodes[members[0]], "belts": 1}
+            warnings.append(f"{_name(first)} gets {delivered:.2f} of {first['rate']:.2f}/min")
     for node_id, node in nodes.items():
         kind = role(node)
-        if kind == "sink" and node["kind"] != BUFFER:
+        if node["kind"] == EXIT:
+            node["delivered"] = node["in"]
+            if node.get("limit", math.inf) == math.inf:
+                node.pop("limit", None)
+            if not ins[node_id]:
+                warnings.append(f"{_name(node)} isn't connected")
+        elif kind == "sink" and node["kind"] != BUFFER:
             node["delivered"] = min(node["in"], node["rate"])
-            if node["delivered"] < node["rate"] - 1e-4:
+            if node["delivered"] < node["rate"] - SHORT:
                 warnings.append(f"{_name(node)} gets {node['delivered']:.2f} of {node['rate']:.2f}/min")
             if not ins[node_id]:
                 warnings.append(f"{_name(node)} isn't connected")
         elif kind == "source":
             node["sent"] = sum(flow[b["id"]] for b in outs[node_id])
+            if node["kind"] == ENTRY:  # what the side would take on this belt: limits the producer's exit
+                node["accepts"] = sum(accept[b["id"]] for b in outs[node_id])
             if not outs[node_id]:
                 warnings.append(f"{_name(node)} isn't connected")
             elif node["kind"] == BUILDING and node["rate"] > outs[node_id][0]["capacity"] + EPSILON:
@@ -523,48 +729,59 @@ def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid) -> Dict:
 
 
 def _complexity(nodes: Dict[str, Dict], ins: Dict[str, List], outs: Dict[str, List]) -> int:
-    """Splitters and mergers, counting an exit that merges belts or an entry that splits as one each per line."""
-    count = 0
-    for node_id, node in nodes.items():
-        if node["kind"] in (SPLITTER, MERGER, OVERFLOW):
-            count += 1
-        elif node["kind"] == EXIT and len(ins[node_id]) > node["lines"]:
-            count += len(ins[node_id]) - node["lines"] if node["lines"] > 1 else 1
-        elif node["kind"] == ENTRY and len(outs[node_id]) > node["lines"]:
-            count += len(outs[node_id]) - node["lines"] if node["lines"] > 1 else 1
-    return count
+    """Splitters and mergers."""
+    return sum(1 for node in nodes.values() if node["kind"] in (SPLITTER, MERGER, OVERFLOW))
 
 
 def _name(node: Dict) -> str:
     if node["kind"] == BUILDING:
         return f"Building {node['building'][1:]}"
+    belt = f" (belt {node['belt']}/{node['belts']})" if node.get("belts", 1) > 1 else ""
     if node["kind"] == EXIT:
-        return f"Exit to {node['label']}" if node["label"] != "demand" else "The demand"
+        return (f"Exit to {node['label']}" if node["label"] != "demand" else "The demand") + belt
     if node["kind"] == ENTRY:
-        return f"Entry from {node['target']}"
+        return f"Entry from {node['target']}{belt}"
     return node["id"]
 
 
-def attach_logistics(nodes: List[Dict], is_fluid, settings: Settings, layouts: Dict[str, Dict]) -> List[Dict]:
+def attach_logistics(nodes: List[Dict], is_fluid, settings: Settings, layouts: Dict[str, Dict],
+                     edges: Optional[Dict[str, int]] = None) -> List[Dict]:
     """
     Adds `logistics: {in, out}` to every production node with buildings: each side's layout (the plan's,
     or the default), its flows and warnings, and whether it was edited. Returns the plan's layouts that
     no longer fit, which are reset: [{key, reason}].
+
+    `edges` sets the number of belts of an edge (by edge_key); others get the fewest their rate needs.
     """
-    # The production graph's edges (ticket 028): belts or pipes for each, by tier and count
+    counts = {}
+    for key, count in (edges or {}).items():
+        try:
+            counts[key] = min(max(int(count), 1), MAX_BELTS)
+        except (TypeError, ValueError):
+            pass
+
+    needs: Dict[str, int] = {}  # edge key -> the fewest belts its rate needs
+
+    def belts(producer: str, consumer: str, item: str, rate: float) -> Dict:
+        fluid = is_fluid(item)
+        needed = belts_needed(rate, fluid, settings)["count"]
+        key = edge_key(producer, consumer, item)
+        needs[key] = needed
+        return {**belts_for(rate, fluid, settings, counts.get(key, needed)), "needed": needed, "key": key}
+
+    # The production graph's edges (tickets 028, 041): belts or pipes for each, by tier and count
     for node in nodes:
         if node.get("sink"):
             continue
-        fluid = is_fluid(node["output_item"])
-        node["edge_belts"] = {consumer: belts_needed(rate, fluid, settings)
+        node["edge_belts"] = {consumer: belts(node["id"], consumer, node["output_item"], rate)
                               for consumer, rate in (node.get("parent_demands") or {}).items() if rate > EPSILON}
         for byproduct in node.get("byproducts") or []:
-            fluid = is_fluid(byproduct["item"])
             rates = {consumer: rate for consumer, rate in byproduct["used"].items() if rate > EPSILON}
             left = byproduct["rate"] - sum(rates.values())
             if left >= NEGLIGIBLE:
                 rates["sink"] = left
-            byproduct["edge_belts"] = {consumer: belts_needed(rate, fluid, settings) for consumer, rate in rates.items()}
+            byproduct["edge_belts"] = {consumer: belts(node["id"], consumer, byproduct["item"], rate)
+                                       for consumer, rate in rates.items()}
 
     resets = []
     specs = side_specs(nodes, is_fluid)
@@ -572,6 +789,18 @@ def attach_logistics(nodes: List[Dict], is_fluid, settings: Settings, layouts: D
     for key, layout in (layouts or {}).items():
         if key not in specs:
             resets.append({"key": key, "reason": "the node isn't in the plan any more"})
+    # Edges with both ends: matched belt by belt when the plan sets their count, else bundled
+    exits, entries = set(), set()
+    for spec in specs.values():
+        for item, sub in spec["items"].items():
+            if spec["side"] == "out":
+                exits.update(e[4] for e in sub["sinks"])
+            else:
+                entries.update(e[3] for e in sub["sources"])
+    linked = exits & entries
+    matched = frozenset(key for key in linked if key in counts)
+
+    chosen = {}  # key -> (layout, edited); defaults after: the output sides follow the input sides
     for key, spec in specs.items():
         layout = (layouts or {}).get(key)
         edited = layout is not None
@@ -580,9 +809,61 @@ def attach_logistics(nodes: List[Dict], is_fluid, settings: Settings, layouts: D
             if reason:
                 resets.append({"key": key, "reason": reason})
                 layout, edited = None, False
-        if layout is None:
-            layout = default_layout(spec, settings, is_fluid)
-        result = simulate(layout, spec, settings, is_fluid)
+        if layout is not None:
+            chosen[key] = (layout, edited)
+    targets: Dict[Tuple[str, int], float] = {}  # what each matched belt's input side takes
+    for key, spec in specs.items():
+        if spec["side"] == "in":
+            if key not in chosen:
+                chosen[key] = (default_layout(spec, settings, is_fluid, matched), False)
+            for node in simulate(chosen[key][0], spec, settings, is_fluid)["nodes"]:
+                if node["kind"] == ENTRY and node["edge"] in matched:
+                    targets[(node["edge"], node["belt"])] = node["accepts"]
+    for key, spec in specs.items():
+        if key not in chosen:
+            chosen[key] = (default_layout(spec, settings, is_fluid, matched, targets), False)
+
+    # The belts between two sides: what each exit gets is what its entry brings, and what each entry
+    # lets through limits its exit (a bundle: shared). Repeated over all the sides until that settles.
+    supply: Dict[Tuple[str, int], float] = {}
+    limits: Dict[Tuple[str, Optional[int]], float] = {}
+    for _ in range(COUPLING_ROUNDS):
+        results = {key: simulate(layout, specs[key], settings, is_fluid, supply, limits)
+                   for key, (layout, _) in chosen.items()}
+        sent: Dict[str, Dict[int, float]] = {}  # edge -> belt -> what its exit gets
+        taken: Dict[str, Dict[int, float]] = {}  # edge -> belt -> what its entry lets through
+        for result in results.values():
+            for node in result["nodes"]:
+                if node.get("edge") in linked:
+                    if node["kind"] == EXIT:
+                        sent.setdefault(node["edge"], {})[node["belt"]] = node["delivered"]
+                    elif node["kind"] == ENTRY:
+                        taken.setdefault(node["edge"], {})[node["belt"]] = node["accepts"]
+        new_supply, new_limits = {}, {}
+        for edge in linked:
+            if edge in matched:
+                new_supply.update({(edge, belt): rate for belt, rate in sent[edge].items()})
+                new_limits.update({(edge, belt): rate for belt, rate in taken[edge].items()})
+            else:  # the bundle's total, over the entries as they take it
+                belts = sorted(taken[edge])
+                shares = _water_fill(sum(sent[edge].values()), [taken[edge][b] for b in belts])
+                new_supply.update({(edge, belt): share for belt, share in zip(belts, shares)})
+                new_limits[(edge, None)] = sum(taken[edge].values())
+        settled = _close(new_supply, supply) and _close(new_limits, limits)
+        supply, limits = new_supply, new_limits
+        if settled:
+            break
+
+    for key, result in results.items():
+        layout, edited = chosen[key]
+        spec = specs[key]
+        for node in result["nodes"]:  # belt ends: the edge's default count, and whether the plan sets it
+            if node.get("edge"):
+                node.update({"needed": needs.get(node["edge"], 1), "set": node["edge"] in counts})
         result.update({"key": key, "side": spec["side"], "edited": edited, "fixed": layout["fixed"]})
         by_id[spec["node"]].setdefault("logistics", {})[spec["side"]] = result
     return resets
+
+
+def _close(a: Dict, b: Dict) -> bool:
+    return a.keys() == b.keys() and all(abs(a[k] - b[k]) <= EPSILON for k in a)

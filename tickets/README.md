@@ -5,9 +5,8 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
-| [041](041-belts-per-edge.md) | Belts per edge, matched across both ends (logistics mode) | feature | P2 | Open |
 
-Next when wanted: 041, then 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
@@ -54,3 +53,4 @@ Moved to [done/](done/).
 | [038](done/038-node-tab.md) | Node tab in the side panel | feature | P3 | Done |
 | [039](done/039-plan-tabs.md) | Plan tabs and Save Book | feature | P2 | Done |
 | [040](done/040-chain-tab.md) | Chain tab: links between plans | feature | P2 | Done |
+| [041](done/041-belts-per-edge.md) | Belts per edge, matched across both ends (logistics mode) | feature | P2 | Done |

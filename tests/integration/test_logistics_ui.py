@@ -93,10 +93,13 @@ def test_editing_a_logistics_node(page):
     open_logistics(page)
     zoom_in(page)
     assert page.js("document.getElementById('lv-title').textContent").startswith("Output logistics: Steel Beam")
-    # Buildings on the left, exits on the right; the exits merge the buildings' belts themselves
+    # Buildings on the left, exits on the right; each exit is one belt, the buildings merged onto it
     xs = page.js(f"{LCY}.nodes('.real').map(n => [n.data('raw').kind, n.position().x])")
     assert max(x for kind, x in xs if kind == "building") < min(x for kind, x in xs if kind == "exit")
-    assert page.js(belts_between("b5|Steel Beam", encased)) == 1
+    feeding = f"{LCY}.edges().filter(e => e.target().id() === {{}}).map(e => e.source().id())"
+    [encased_merger] = page.js(feeding.format(json.dumps(encased)))
+    [framework_merger] = page.js(feeding.format(json.dumps(framework)))
+    assert page.js(belts_between("b5|Steel Beam", encased_merger)) == 1
 
     # Take Constructor 5 off the Encased Beam exit, onto a buffer: a belt from its output dot
     page.js(f"void {LCY}.edges().filter(e => e.source().id() === 'b5|Steel Beam').select()")
@@ -117,17 +120,17 @@ def test_editing_a_logistics_node(page):
     click(page, lcy_position(page, buffer))
     assert page.js(f"{LCY}.$(':selected').map(e => e.id())") == [buffer]
 
-    # Move a belt: drag the end of Constructor 1's belt to the Versatile Framework exit
+    # Move a belt: drag the end of Constructor 1's belt to the Versatile Framework merger
     fit(page)
     page.js(f"void {LCY}.$(':selected').unselect(); void {LCY}.edges().filter(e => e.source().id() === 'b1|Steel Beam').select()")
-    page.drag(lcy_position(page, "__end|to"), lcy_position(page, framework))
-    page.wait_until(belts_between("b1|Steel Beam", framework) + " === 1")
-    # That exit now merges three belts, so a fourth is refused, and nothing changes
+    page.drag(lcy_position(page, "__end|to"), lcy_position(page, framework_merger))
+    page.wait_until(belts_between("b1|Steel Beam", framework_merger) + " === 1")
+    # An exit is one belt (ticket 041), and has it: a second is refused, and nothing changes
     page.js(f"void {LCY}.$(':selected').unselect(); void {LCY}.edges().filter(e => e.source().id() === 'b2|Steel Beam').select()")
     page.drag(lcy_position(page, "__end|to"), lcy_position(page, framework))
-    page.wait_until("document.getElementById('toast').textContent === "
-                    "'to Versatile Framework (demand) merges up to 3 belts, and has them all.'")
-    assert page.js(belts_between("b2|Steel Beam", encased)) == 1
+    page.wait_until("document.getElementById('toast').textContent === 'to Versatile Framework (demand) is one belt, "
+                    "and has it. Merge first, or add a belt to the edge (+ Belt).'")
+    assert page.js(belts_between("b2|Steel Beam", encased_merger)) == 1
 
     # Nodes move, and stay where they're put
     fit(page)
@@ -151,8 +154,8 @@ def test_editing_a_logistics_node(page):
 def test_a_change_that_breaks_an_edited_layout_resets_it(page):
     open_logistics(page)
     zoom_in(page)
-    page.js("document.querySelector('.lv-add[data-kind=merger]').click()")  # an edit, so the layout is stored
-    page.wait_until(f"{LCY}.nodes('.merger').length === 1")
+    page.js("document.querySelector('.lv-add[data-kind=buffer]').click()")  # an edit, so the layout is stored
+    page.wait_until(f"{LCY}.nodes('.buffer').length === 1")
     page.js("document.getElementById('lv-back').click()")
 
     rows = "document.querySelectorAll('#demand-rows input[name=rates]')"
@@ -174,7 +177,8 @@ def test_new_plan_keeps_the_settings(page):
     open_logistics(page, {**BEAMS, "logistics": {"settings": {"belt_tier": 2, "pipe_tier": 1, "smart": False}, "layouts": {}}})
     page.js("window.confirm = () => true; document.getElementById('new-plan-btn').click()")
     assert saved(page)["items"] == []
-    assert saved(page)["logistics"] == {"settings": {"belt_tier": 2, "pipe_tier": 1, "smart": False}, "layouts": {}, "positions": {}}
+    assert saved(page)["logistics"] == {"settings": {"belt_tier": 2, "pipe_tier": 1, "smart": False}, "layouts": {},
+                                        "positions": {}, "edges": {}}
 
 
 def test_input_side_buildings_in_order_and_the_odd_clock_shows(page):
@@ -200,6 +204,39 @@ def test_the_demand_target_shows_in_the_zoomed_in_view(page):
     assert page.js(f"{LCY}.getElementById({json.dumps(demand)}).style('shape')") == "ellipse"
     assert page.js(f"{LCY}.getElementById({json.dumps(demand)}).style('border-color')") == "rgb(168,85,247)"
     assert page.js(f"{LCY}.getElementById({json.dumps(other)}).style('shape')") == "tag"
+
+
+def test_belts_per_edge(page):
+    """Ticket 041: an edge's belts, set from the zoomed-in view and from the edge; one exit and entry per belt."""
+    framework = "x|Versatile Framework|Steel Beam"
+    key = f"{BEAM}>Versatile Framework|Steel Beam"
+    open_logistics(page)
+    zoom_in(page)
+    page.js(f"void {LCY}.getElementById({json.dumps(framework)}).select()")
+    assert page.js("document.getElementById('lv-belts').textContent") == "1 belt"
+    assert page.js("document.getElementById('lv-belt-fewer').disabled")
+    page.js("document.getElementById('lv-belt-more').click()")
+    page.wait_until(f"{LCY}.getElementById({json.dumps(framework + '|2')}).length === 1")
+    assert saved(page)["logistics"]["edges"] == {key: 2}
+    assert "belt 2/2" in page.js(f"{LCY}.getElementById({json.dumps(framework + '|2')}).data('label')")
+    assert page.js("document.getElementById('lv-warnings').textContent") == ""
+
+    # Double-click a belt end: the other side opens, with that belt's entry selected
+    page.js(f"void {LCY}.getElementById({json.dumps(framework + '|2')}).emit('dbltap')")
+    page.wait_until("document.getElementById('lv-title').textContent.startsWith('Input logistics: Versatile Framework')")
+    assert page.js(f"{LCY}.$(':selected').map(n => n.id())") == [f"e|{BEAM}|Steel Beam|2"]
+    page.js("document.getElementById('lv-back').click()")
+
+    # The edge in the graph: its belts in the side panel, back to the default count
+    page.js(f"void {CY}.edges().filter(e => e.data('edge') && e.data('edge').key === {json.dumps(key)}).emit('tap')")
+    page.wait_until("document.getElementById('edge-details').style.display === 'block'")
+    assert page.js("document.getElementById('edge-belts').textContent") == "2× Mk.1"
+    page.js("document.getElementById('edge-belt-default').click()")
+    page.wait_until(f"{SAVED_EDGES} && Object.keys({SAVED_EDGES}).length === 0")
+    assert page.js("document.getElementById('edge-belts').textContent") == "1× Mk.1"
+
+
+SAVED_EDGES = f"JSON.parse(localStorage.getItem({json.dumps(KEY)})).logistics.edges"
 
 
 def test_tabs_share_what_is_unlocked(page):
