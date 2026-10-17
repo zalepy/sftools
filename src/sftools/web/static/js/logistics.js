@@ -6,7 +6,7 @@
 // has its own entry or exit (ticket 041): +/- Belt changes how many an edge has, and double-clicking one
 // opens the other side of that belt.
 import { state } from './state.js';
-import { textColorOn } from './graph.js';
+import { smoothWheelZoom, textColorOn } from './graph.js';
 import { showToast as toast } from './panel.js';
 
 const $ = id => document.getElementById(id);
@@ -80,6 +80,7 @@ function createGraph() {
         minZoom: 0.1,
         maxZoom: 4
     });
+    smoothWheelZoom(lcy);
 
     lcy.on('tapstart', 'node.handle', evt => startDrag({ from: evt.target.data('owner') }, evt.target.position()));
     lcy.on('tapstart', 'node.end', evt => {

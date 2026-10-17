@@ -206,6 +206,18 @@ def test_the_demand_target_shows_in_the_zoomed_in_view(page):
     assert page.js(f"{LCY}.getElementById({json.dumps(other)}).style('shape')") == "tag"
 
 
+def test_mouse_wheel_zooms_in_small_steps(page):
+    """The zoomed-in view zooms like the graph: about 15% per mouse tick, not Cytoscape's jumps."""
+    open_logistics(page)
+    zoom_in(page)
+    fit(page)
+    before = page.js(f"{LCY}.zoom()")
+    x, y = lcy_position(page, "x|Versatile Framework|Steel Beam")
+    page.send("Input.dispatchMouseEvent", type="mouseWheel", x=x, y=y, deltaX=0, deltaY=-100)
+    page.wait(0.3)
+    assert 1.1 < page.js(f"{LCY}.zoom()") / before < 1.25
+
+
 def test_belts_per_edge(page):
     """Ticket 041: an edge's belts, set from the zoomed-in view and from the edge; one exit and entry per belt."""
     framework = "x|Versatile Framework|Steel Beam"
