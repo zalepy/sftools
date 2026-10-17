@@ -221,18 +221,23 @@ cy.on('zoom', updateZoomSlider);
 const WHEEL_ZOOM_RATE = 0.0015;  // per pixel of scroll
 const LINE_HEIGHT = 33;          // pixels per line, for wheels that report lines
 
-// Cytoscape listens on its container, so catch the event on the way down, at the parent.
-cy.container().parentElement.addEventListener('wheel', e => {
-    if (!cy.container().contains(e.target)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const pixels = e.deltaMode === WheelEvent.DOM_DELTA_LINE ? e.deltaY * LINE_HEIGHT : e.deltaY;
-    const box = cy.container().getBoundingClientRect();
-    cy.zoom({
-        level: cy.zoom() * Math.pow(1 + WHEEL_ZOOM_RATE, -pixels),
-        renderedPosition: { x: e.clientX - box.left, y: e.clientY - box.top }
-    });
-}, { capture: true, passive: false });
+/** Smooth wheel zoom for a Cytoscape graph (this one, and the zoomed-in logistics view). */
+export function smoothWheelZoom(graph) {
+    // Cytoscape listens on its container, so catch the event on the way down, at the parent.
+    graph.container().parentElement.addEventListener('wheel', e => {
+        if (!graph.container().contains(e.target)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const pixels = e.deltaMode === WheelEvent.DOM_DELTA_LINE ? e.deltaY * LINE_HEIGHT : e.deltaY;
+        const box = graph.container().getBoundingClientRect();
+        graph.zoom({
+            level: graph.zoom() * Math.pow(1 + WHEEL_ZOOM_RATE, -pixels),
+            renderedPosition: { x: e.clientX - box.left, y: e.clientY - box.top }
+        });
+    }, { capture: true, passive: false });
+}
+
+smoothWheelZoom(cy);
 
 /** Call after the graph's container changes size (Cytoscape only notices window resizes). */
 export function resizeGraph() {
@@ -348,10 +353,10 @@ export function renderGraph(nodesData) {
     nodesData.forEach(node => {
         const badges = badgeImage(node);
         const alternate = node.is_alternate ? ' (A)' : '';
-        // A fourth line only when some building runs at another clock than 100%
+        // A line for the clocks only when some building runs at another clock than 100%, and one for the shards
         const clocks = clocksText(node, '×');
-        const shards = node.power_shards ? ` · ${node.power_shards} shards` : '';
-        const clockLine = clocks || shards ? `\n${clocks}${shards}` : '';
+        const shards = node.power_shards ? `\n${node.power_shards} shards` : '';
+        const clockLine = `${clocks ? `\n${clocks}` : ''}${shards}`;
         const made = node.inbound ? 'inbound'
             : node.sink ? `${node.buildings}× ${node.building}`
             : node.is_supplied ? 'supplied from outside' : `${buildingsText(node)}× ${node.building}`;

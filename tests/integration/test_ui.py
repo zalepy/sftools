@@ -104,7 +104,7 @@ def test_clocks_apply_and_clear(page):
     page.js("document.getElementById('clock-last').value = '200'; document.getElementById('apply-clocks-btn').click()")
     page.wait_until(f"{SAVED}.clocks['Iron Rod'] !== undefined")
     assert page.saved_plan()["clocks"] == {"Iron Rod": [{"clock": 1}, {"count": 1, "clock": 2}]}
-    assert page.js(label("Iron Rod")).endswith("(9× Constructor)\n8×100% + 1×200% · 2 shards")
+    assert page.js(label("Iron Rod")).endswith("(9× Constructor)\n8×100% + 1×200%\n2 shards")
     assert page.js("document.getElementById('detail-buildings').textContent") == "9 (8 × 100% + 1 × 200%)"
     assert page.js("document.getElementById('clock-last').value") == "200"
 
