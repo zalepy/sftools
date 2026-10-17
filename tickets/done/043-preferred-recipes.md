@@ -23,4 +23,5 @@ Every new node runs the default recipe for its item (`default_recipe_for`: basic
 - Browser: `sf_planner_recipes`; "Prefer for <item>" / "Use Default Recipe" under Switch Recipe, with how many nodes keep a recipe of their own; Preferred Recipes list at the top of the Colors tab (✕ to remove). Preferring drops the node choices equal to it in the plan shown.
 - Unmerge copies the merged node's own recipe to the nodes split back out.
 - Save Book writes `preferred` and `colors` (the user's changes); importing a book sets them.
+- Recipes tab (follow-up, the user's request): every item made by more than one recipe (`GET /api/recipe_choices`, ores included: purity and miner), each a dropdown set to its default; changed ones highlighted, a filter and "Changed only", All to Default. It replaces the list on the Colors tab. Preferring an item's default removes the preference.
 - Preferences apply live: changing one changes every tab's nodes of that item that have no recipe of their own, when next calculated.

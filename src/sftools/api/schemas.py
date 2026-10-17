@@ -43,3 +43,10 @@ class RecipeInfo(BaseModel):
     building: str
     output_rate: float  # per building, of the requested item
     byproduct: bool  # the requested item is the recipe's by-product
+
+
+class RecipeChoice(BaseModel):
+    """An item made by more than one recipe, and the one its nodes run by default."""
+    item: str
+    default: str
+    recipes: List[RecipeInfo]

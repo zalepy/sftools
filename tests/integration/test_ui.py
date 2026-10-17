@@ -199,12 +199,23 @@ def test_preferred_recipes(page):
     page.wait_until(f"{recipes_of(SCREWS)}.then(r => r[2] === 'Screws')")
     assert page.saved_plan()["recipes"] == {SCREWS[1]: "Screws", SCREWS[2]: "Screws"}
 
-    # Removed on the colors tab: back to the default recipe
-    page.js("document.querySelector('.tab[data-tab=colors]').click()")
-    assert page.js("document.getElementById('preferred-list').textContent").startswith("Screws")
-    page.js("document.querySelector('.preferred-remove').click()")
+    # The Recipes tab: every item with a choice, the changed ones highlighted; back to the default there
+    page.js("document.querySelector('.tab[data-tab=recipes]').click()")
+    row = "document.querySelector('.recipe-choice[data-item=Screws]')"
+    assert page.js(f"{row}.classList.contains('changed') && {row}.querySelector('select').value") == CAST
+    page.js("document.getElementById('recipe-changed-only').click()")
+    assert page.js("[...document.querySelectorAll('.recipe-choice')].filter(r => !r.hidden).map(r => r.dataset.item)") == ["Screws"]
+    page.js(f"(() => {{ const s = {row}.querySelector('select'); s.value = 'Screws'; s.dispatchEvent(new Event('change')); }})()")
     page.wait_until(f"{recipes_of(SCREWS)}.then(r => r[0] === 'Screws')")
     assert page.js("JSON.parse(localStorage.getItem('sf_planner_recipes'))") == {}
+    assert not page.js(f"{row}.classList.contains('changed')")
+
+    # Picked there for an item: Iron Rod from Steel Rods, everywhere
+    page.js("document.getElementById('recipe-changed-only').click()")
+    rod = "document.querySelector('.recipe-choice[data-item=\"Iron Rod\"] select')"
+    page.js(f"(() => {{ const s = {rod}; s.value = 'Alternate: Steel Rod'; s.dispatchEvent(new Event('change')); }})()")
+    page.wait_until("JSON.parse(localStorage.getItem('sf_planner_recipes'))['Iron Rod'] === 'Alternate: Steel Rod'")
+    page.wait_until(f"{recipes_of(['Modular Frame__Iron Rod'])}.then(r => r[0] === 'Alternate: Steel Rod')")
 
 
 def test_mouse_wheel_zooms_in_small_steps(page):

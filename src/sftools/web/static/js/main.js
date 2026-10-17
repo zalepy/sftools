@@ -141,7 +141,7 @@ async function openBook(data) {
     const isMap = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
     if (isMap(data.preferred)) {
         savePreferred(data.preferred);
-        panel.renderPreferredList(item => setPreferred(item, null));
+        panel.renderRecipeList();
     }
     if (isMap(data.colors)) {
         saveColors({ ...state.colors, ...data.colors });
@@ -523,27 +523,32 @@ async function importFile(input) {
 
 // --- Preferred recipes (ticket 043) ---
 
-/** Prefers a recipe for an item (null: back to the default), in every tab; recalculates the plan shown. */
-async function setPreferred(item, recipe) {
+/** Prefers a recipe for an item (null, or its default: back to the default), in every tab. */
+function setPreferred(item, recipe) {
+    const preferred = { ...state.preferred };
+    if (recipe && recipe !== panel.defaultRecipe(item)) preferred[item] = recipe; else delete preferred[item];
+    return changePreferred(preferred, item, preferred[item]);
+}
+
+/** Replaces the preferred recipes; recalculates the plan shown. `item`/`recipe`: the one just preferred. */
+async function changePreferred(preferred, item = null, recipe = null) {
     const previous = state.preferred;
-    const preferred = { ...previous };
-    if (recipe) preferred[item] = recipe; else delete preferred[item];
     // A node's own choice of the same recipe goes: it follows the preferred one from now on
     const recipes = Object.fromEntries(Object.entries(state.recipes)
         .filter(([id, name]) => !(recipe && name === recipe && getNodeData(id)?.output_item === item)));
     savePreferred(preferred);
-    panel.renderPreferredList(item => setPreferred(item, null));
+    panel.renderRecipeList();
     if (!hasNodes()) return;
     try {
         render(await requestPlan({ recipes }));
         state.recipes = recipes;
         save();
         if (state.selectedNodeId) reselectNode(state.selectedNodeId);
-        const own = panel.ownRecipeNodes(item).length;
+        const own = item ? panel.ownRecipeNodes(item).length : 0;
         if (own) panel.showToast(`${own} ${item} node${own === 1 ? '' : 's'} here keep${own === 1 ? 's' : ''} a recipe of ${own === 1 ? 'its' : 'their'} own.`);
     } catch (e) {
         savePreferred(previous);
-        panel.renderPreferredList(item => setPreferred(item, null));
+        panel.renderRecipeList();
         console.error("Preferred recipe change failed", e);
         alert(`Preferred recipe change failed: ${e.message}`);
     }
@@ -663,7 +668,16 @@ onMergeDrop(mergeNodes);
 // Module scripts run after the document is parsed. Colors first, so the first render uses them.
 await loadColors();
 loadPreferred();
-panel.renderPreferredList(item => setPreferred(item, null));
+let recipeChoices = [];
+try {
+    recipeChoices = await api.fetchRecipeChoices();
+} catch (e) {
+    console.error("Failed to load recipe choices", e);
+}
+panel.initRecipeList(recipeChoices, setPreferred);
+$('recipe-reset-all').addEventListener('click', () => {
+    if (Object.keys(state.preferred).length && confirm('Every item back to its default recipe, in every tab?')) changePreferred({});
+});
 tabs.loadBook();
 tabs.initTabs({ onSwitch: switchTab, onClose: closeTab, onAdd: addTab, onDuplicate: duplicateTab, onChain: showChain });
 history.useTab(tabs.activeTab().id);

@@ -3,9 +3,9 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from sftools.api.schemas import PlanRequest, PlanResponse, RecipeInfo
+from sftools.api.schemas import PlanRequest, PlanResponse, RecipeChoice, RecipeInfo
 from sftools.config import DEFAULT_COLORS_FILE
-from sftools.engine.calculator import build_plan
+from sftools.engine.calculator import build_plan, default_recipe_for
 from sftools.engine.game_data import GameData, get_game_data
 from sftools.engine.logistics import FLUIDS, Settings, attach_logistics
 
@@ -59,6 +59,23 @@ def available_recipes(item_name: str, data: GameData = Depends(get_game_data)):
         )
         for r in item.recipes
     ]
+
+
+@router.get("/recipe_choices", response_model=List[RecipeChoice])
+def recipe_choices(data: GameData = Depends(get_game_data)):
+    """Every item made by more than one recipe: its default and the others (the Recipes tab, ticket 043)."""
+    choices = []
+    for name in sorted(data.items):
+        item = data.items[name]
+        recipes = [r for r in item.recipes if r.produces(name) and r.rate_of(name)]
+        default = default_recipe_for(item)
+        if len(recipes) < 2 or default is None:
+            continue
+        choices.append(RecipeChoice(item=name, default=default.name, recipes=[
+            RecipeInfo(name=r.name, type=r.type.name, building=r.building.name, output_rate=r.rate_of(name),
+                       byproduct=not r.is_main_product(name))
+            for r in recipes]))
+    return choices
 
 
 @router.get("/colors")
