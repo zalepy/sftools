@@ -38,6 +38,7 @@
                 <div class="tab active" data-tab="planner">Planner</div>
                 <div class="tab" data-tab="node">Node</div>
                 <div class="tab" data-tab="colors">Colors</div>
+                <div class="tab" data-tab="recipes">Recipes</div>
             </div>
 
             <!-- Planner Tab -->
@@ -333,13 +334,22 @@
                 </section>
             </div>
 
-            <!-- Colors Tab -->
-            <div id="colors-tab" class="tab-content">
+            <!-- Recipes Tab: the preferred recipe of every item made by more than one (ticket 043) -->
+            <div id="recipes-tab" class="tab-content">
                 <section>
                     <h3>Preferred Recipes</h3>
-                    <p class="hint" style="margin-bottom: 1rem;">New nodes of these items run these recipes, in every tab; a recipe switched on a node still wins. Set one on a node (Recipe Details, Prefer).</p>
-                    <div id="preferred-list"></div>
+                    <p class="hint">Every node of an item runs its recipe here, in every tab, unless the node has a recipe switched of its own. Highlighted: not the default. Kept in this browser and in Save Book.</p>
+                    <div class="recipe-filter-row">
+                        <input type="search" id="recipe-filter" placeholder="Filter items" aria-label="Filter items">
+                        <label><input type="checkbox" id="recipe-changed-only"> Changed only</label>
+                    </div>
+                    <div id="recipe-list"></div>
+                    <button type="button" class="secondary" id="recipe-reset-all" style="margin-top: 1rem;">All to Default</button>
                 </section>
+            </div>
+
+            <!-- Colors Tab -->
+            <div id="colors-tab" class="tab-content">
                 <section>
                     <h3>Node Color Mapping</h3>
                     <p class="hint" style="margin-bottom: 1rem;">Colors are based on the output item of the node.</p>

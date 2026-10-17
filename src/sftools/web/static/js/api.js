@@ -27,6 +27,13 @@ export async function fetchRecipes(itemName) {
     return response.json();
 }
 
+/** Items made by more than one recipe: [{item, default, recipes: [{name, type, byproduct, ...}]}]. */
+export async function fetchRecipeChoices() {
+    const response = await fetch('/api/recipe_choices');
+    if (!response.ok) throw await errorFrom(response);
+    return response.json();
+}
+
 export async function fetchDefaultColors() {
     const response = await fetch('/api/colors');
     return response.ok ? response.json() : {};

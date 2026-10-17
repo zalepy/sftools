@@ -1,4 +1,4 @@
-// Sidebar: demand rows, selected-node details, recipe picker, colors tab and the plan notice.
+// Sidebar: demand rows, selected-node details, recipe picker, colors and recipes tabs, and the plan notice.
 import { fetchRecipes } from './api.js';
 import { getNodeData, clocksText, buildingsText, builtStatus } from './graph.js';
 import { state } from './state.js';
@@ -8,7 +8,7 @@ const $ = id => document.getElementById(id);
 
 // --- Tabs ---
 
-/** Shows a tab of the side panel: 'planner', 'node' or 'colors'. */
+/** Shows a tab of the side panel: 'planner', 'node', 'colors' or 'recipes'. */
 export function showTab(tabId) {
     document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.tab === tabId));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.toggle('active', content.id === `${tabId}-tab`));
@@ -508,37 +508,60 @@ function renderPreferred(data) {
     const own = ownRecipeNodes(item).length;
     const keep = own ? ` ${own} node${own === 1 ? '' : 's'} here keep${own === 1 ? 's' : ''} a recipe of ${own === 1 ? 'its' : 'their'} own.` : '';
     $('prefer-btn').textContent = `Prefer for ${item}`;
-    $('prefer-btn').style.display = preferred === recipe ? 'none' : '';
+    // Nothing to prefer when the node runs the default and nothing else is preferred
+    $('prefer-btn').style.display = preferred === recipe || (!preferred && recipe === defaultRecipe(item)) ? 'none' : '';
     $('unprefer-btn').style.display = preferred ? '' : 'none';
     $('preferred-hint').innerText = preferred === recipe
         ? `Preferred for ${item}: new ${item} nodes run it, in every tab.${keep}`
         : preferred
             ? `Preferred for ${item}: ${preferred}.${keep}`
-            : `${item} nodes run the default recipe unless switched. Prefer this one to run it in every new ${item} node, in every tab.`;
+            : recipe === defaultRecipe(item)
+                ? `${item} nodes run this recipe (the default) unless switched. Pick another for all of them on the Recipes tab.`
+                : `${item} nodes run the default recipe unless switched. Prefer this one to run it in every ${item} node, in every tab.`;
 }
 
-/** The Preferred Recipes list on the colors tab; `onRemove(item)` when one is removed. */
-export function renderPreferredList(onRemove) {
-    const items = Object.keys(state.preferred).sort();
-    const list = $('preferred-list');
-    if (!items.length) {
-        list.replaceChildren(Object.assign(document.createElement('p'), { className: 'hint', textContent: 'None: every item runs its default recipe.' }));
-        return;
-    }
-    list.replaceChildren(...items.map(item => {
+// The Recipes tab: every item made by more than one recipe, with a dropdown of its recipes
+let recipeChoices = [];  // from the server: [{item, default, recipes}]
+let onRecipeChange = null;  // (item, recipe or null for the default)
+
+export function initRecipeList(choices, onChange) {
+    recipeChoices = choices;
+    onRecipeChange = onChange;
+    $('recipe-filter').addEventListener('input', filterRecipeList);
+    $('recipe-changed-only').addEventListener('change', filterRecipeList);
+    renderRecipeList();
+}
+
+/** The recipe an item's nodes run by default, or null when it has no other. */
+export function defaultRecipe(item) {
+    return recipeChoices.find(choice => choice.item === item)?.default ?? null;
+}
+
+/** Redraws the Recipes tab from the preferred recipes. */
+export function renderRecipeList() {
+    $('recipe-list').replaceChildren(...recipeChoices.map(choice => {
+        const preferred = choice.recipes.some(r => r.name === state.preferred[choice.item]) ? state.preferred[choice.item] : choice.default;
         const row = document.createElement('div');
-        row.className = 'stat-row';
-        const label = Object.assign(document.createElement('span'), { className: 'stat-label', textContent: item });
-        const value = Object.assign(document.createElement('span'), { className: 'stat-value', textContent: `${state.preferred[item]} ` });
-        const remove = Object.assign(document.createElement('button'), {
-            type: 'button', className: 'secondary preferred-remove', textContent: '✕', title: 'Back to the default recipe'
-        });
-        remove.dataset.item = item;
-        remove.addEventListener('click', () => onRemove(item));
-        value.appendChild(remove);
-        row.append(label, value);
+        row.className = `recipe-choice${preferred === choice.default ? '' : ' changed'}`;
+        row.dataset.item = choice.item;
+        const label = Object.assign(document.createElement('span'), { textContent: choice.item });
+        const select = document.createElement('select');
+        select.setAttribute('aria-label', `Preferred recipe for ${choice.item}`);
+        select.replaceChildren(...choice.recipes.map(r => new Option(
+            `${r.name}${r.name === choice.default ? ' (default)' : r.byproduct ? ' (by-product)' : ''}`, r.name, false, r.name === preferred)));
+        select.addEventListener('change', () => onRecipeChange(choice.item, select.value === choice.default ? null : select.value));
+        row.append(label, select);
         return row;
     }));
+    filterRecipeList();
+}
+
+function filterRecipeList() {
+    const text = $('recipe-filter').value.trim().toLowerCase();
+    const changedOnly = $('recipe-changed-only').checked;
+    document.querySelectorAll('#recipe-list .recipe-choice').forEach(row => {
+        row.hidden = (text && !row.dataset.item.toLowerCase().includes(text)) || (changedOnly && !row.classList.contains('changed'));
+    });
 }
 
 // --- Colors tab ---

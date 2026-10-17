@@ -91,6 +91,17 @@ def test_preferred_recipes_are_used_for_new_nodes(client):
     assert {n["recipe_name"] for n in nodes_by_item(plain, "Screws")} == {"Screws"}
 
 
+def test_recipe_choices(client):
+    """The Recipes tab's list: items with more than one recipe, each with its default."""
+    choices = {c["item"]: c for c in client.get("/api/recipe_choices").json()}
+    screws = choices["Screws"]
+    assert screws["default"] == "Screws"
+    assert [r["name"] for r in screws["recipes"]] == ["Screws", "Alternate: Cast Screws", "Alternate: Steel Screws"]
+    assert all(len(c["recipes"]) > 1 for c in choices.values())
+    # Ores too: which node purity and miner the extraction recipes default to
+    assert choices["Iron Ore"]["default"] in [r["name"] for r in choices["Iron Ore"]["recipes"]]
+
+
 def test_requests_do_not_share_state(client):
     expected = calculate(client).json()["nodes"]
     calculate(client, demands=[{"item": "Rotor", "rate": 4}], clocks={"Rotor": [{"clock": 2.0}]})

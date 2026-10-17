@@ -269,10 +269,64 @@ button:disabled {
     margin-bottom: 0.4rem;
 }
 
-.preferred-remove {
+.recipe-filter-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin: 0.75rem 0;
+}
+
+.recipe-filter-row input[type=search] {
+    flex: 1;
+    min-width: 0;
+}
+
+.recipe-filter-row label {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.recipe-filter-row input[type=checkbox] {
     width: auto;
-    padding: 0 0.4rem;
-    margin-left: 0.3rem;
+    margin: 0;
+}
+
+.recipe-choice {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.3rem 0.4rem;
+    border-radius: 4px;
+}
+
+.recipe-choice span {
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+}
+
+.recipe-choice select {
+    width: 100%;
+    min-width: 0;
+    background: var(--bg-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 0.25rem;
+    border-radius: 4px;
+}
+
+.recipe-choice.changed {
+    background: rgba(245, 158, 11, 0.15);
+}
+
+.recipe-choice.changed span {
+    color: var(--accent);
+    font-weight: 600;
 }
 
 .stat-row {
