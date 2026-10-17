@@ -6,7 +6,7 @@ import {
 } from './state.js';
 import {
     renderGraph, refreshNodeColors, refreshBuilt, hasNodes, fitView, resizeGraph, getNodeData, onNodeSelected, reselectNode, onMergeDrop,
-    onByproductSelected, onLogisticsSelected, selectLogistics
+    onByproductSelected, onLogisticsSelected, selectLogistics, onEdgeSelected, getEdgeData
 } from './graph.js';
 import * as panel from './panel.js';
 import * as history from './history.js';
@@ -80,6 +80,7 @@ async function switchTab(id, { ownSettings = false, reload = false } = {}) {
     state.selectedNodeId = null;
     panel.hideNodeDetails();
     panel.hideByproductDetails();
+    panel.hideEdgeDetails();
     panel.hideLogisticsDetails();
     panel.hidePlanNotice();
     const plan = tabs.activeTab().plan || emptyPlan();
@@ -149,7 +150,8 @@ async function openBook(data) {
  */
 async function requestPlan({
     merges = state.merges, recipes = state.recipes, clocks = state.clocks,
-    byproducts = state.byproducts, byproductsDefault = 'sink', layouts = state.logistics.layouts
+    byproducts = state.byproducts, byproductsDefault = 'sink', layouts = state.logistics.layouts,
+    edges = state.logistics.edges
 } = {}) {
     const { items, rates, inbound } = panel.getDemands();
     const { nodes, ignored, byproducts: resolved, logisticsResets } = await api.calculate({
@@ -160,7 +162,7 @@ async function requestPlan({
         clocks,
         byproducts,
         byproducts_default: byproductsDefault,
-        logistics: { settings: state.logistics.settings, layouts }
+        logistics: { settings: state.logistics.settings, layouts, edges }
     });
     state.byproducts = resolved;
     // The dashed border shows the clocks of the plan just calculated; callers keep them in state afterwards
@@ -378,20 +380,59 @@ async function setLayout(nodeId, side, layout) {
     }
 }
 
-function zoomIn(nodeId, side) {
+function zoomIn(nodeId, side, select = null) {
     const node = getNodeData(nodeId);
-    if (!node) return;
-    logisticsView.openView(node, side, layout => setLayout(nodeId, side, layout), panel.nodeLabel, save);
+    if (!node || !node.logistics || !node.logistics[side]) {
+        panel.showToast("That end isn't in the plan's logistics: it's the demand, the Sink or inbound production.");
+        return;
+    }
+    logisticsView.openView(node, side, {
+        onChange: layout => setLayout(nodeId, side, layout),
+        describe: panel.nodeLabel,
+        onMove: save,
+        onBelts: setEdgeBelts,
+        onOpen: zoomIn
+    }, select);
+}
+
+/**
+ * Sets how many belts an edge has (ticket 041); null goes back to the fewest its rate needs. The layouts
+ * of both its ends are suggested again (the server resets edited ones, with a notice).
+ */
+async function setEdgeBelts(key, count) {
+    const edges = { ...state.logistics.edges };
+    if (count === null) delete edges[key]; else edges[key] = count;
+    try {
+        render(await requestPlan({ edges }));
+        state.logistics.edges = edges;
+        save();
+        const edge = getEdgeData(key);
+        if (edge) panel.showEdgeDetails(edge); else panel.hideEdgeDetails();
+    } catch (e) {
+        console.error("Belt change failed", e);
+        alert(`Belt change failed: ${e.message}`);
+    }
 }
 
 function wireLogistics() {
     onLogisticsSelected((nodeId, side) => {
         panel.hideNodeDetails();
         panel.hideByproductDetails();
+        panel.hideEdgeDetails();
         panel.showLogisticsDetails(getNodeData(nodeId), side);
         panel.showTab('node');
     });
     $('logistics-zoom-btn').addEventListener('click', e => zoomIn(e.target.dataset.node, e.target.dataset.side));
+    onEdgeSelected(edge => {
+        panel.hideNodeDetails();
+        panel.hideLogisticsDetails();
+        if (!edge.byproduct) panel.hideByproductDetails();
+        panel.showEdgeDetails(edge);
+        panel.showTab('node');
+    });
+    $('edge-belt-more').addEventListener('click', e => setEdgeBelts(e.target.dataset.key, parseInt(e.target.dataset.count, 10) + 1));
+    $('edge-belt-fewer').addEventListener('click', e => setEdgeBelts(e.target.dataset.key, parseInt(e.target.dataset.count, 10) - 1));
+    $('edge-belt-default').addEventListener('click', e => setEdgeBelts(e.target.dataset.key, null));
     ['belt-tier', 'pipe-tier', 'smart-splitters'].forEach(id => $(id).addEventListener('change', changeLogisticsSettings));
 }
 
@@ -421,6 +462,7 @@ function newPlan() {
     applySaved({ logistics: { settings: state.logistics.settings } });
     panel.hideNodeDetails();
     panel.hideByproductDetails();
+    panel.hideEdgeDetails();
     panel.hideLogisticsDetails();
     panel.hidePlanNotice();
     renderGraph([]);
@@ -547,6 +589,7 @@ $('fit-view-btn').addEventListener('click', fitView);
 
 onNodeSelected(data => {
     panel.hideByproductDetails();
+    panel.hideEdgeDetails();
     panel.hideLogisticsDetails();
     panel.showNodeDetails(data);
     panel.showTab('node');

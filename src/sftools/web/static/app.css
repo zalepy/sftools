@@ -248,9 +248,21 @@ button:disabled {
     margin-bottom: 0.5rem;
 }
 
-/* Node tab: Node Details; By-product Details (a selected by-product edge); Logistics Details. One at a time. */
-#node-details, #byproduct-details, #logistics-details {
+/* Node tab: Node Details; By-product and Edge Details (a selected edge); Logistics Details. */
+#node-details, #byproduct-details, #edge-details, #logistics-details {
     display: none;
+}
+
+/* An edge's belts, with - and + (ticket 041) */
+.edge-belt-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.edge-belt-controls button {
+    width: auto;
+    padding: 0.1rem 0.6rem;
 }
 
 .stat-row {
@@ -624,6 +636,12 @@ details[open] summary::after {
 
 .lv-hint {
     padding: 0.4rem 1rem 0;
+}
+
+.lv-belts {
+    font-size: 0.85rem;
+    color: var(--text-muted, #94a3b8);
+    white-space: nowrap;
 }
 
 .lv-warnings {

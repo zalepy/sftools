@@ -16,7 +16,7 @@ export function showTab(tabId) {
 
 // The Node tab says what to click while nothing is selected
 function updateNodeEmpty() {
-    const shown = ['node-details', 'byproduct-details', 'logistics-details']
+    const shown = ['node-details', 'byproduct-details', 'edge-details', 'logistics-details']
         .some(id => $(id) && $(id).style.display === 'block');
     $('node-empty').hidden = shown;
 }
@@ -380,6 +380,38 @@ export function showLogisticsDetails(node, side) {
 
 export function hideLogisticsDetails() {
     const section = $('logistics-details');
+    if (section) section.style.display = 'none';
+    updateNodeEmpty();
+}
+
+// --- Selected edge: its belts (ticket 041) ---
+
+/** An edge's belts: how many, of what tier, and buttons to change how many. */
+export function showEdgeDetails(edge) {
+    if (!edge) return hideEdgeDetails();
+    const name = id => id === 'External Demand' ? 'the demand' : id === 'sink' ? 'the Sink' : parentLabel(id);
+    $('edge-title').innerText = `${name(edge.producer)} → ${name(edge.consumer)}`;
+    $('edge-item').innerText = edge.item;
+    $('edge-rate').innerText = `${edge.rate.toFixed(2)}/min`;
+    $('edge-belts').innerText = `${edge.count}× ${edge.kind === 'pipe' ? 'pipe ' : ''}Mk.${edge.tier}`;
+    const needs = `The rate needs ${edge.needed} ${edge.kind}${edge.needed === 1 ? '' : 's'}.`;
+    const over = edge.over ? ` ${edge.count} can't carry it: some backs up.` : '';
+    $('edge-hint').innerText = edge.set
+        ? `${needs}${over} Set by you: the belts are matched one by one with the layouts at both ends (zoom in on either).`
+        : `${needs} Add belts to match them one by one with the layouts at both ends, e.g. a belt for each consumer building.`;
+    ['edge-belt-more', 'edge-belt-fewer', 'edge-belt-default'].forEach(id => {
+        $(id).dataset.key = edge.key;
+        $(id).dataset.count = edge.count;
+    });
+    $('edge-belt-fewer').disabled = edge.count <= 1;
+    $('edge-belt-more').disabled = edge.count >= 12;
+    $('edge-belt-default').style.display = edge.set ? '' : 'none';
+    $('edge-details').style.display = 'block';
+    updateNodeEmpty();
+}
+
+export function hideEdgeDetails() {
+    const section = $('edge-details');
     if (section) section.style.display = 'none';
     updateNodeEmpty();
 }

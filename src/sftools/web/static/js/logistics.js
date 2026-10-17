@@ -2,7 +2,9 @@
 // production node. Its buildings, entries/exits, splitters, mergers and buffers are nodes here, and its
 // belts edges. Drag a node to move it; drag from one of the dots under a node (its free outputs) to lay a
 // belt; drag an end of a selected belt to move it (ticket 036). Every change is checked here first, then
-// sent as the side's layout; the server simulates the flows (engine/logistics.py).
+// sent as the side's layout; the server simulates the flows (engine/logistics.py). Each belt of an edge
+// has its own entry or exit (ticket 041): +/- Belt changes how many an edge has, and double-clicking one
+// opens the other side of that belt.
 import { state } from './state.js';
 import { textColorOn } from './graph.js';
 import { showToast as toast } from './panel.js';
@@ -11,9 +13,9 @@ const $ = id => document.getElementById(id);
 
 const PREFIX = { splitter: 's', merger: 'm', overflow: 'o', buffer: 'u' };
 const PORTS = { splitter: [1, 3], overflow: [1, 3], merger: [3, 1], buffer: [null, 0] };  // [in, out]; null: any
-const JOIN = 3;  // an exit merges up to 3 belts per line, an entry splits each line into up to 3 (engine JOIN)
 const PART_LABELS = { splitter: 'Splitter', merger: 'Merger', overflow: 'Smart Splitter', buffer: 'Buffer' };
-const EPSILON = 1e-4;
+const SHORT = 0.005;  // a shortfall that shows as 0.00/min isn't one (engine SHORT)
+const MAX_BELTS = 12;  // per edge (engine MAX_BELTS)
 
 // Placement: sources in the left column, sinks in the right one, parts in columns between by belt order
 const COLUMN = 230;
@@ -21,7 +23,7 @@ const ROW = 72;
 const DOT = 14;  // between port dots
 
 let lcy = null;
-let view = null;  // { node, side, data, onChange, onMove, describe }
+let view = null;  // { node, side, data, onChange, onMove, describe, onBelts, onOpen }
 let drag = null;  // a belt being laid or moved: { from } or { belt, end: 'from' | 'to' }
 
 function createGraph() {
@@ -102,18 +104,23 @@ function createGraph() {
         rememberPositions();
         view.onMove();
     });
+    lcy.on('dbltap', 'node.entry, node.exit', evt => openOtherEnd(evt.target.data('raw')));
 }
 
 /**
  * Opens the zoomed-in view. `describe(id)` names a production node; `onChange(layout|null)` applies an edit;
- * `onMove()` saves the plan after a node was moved.
+ * `onMove()` saves the plan after a node was moved; `onBelts(edge key, count)` sets an edge's belts;
+ * `onOpen(node id, side, select id)` opens another side with one of its nodes selected. `select` is the
+ * id of a node to select here.
  */
-export function openView(node, side, onChange, describe, onMove) {
-    view = { node, side, data: node.logistics[side], onChange, onMove, describe };
+export function openView(node, side, { onChange, describe, onMove, onBelts, onOpen }, select = null) {
+    view = { node, side, data: node.logistics[side], onChange, onMove, describe, onBelts, onOpen };
     $('logistics-view').hidden = false;
     if (!lcy) createGraph();
     lcy.resize();
+    lcy.$(':selected').unselect();
     render(true);
+    if (select) lcy.getElementById(select).select();
 }
 
 /** Shows the side again after the plan was recalculated; closes the view if it's gone. */
@@ -155,16 +162,24 @@ function label(node) {
             return `${view.node.building} ${node.building.slice(1)}${item}\n${rate(flow)} of ${rate(node.rate)}`;
         }
         case 'entry':
-            return `from ${view.describe(node.target)}${item}\n${rate(node.rate)}`;
+            return `from ${view.describe(node.target)}${beltLine(node)}\n${rate(node.sent)}`;
         case 'exit': {
             const to = node.label === 'demand' ? 'the demand' : node.label === 'Sink' ? 'the Sink' : view.describe(node.target);
-            return `to ${to}${item}\n${rate(node.delivered)} of ${rate(node.rate)}`;
+            // What the other end takes on this belt, when it's known; the edge's rate on a single belt
+            const wanted = node.limit !== undefined ? Math.min(node.limit, node.rate) : node.belts > 1 ? null : node.rate;
+            return `to ${to}${beltLine(node)}\n${rate(node.delivered)}${wanted === null ? '' : ` of ${rate(wanted)}`}`;
         }
         case 'buffer':
             return `Buffer\n${rate(node.in || 0)}`;
         default:
             return PART_LABELS[node.kind];
     }
+}
+
+/** An entry's or exit's second line: which belt of its edge, and the item when the side has several. */
+function beltLine(node) {
+    const parts = [node.belts > 1 && `belt ${node.belt}/${node.belts}`, itemsOf().length > 1 && node.item].filter(Boolean);
+    return parts.length ? `\n${parts.join(' · ')}` : '';
 }
 
 function itemsOf() {
@@ -189,7 +204,8 @@ function render(fit) {
     const odd = oddBuildings();
     const elements = data.nodes.map(node => {
         const color = state.colors[node.item] || '#334155';
-        const short = node.delivered !== undefined && node.delivered < node.rate - EPSILON;
+        const short = node.kind === 'exit' ? node.pool_delivered < node.rate - SHORT
+            : node.delivered !== undefined && node.delivered < node.rate - SHORT;
         return {
             group: 'nodes',
             data: { id: node.id, label: label(node), raw: node, color, textColor: textColorOn(color) },
@@ -328,8 +344,8 @@ function rememberPositions() {
 
 function ports(node) {
     if (node.kind === 'building') return view.side === 'out' ? [0, 1] : [1, 0];
-    if (node.kind === 'exit') return [node.lines * JOIN, 0];
-    if (node.kind === 'entry') return [0, node.lines * JOIN];
+    if (node.kind === 'exit') return [1, 0];  // one belt each (ticket 041)
+    if (node.kind === 'entry') return [0, 1];
     return PORTS[node.kind];
 }
 
@@ -454,11 +470,11 @@ function problem(layout) {
     for (const node of Object.values(nodes)) {
         const [maxIn, maxOut] = ports(node);
         if (maxIn !== null && (ins[node.id] || 0) > maxIn) {
-            if (node.kind === 'exit') return `${nameOf(node)} merges up to ${maxIn} belts, and has them all.`;
+            if (node.kind === 'exit') return `${nameOf(node)} is one belt, and has it. Merge first, or add a belt to the edge (+ Belt).`;
             return `${nameOf(node)} takes ${maxIn || 'no'} belt${maxIn === 1 ? '' : 's'} in.`;
         }
         if (maxOut !== null && (outs[node.id] || 0) > maxOut) {
-            if (node.kind === 'entry') return `${nameOf(node)} splits into up to ${maxOut} belts, and has them all.`;
+            if (node.kind === 'entry') return `${nameOf(node)} is one belt, and has it. Split it, or add a belt to the edge (+ Belt).`;
             return `${nameOf(node)} has ${maxOut || 'no'} belt${maxOut === 1 ? '' : 's'} out.`;
         }
     }
@@ -532,10 +548,39 @@ function updateButtons() {
     const selected = lcy.$(':selected')[0];
     $('lv-delete').disabled = !selected;
     $('lv-overflow').disabled = !(selected && selected.isEdge() && selected.source().data('raw').kind === 'overflow');
+    const end = selectedEnd();
+    $('lv-belt-more').disabled = !end || end.belts >= MAX_BELTS;
+    $('lv-belt-fewer').disabled = !end || end.belts <= 1;
+    $('lv-belts').textContent = end
+        ? `${end.belts} belt${end.belts === 1 ? '' : 's'}${end.set ? ` (default ${end.needed})` : ''}`
+        : '';
+}
+
+/** The selected entry or exit (a belt end), or null. */
+function selectedEnd() {
+    const selected = lcy && lcy.$('node:selected')[0];
+    const raw = selected && selected.data('raw');
+    return raw && (raw.kind === 'entry' || raw.kind === 'exit') ? raw : null;
+}
+
+/** One belt more or fewer on the selected belt end's edge (both sides' layouts of it are suggested again). */
+function changeBelts(step) {
+    const end = selectedEnd();
+    if (!end) return;
+    view.onBelts(end.edge, Math.min(Math.max(end.belts + step, 1), MAX_BELTS));
+}
+
+/** The other side of a belt: the consumer's entry for an exit, the producer's exit for an entry. */
+function openOtherEnd(end) {
+    const suffix = end.belt > 1 ? `|${end.belt}` : '';
+    if (end.kind === 'exit') view.onOpen(end.target, 'in', `e|${view.node.id}|${end.item}${suffix}`);
+    else view.onOpen(end.target, 'out', `x|${view.node.id}|${end.item}${suffix}`);
 }
 
 document.querySelectorAll('.lv-add').forEach(button => button.addEventListener('click', () => addPart(button.dataset.kind)));
 $('lv-delete').addEventListener('click', deleteSelected);
+$('lv-belt-more').addEventListener('click', () => changeBelts(1));
+$('lv-belt-fewer').addEventListener('click', () => changeBelts(-1));
 $('lv-overflow').addEventListener('click', toggleOverflow);
 $('lv-reset').addEventListener('click', () => view && view.onChange(null));
 $('lv-back').addEventListener('click', closeView);

@@ -407,8 +407,9 @@ export function renderGraph(nodesData) {
             const belts = (maker.edge_belts || {})['External Demand'];
             elements.push({
                 group: 'edges',
-                data: { source: makerId, target: DEMAND_PREFIX + demand.item, label: rate > EPSILON ? `${rate.toFixed(2)}/m${beltText(belts)}` : '' },
-                classes: belts?.count > 1 ? ['multi'] : []
+                data: { source: makerId, target: DEMAND_PREFIX + demand.item, label: rate > EPSILON ? `${rate.toFixed(2)}/m${beltText(belts)}` : '',
+                    edge: edgeInfo(belts, makerId, 'External Demand', demand.item, rate) },
+                classes: forced(belts) ? ['multi'] : []
             });
         });
     });
@@ -419,15 +420,16 @@ export function renderGraph(nodesData) {
         (node.parents || []).forEach(parentId => {
             if (!nodeMap[parentId]) return;
             const rate = (node.parent_demands || {})[parentId] || 0;
-            const belts = beltText((node.edge_belts || {})[parentId]);
+            const belts = (node.edge_belts || {})[parentId];
             elements.push({
                 group: 'edges',
                 data: {
                     source: node.id,
                     target: parentId,
-                    label: rate > 0 ? `${rate.toFixed(2)}/m${belts}` : ''
+                    label: rate > 0 ? `${rate.toFixed(2)}/m${beltText(belts)}` : '',
+                    edge: edgeInfo(belts, node.id, parentId, node.output_item, rate)
                 },
-                classes: (node.edge_belts || {})[parentId]?.count > 1 ? ['multi'] : []
+                classes: forced(belts) ? ['multi'] : []
             });
         });
     });
@@ -438,10 +440,12 @@ export function renderGraph(nodesData) {
             const solved = byproduct.solving ? ' (loop, solved)' : '';
             Object.entries(byproduct.used).forEach(([consumer, rate]) => {
                 if (!nodeMap[consumer]) return;
+                const belts = (byproduct.edge_belts || {})[consumer];
                 elements.push({
                     group: 'edges',
                     data: { source: node.id, target: consumer, maker: node.id,
-                        label: `${rate.toFixed(2)}/m ${byproduct.item}${solved}${beltText((byproduct.edge_belts || {})[consumer])}` },
+                        label: `${rate.toFixed(2)}/m ${byproduct.item}${solved}${beltText(belts)}`,
+                        edge: edgeInfo(belts, node.id, consumer, byproduct.item, rate, true) },
                     classes: ['byproduct', 'used', byproduct.solving && 'loop'].filter(Boolean)
                 });
             });
@@ -452,10 +456,11 @@ export function renderGraph(nodesData) {
             if (!nodeMap[input.from]) return;
             const loop = input.loop ? ' (loop)' : '';
             const maker = (nodeMap[input.from].byproducts || []).find(b => b.item === input.item);
-            const belts = beltText(((maker || {}).edge_belts || {}).sink);
+            const belts = ((maker || {}).edge_belts || {}).sink;
             elements.push({
                 group: 'edges',
-                data: { source: input.from, target: sink.id, label: `${input.rate.toFixed(2)}/m ${input.item}${loop}${belts}`, maker: input.from },
+                data: { source: input.from, target: sink.id, label: `${input.rate.toFixed(2)}/m ${input.item}${loop}${beltText(belts)}`, maker: input.from,
+                    edge: edgeInfo(belts, input.from, 'sink', input.item, input.rate, true) },
                 classes: ['byproduct', input.fluid && 'invalid', input.loop && 'loop'].filter(Boolean)
             });
         });
@@ -478,6 +483,16 @@ function beltText(belts) {
     if (!belts) return '';
     const count = belts.count > 1 ? `${belts.count}× ` : '';
     return ` · ${count}${belts.kind === 'pipe' ? 'pipe ' : ''}Mk.${belts.tier}`;
+}
+
+// The rate needs more than one belt of the highest tier unlocked (not a count the user chose)
+function forced(belts) {
+    return Boolean(belts && belts.needed > 1);
+}
+
+/** What the side panel shows for an edge and its belts (ticket 041), or null without logistics. */
+function edgeInfo(belts, producer, consumer, item, rate, byproduct = false) {
+    return belts ? { ...belts, producer, consumer, item, rate, byproduct, set: belts.key in state.logistics.edges } : null;
 }
 
 const LOGISTICS_GAP = 14;  // between a production node and its logistics nodes
@@ -578,6 +593,17 @@ export function getLogistics(nodeId, side) {
 export function selectLogistics(nodeId, side) {
     const node = cy.getElementById(`${nodeId}|${side}`);
     if (node && node.length > 0) node.emit('tap');
+}
+
+/** Calls callback(edge info, see edgeInfo) when an edge with belts is clicked. */
+export function onEdgeSelected(callback) {
+    cy.on('tap', 'edge[edge]', evt => callback(evt.target.data('edge')));
+}
+
+/** An edge's info by its key ('<producer>><consumer>|<item>'), or null. */
+export function getEdgeData(key) {
+    const edge = cy.edges().filter(e => e.data('edge') && e.data('edge').key === key)[0];
+    return edge ? edge.data('edge') : null;
 }
 
 /** Calls callback(maker node id) when a by-product edge is clicked. */

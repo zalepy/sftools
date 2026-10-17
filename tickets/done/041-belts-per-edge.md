@@ -1,6 +1,6 @@
 # 041 — Belts per edge, matched across both ends (logistics mode)
 
-**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** [033](done/033-logistics-mode.md), [034](034-balancers.md), [036](done/036-logistics-editing-issues.md)
+**Type:** feature · **Priority:** P2 · **Status:** Done · **Related:** [033](done/033-logistics-mode.md), [034](034-balancers.md), [036](done/036-logistics-editing-issues.md)
 
 ## Problem
 An edge of the production graph is planned as one bundle of belts, its count set by the rate alone (`belts_needed`). On the producer's output side the edge is one exit, a sink of the consumer's whole rate with a merger built in: every belt brought to it shares that rate as one pool. On the consumer's input side it is one entry. Neither end knows where each belt goes at the other end.
@@ -25,3 +25,12 @@ Keep the zoomed-in views per node side (inputs, outputs), and make the edge the 
 
 ## Open
 - Matching belts by number (k = k) should do, since the input layout decides where each belt goes; pair them explicitly only if that turns out to be confusing.
+
+## Done (2026-10-17)
+- `logistics.edges` in the plan; `edge_belts` carries `count`, `needed`, `key`; `belts_for` gives the tier of a chosen count (`over` when it can't carry the rate).
+- One exit/entry per belt (`x|<target>|<item>`, `|2`...), each taking one belt (the merger built into exits is gone).
+- Coupled simulation in `attach_logistics`: matched edges (count set in the plan) belt by belt; default counts as a bundle (as before), which keeps rate-forced belts (over a Mk.6/Mk.2 pipe) from stranding a belt on whole-building granularity.
+- Suggested layouts: input sides first; output sides fill each matched belt up to what its entry takes (`_spread`, leftovers merged and split); the belts of a matched edge (or of one whose belts each carry a building's need) feed their own buildings (`_belt_shares`); leftover buildings fill an edge with no building of its own first with smart splitters (`_priority`), which also fixes the ACU Circuit Board shortfall.
+- Zoomed-in view: "belt k/n" on entries and exits, − Belt / + Belt for the selected one, double-click opens the other end with that belt selected. Graph: click an edge for its belts in the side panel (− / +, Default Belts); amber only when the rate forces more than one belt.
+- Warnings skip shortfalls below 0.005/min (e.g. a clock of 166.666%).
+- Edited layouts with several belts into an exit or out of an entry are reset (with the usual notice).

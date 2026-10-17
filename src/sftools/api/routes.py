@@ -36,7 +36,8 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
 
     nodes = graph.get_ui_data()
     resets = attach_logistics(nodes, lambda item: data.items[item].category in FLUIDS,
-                              Settings.parse(plan.logistics.get("settings")), plan.logistics.get("layouts") or {})
+                              Settings.parse(plan.logistics.get("settings")), plan.logistics.get("layouts") or {},
+                              plan.logistics.get("edges") or {})
     return {"nodes": nodes, "ignored": graph.ignored, "byproducts": graph.resolved_byproduct_choices(),
             "logistics_resets": resets}
 
