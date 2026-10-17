@@ -189,6 +189,19 @@ def test_input_side_buildings_in_order_and_the_odd_clock_shows(page):
     assert page.js(f"{LCY}.getElementById('b2|Screws').style('border-color')") == "rgb(34,211,238)"
 
 
+def test_the_demand_target_shows_in_the_zoomed_in_view(page):
+    beams = {**BEAMS, "items": ["Encased Industrial Beam", "Steel Beam"], "rates": [12, 6],
+             "merges": {"Encased Industrial Beam__Steel Beam": "Steel Beam"}}
+    open_logistics(page, beams)
+    assert page.js(f"{CY}.edges().filter(e => e.target().id() === 'demand|Steel Beam').map(e => e.source().id())") == ["Steel Beam|out"]
+    zoom_in(page, "Steel Beam")
+    demand, other = "x|External Demand|Steel Beam", "x|Encased Industrial Beam|Steel Beam"
+    assert page.js(f"{LCY}.getElementById({json.dumps(demand)}).hasClass('demand')")
+    assert page.js(f"{LCY}.getElementById({json.dumps(demand)}).style('shape')") == "ellipse"
+    assert page.js(f"{LCY}.getElementById({json.dumps(demand)}).style('border-color')") == "rgb(168,85,247)"
+    assert page.js(f"{LCY}.getElementById({json.dumps(other)}).style('shape')") == "tag"
+
+
 def test_tabs_share_what_is_unlocked(page):
     """Logistics settings are the game's: a new tab keeps them (ticket 039)."""
     open_logistics(page, {**BEAMS, "logistics": {"settings": {"belt_tier": 3, "pipe_tier": 1, "smart": False}}})

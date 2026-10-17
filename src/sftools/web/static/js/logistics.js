@@ -43,6 +43,9 @@ function createGraph() {
             { selector: '.merger', style: { 'shape': 'rectangle', 'width': 44, 'height': 44 } },
             { selector: '.buffer', style: { 'shape': 'barrel', 'width': 70 } },
             // Runs at another clock than the node's other buildings
+            // The plan's demand target and the Sink, drawn as in the production graph
+            { selector: '.exit.demand', style: { 'shape': 'ellipse', 'width': 200, 'height': 56, 'border-color': '#a855f7', 'border-width': 3, 'text-max-width': 150 } },
+            { selector: '.exit.sunk', style: { 'shape': 'ellipse', 'width': 200, 'height': 56, 'border-color': '#94a3b8', 'border-width': 3, 'text-max-width': 150 } },
             { selector: '.building.odd', style: { 'border-color': '#22d3ee', 'border-width': 4 } },
             { selector: '.short', style: { 'border-color': '#ef4444', 'border-width': 4 } },
             {
@@ -192,7 +195,8 @@ function render(fit) {
             data: { id: node.id, label: label(node), raw: node, color, textColor: textColorOn(color) },
             position: positions[node.id],
             classes: ['real', node.kind, PART_LABELS[node.kind] && node.kind !== 'buffer' && 'part',
-                odd.has(node.building) && 'odd', short && 'short'].filter(Boolean)
+                odd.has(node.building) && 'odd', short && 'short',
+                node.kind === 'exit' && node.label === 'demand' && 'demand', node.kind === 'exit' && node.label === 'Sink' && 'sunk'].filter(Boolean)
         };
     });
     data.belts.forEach(belt => {

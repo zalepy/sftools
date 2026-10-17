@@ -329,10 +329,26 @@ def test_supplied_from_outside(page):
     assert page.js("document.getElementById('clock-controls').style.display") == ""
 
 
-def test_demanded_nodes_have_a_purple_border(page):
-    page.open(page.base_url, plan())
-    assert page.js(node_style("Smart Plating", "border-color")) == "rgb(168,85,247)"
-    assert page.js(node_style(RIP_SP, "border-color")) == "rgb(245,158,11)"
+def test_demand_targets_are_circles_fed_by_their_node(page):
+    """A demand target is its own purple circle; the node making it keeps a production border."""
+    page.open(page.base_url, plan(items=["Smart Plating", "Reinforced Iron Plate"], rates=[2, 3],
+                                  merges={RIP_SP: "Reinforced Iron Plate"}))
+    demand = "demand|Reinforced Iron Plate"
+    assert page.js(label(demand)) == "Reinforced Iron Plate\n3.00/m\n(demand)"
+    assert page.js(node_style(demand, "shape")) == "ellipse"
+    assert page.js(node_style(demand, "border-color")) == "rgb(168,85,247)"
+    assert page.js(node_style("Reinforced Iron Plate", "border-color")) == "rgb(245,158,11)"
+    feeding = f"{EDGES}.filter(e => end(e.target()) === {json.dumps(demand)}).map(e => [end(e.source()), e.data('label')])"
+    [[source, text]] = page.js(feeding)
+    assert source == "Reinforced Iron Plate" and text.startswith("3.00/m")
+    assert page.js(label("demand|Smart Plating")) == "Smart Plating\n2.00/m\n(demand)"
+
+    # Clicking it shows the node that makes it; it can't be merged into
+    page.js(f"void document.getElementById('cy')._cyreg.cy.getElementById({json.dumps(demand)}).emit('tap')")
+    page.wait_until("document.getElementById('detail-id').textContent === 'Reinforced Iron Plate'")
+    page.drag(page.node_position(demand), page.node_position("Reinforced Iron Plate"))
+    page.wait(0.5)
+    assert page.saved_plan()["merges"] == {RIP_SP: "Reinforced Iron Plate"}
 
 
 def test_text_is_dark_on_bright_node_colors(page):
@@ -431,7 +447,7 @@ def test_legend_toggles_and_is_remembered(page):
     assert page.js("document.getElementById('legend').hidden")
     page.js("document.getElementById('legend-toggle').click()")
     assert not page.js("document.getElementById('legend').hidden")
-    assert "Demanded by you" in page.js("document.getElementById('legend').textContent")
+    assert "Demand target" in page.js("document.getElementById('legend').textContent")
     assert "Logistics node" in page.js("document.getElementById('legend').textContent")
 
     page.send("Page.reload")
