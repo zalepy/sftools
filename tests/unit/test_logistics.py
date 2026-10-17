@@ -130,6 +130,19 @@ def test_overflow_splitter_fills_its_main_output_first():
     assert result["warnings"] == ["Exit to Motor gets 5.00 of 6.00/min"]
 
 
+def test_inputs_that_send_less_than_their_share_leave_the_rest_to_the_others():
+    """An exit taking 20 from belts offering 10, 10 and 4: the 4 is all taken, the other two send 8 each."""
+    spec = {"side": "out", "items": {"Stator": {"sources": [("b1", 10.0), ("b2", 10.0), ("b3", 4.0)],
+                                                "sinks": [("Motor", 20.0, "Motor")]}}}
+    fixed = ["b1|Stator", "b2|Stator", "b3|Stator", "x|Motor|Stator"]
+    belts = [{"from": f"b{i}|Stator", "to": "x|Motor|Stator"} for i in (1, 2, 3)]
+    result = simulate({"fixed": fixed, "nodes": [], "belts": belts}, spec, Settings(), not_fluid)
+    assert flows_into(result, "x|Motor|Stator") == pytest.approx(20)
+    sent = {n["id"]: n["sent"] for n in result["nodes"] if n["kind"] == "building"}
+    assert sent == {"b1|Stator": pytest.approx(8), "b2|Stator": pytest.approx(8), "b3|Stator": pytest.approx(4)}
+    assert result["warnings"] == [] and result["backed_up"] == pytest.approx(4)
+
+
 def test_an_exit_merges_up_to_three_belts_per_line():
     """Ticket 036: an exit has a merger built in, counted with the splitters and mergers."""
     spec = {"side": "out", "items": {"Rotor": {"sources": [(f"b{i}", 4.0) for i in range(1, 5)],
