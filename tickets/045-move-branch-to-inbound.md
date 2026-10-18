@@ -19,7 +19,14 @@ Migrate a branch from one plan to another. A button on the selected node turns i
 - **Afterwards:** stay on the source plan, with a notice like "Moved 15/min Motor to MFG".
 - **Undo gap:** undo is per plan. Undoing in the source removes the inbound row, but the destination keeps its demand row. The confirmation warns about this.
 
+- **Remove "Supplied from outside"** (the user's call, 2026-10-18): this feature supersedes it. Remove it as part of this ticket:
+  - The recipe picker option, `OUTSIDE_SUPPLY` / `outside_supply_recipe` and `RecipeType.OUTSIDE` (calculator, recipe_type), and the "supplied from outside: no buildings" clock check.
+  - The Switch Recipe hint and the legend entry (index.html). The legend's sky-blue border stays for inbound production.
+  - Its tests (`test_supplied_from_outside` and the unit tests in test_api.py).
+  - The docs (README, ARCHITECTURE).
+  - Keep the `is_supplied` flag: the inbound node uses it (`_inbound_node`), and so do the checks that skip buildings, clocks and logistics for it.
+  - **Saved plans and books** that still have `"Supplied from outside"` as a node's recipe: the server ignores it like any unknown recipe, the plan notice reports it, and the branch comes back on its default or preferred recipe. The user can then use Move Branch to Inbound. No automatic conversion: its semantics are per node, inbound's are per item.
+
 ## Notes
 - Whether the node is the only one making the item: count nodes with `output_item` equal to it (by-product makers don't count). A merged node is one node.
 - Chain links and tab plans live in `tabs.js` (`getBook()`, the stored plans); the demand/inbound rows in `panel.js` (`getDemands`, `setDemands`).
-- "Supplied from outside" (a recipe choice) already removes a single node's branch, but the Chain tab can't see it. This feature uses inbound production so the plans can be linked.
