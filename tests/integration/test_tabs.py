@@ -288,3 +288,19 @@ def test_mouse_wheel_zooms_the_chain_in_small_steps(page):
     page.send("Input.dispatchMouseEvent", type="mouseWheel", x=x, y=y, deltaX=0, deltaY=-100)
     page.wait(0.3)
     assert 1.1 < page.js(f"{CCY}.zoom()") / before < 1.25
+
+
+def test_hidden_links_dont_block_new_ones(page):
+    """
+    A link whose demand target is gone (AW no longer makes Motors) is hidden. It used to count in the
+    many-to-many check, so XYZ couldn't feed both ACU and MFG. A new link sharing its end drops it.
+    """
+    book = {**CHAIN_BOOK, "tabs": [{**CHAIN_BOOK["tabs"][0], "plan": tab_plan()}, *CHAIN_BOOK["tabs"][1:]],
+            "chain": {"links": [{"from": {"tab": "aw", "item": "Motor"}, "to": {"tab": "mfg", "item": "Motor"}},
+                                {"from": {"tab": "xyz", "item": "Motor"}, "to": {"tab": "acu", "item": "Motor"}}]}}
+    open_book(page, book)
+    page.js("document.getElementById('chain-tab-btn').click()")
+    page.wait_until("!document.getElementById('chain-view').hidden")
+    assert page.js(f"{CCY}.edges().length") == 1  # the AW link isn't drawn
+    link(page, "s|xyz|Motor", "n|mfg|Motor")
+    assert sorted(links(page)) == ["xyz>acu:Motor", "xyz>mfg:Motor"]
