@@ -3,7 +3,7 @@
 // need of the same item, which also records that the connection is routed in the game. Nothing here
 // changes a plan: rates are derived from the plans, and highlights show where they don't add up.
 import { state } from './state.js';
-import { textColorOn } from './graph.js';
+import { smoothWheelZoom, textColorOn } from './graph.js';
 import { showToast as toast } from './panel.js';
 import { getBook, saveBook } from './tabs.js';
 
@@ -58,12 +58,27 @@ const supplyOf = link => nodeId('supply', link.from.tab, link.from.item);
 const needOf = link => nodeId('need', link.to.tab, link.to.item);
 
 /**
+ * The links both of whose ends are in the plans. The others stay hidden (a plan may get its demand target
+ * or inbound production back) until a new link shares an end with them (see dropHidden).
+ */
+function liveLinks(nodes = endpoints()) {
+    return chain().links.filter(link => nodes.has(supplyOf(link)) && nodes.has(needOf(link)));
+}
+
+/** Drops the hidden links that share an end with `added`: they'd come back as a conflict with it. */
+function dropHidden(added) {
+    const live = new Set(liveLinks().map(linkId));
+    chain().links = chain().links.filter(l =>
+        live.has(linkId(l)) || (supplyOf(l) !== supplyOf(added) && needOf(l) !== needOf(added)));
+}
+
+/**
  * The links whose ends are in the plans, with their rates, and what each node gets or gives. One supply
  * to several needs: each link carries what its need asks for; several supplies to one need: what its
  * supply makes; one to one: the smaller of the two.
  */
 function flows(nodes) {
-    const links = chain().links.filter(link => nodes.has(supplyOf(link)) && nodes.has(needOf(link)));
+    const links = liveLinks(nodes);
     const count = {};
     links.forEach(link => [supplyOf(link), needOf(link)].forEach(id => { count[id] = (count[id] || 0) + 1; }));
     const flowing = {};
@@ -149,6 +164,7 @@ function createGraph() {
         saveBook();
     });
     ccy.on('dbltap', 'node.box', evt => shown && shown.onOpenTab(evt.target.data('tab')));
+    smoothWheelZoom(ccy);
 }
 
 /** Where each box goes: where the user put it, else in columns by what feeds what. */
@@ -274,6 +290,7 @@ function endDrag(position) {
         toast(why);
         return;
     }
+    dropHidden(added);
     chain().links.push(added);
     saveBook();
     render(false);
@@ -291,8 +308,9 @@ function problem(added) {
     if (added.from.tab === added.to.tab) return `${tabName(added.from.tab)} can't feed itself.`;
     const links = chain().links;
     if (links.some(l => linkId(l) === linkId(added))) return 'Those are linked already.';
-    // The links joined to the new one, through their ends: one supply, or one need, never several of both
-    const all = [...links, added];
+    // The links joined to the new one, through their ends: one supply, or one need, never several of both.
+    // Hidden links don't count (see liveLinks).
+    const all = [...liveLinks(), added];
     const group = new Set([supplyOf(added), needOf(added)]);
     let grew = true;
     while (grew) {
@@ -317,6 +335,7 @@ export function addLink(from, to) {
     if (chain().links.some(l => linkId(l) === linkId(added))) return null;
     const why = problem(added);
     if (why) return why;
+    dropHidden(added);
     chain().links.push(added);
     saveBook();
     return null;
