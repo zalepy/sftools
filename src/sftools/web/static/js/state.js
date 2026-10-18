@@ -20,6 +20,7 @@ export const state = {
     // belts ('<producer>><consumer>|<item>' -> count, ticket 041)
     logistics: { settings: { ...DEFAULT_LOGISTICS_SETTINGS }, layouts: {}, positions: {}, edges: {} },
     colors: {},         // item -> color
+    defaultColors: {},  // item -> built-in color (node_colors.json); × on the Colors tab goes back to it
     preferred: {},      // item -> recipe new nodes of it run (ticket 043); global, like the colors
     selectedNodeId: null
 };

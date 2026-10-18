@@ -352,10 +352,16 @@
             <div id="colors-tab" class="tab-content">
                 <section>
                     <h3>Node Color Mapping</h3>
-                    <p class="hint" style="margin-bottom: 1rem;">Colors are based on the output item of the node.</p>
+                    <p class="hint" style="margin-bottom: 1rem;">Colors are based on the output item of the node. &times; resets a built-in color, or removes one you added.</p>
                     <div id="color-list">
                         <!-- Polulated by JS -->
                     </div>
+                    <div class="color-add-row">
+                        <input type="text" id="color-add-item" list="items_list" placeholder="Item to color" autocomplete="off">
+                        <input type="color" id="color-add-value" value="#3b82f6">
+                        <button type="button" id="color-add-btn" class="secondary">Define</button>
+                    </div>
+                    <div id="color-add-error" class="hint" style="color: var(--status-shortage);" hidden></div>
                     <button type="button" id="save-colors-btn" style="margin-top: 1rem;">Save Colors</button>
                 </section>
             </div>
