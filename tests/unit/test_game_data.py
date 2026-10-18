@@ -172,7 +172,9 @@ def test_default_recipe_produces_the_item(game):
     ("Silica", "Silica"),
     ("Water", "Water (normal) at Water Extractor"),
     ("Sulfuric Acid", "Sulfuric Acid"),
-    ("Crude Oil", "Crude Oil (impure) at Oil Extractor"),
+    ("Crude Oil", "Crude Oil (normal) at Oil Extractor"),
+    ("Iron Ore", "Iron Ore (normal) at Miner Mk.2"),
+    ("Nitrogen Gas", "Nitrogen Gas (normal) at Resource Well Extractor"),
     ("Heavy Oil Residue", "Alternate: Heavy Oil Residue"),
     ("Compacted Coal", "Alternate: Compacted Coal"),
     ("Ficsite Ingot", "Ficsite Ingot (Aluminum)"),
@@ -240,14 +242,14 @@ def test_golden_smart_plating(game):
 
 
 def test_golden_fluid_chain(game):
-    """20/min Plastic needs 30 m3/min Crude Oil: half an impure Oil Extractor."""
+    """20/min Plastic needs 30 m3/min Crude Oil: a quarter of a normal Oil Extractor."""
     items, recipes = game
     graph = build_plan(items, recipes, [("Plastic", 20)], exact=True)
 
     assert node_for(graph, "Plastic").building_scale == pytest.approx(1.0)
     crude = node_for(graph, "Crude Oil")
     assert crude.parent_demands == pytest.approx({node_for(graph, "Plastic").id: 30})
-    assert crude.building_scale == pytest.approx(0.5)
+    assert crude.building_scale == pytest.approx(0.25)
 
 
 def test_node_can_produce_a_byproduct(game):

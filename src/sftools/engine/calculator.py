@@ -27,6 +27,13 @@ def outside_supply_recipe(item: Item) -> Recipe:
     return Recipe(OUTSIDE_SUPPLY, OUTSIDE, (item, 1.0), type=RecipeType.OUTSIDE)
 
 
+def _extraction_rank(name: str) -> Tuple[bool, bool]:
+    """Extraction recipes are named `<Item> (<purity>) at <Building>`; other recipes rank the same."""
+    if ' at ' not in name:
+        return (False, False)
+    return ('(normal) at ' not in name, name.endswith(('at Miner Mk.1', 'at Miner Mk.3')))
+
+
 def default_recipe_for(item: Item) -> Optional[Recipe]:
     """
     The recipe used for a demand of `item` until the user switches it. In order of preference:
@@ -34,7 +41,9 @@ def default_recipe_for(item: Item) -> Optional[Recipe]:
     2. item as main product before by-product (by-product chains such as
        Compacted Coal <- Ionized Fuel <- Rocket Fuel <- Turbofuel <- Compacted Coal loop back)
     3. basic, then converter, then alternate recipes
-    4. the recipe named after the item, then the order in the game data
+    4. the recipe named after the item
+    5. extraction on a normal node, and with a Miner Mk.2 for ores
+    6. the order in the game data
     """
     def rank(indexed):
         index, recipe = indexed
@@ -43,6 +52,7 @@ def default_recipe_for(item: Item) -> Optional[Recipe]:
             not recipe.is_main_product(item.name),
             RECIPE_TYPE_ORDER[recipe.type],
             recipe.name != item.name,
+            _extraction_rank(recipe.name),
             index,
         )
 
