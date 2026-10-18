@@ -275,3 +275,16 @@ def test_many_supplies_into_one_need(page):
     assert "surplus" in classes(page, "n|mfg|Motor") and label_of(page, "n|mfg|Motor").endswith("9.00/m more")
     # A link joins the same item only
     assert page.js(f"{CCY}.getElementById('n|acu|Motor').length") == 1
+
+
+def test_mouse_wheel_zooms_the_chain_in_small_steps(page):
+    """The chain tab zooms like the graph: about 15% per mouse tick, not Cytoscape's jumps."""
+    open_book(page, CHAIN_BOOK)
+    page.js("document.getElementById('chain-tab-btn').click()")
+    page.wait_until("!document.getElementById('chain-view').hidden")
+    page.wait(0.3)
+    before = page.js(f"{CCY}.zoom()")
+    x, y = ccy_position(page, "box|aw")
+    page.send("Input.dispatchMouseEvent", type="mouseWheel", x=x, y=y, deltaX=0, deltaY=-100)
+    page.wait(0.3)
+    assert 1.1 < page.js(f"{CCY}.zoom()") / before < 1.25

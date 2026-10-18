@@ -3,7 +3,7 @@
 // need of the same item, which also records that the connection is routed in the game. Nothing here
 // changes a plan: rates are derived from the plans, and highlights show where they don't add up.
 import { state } from './state.js';
-import { textColorOn } from './graph.js';
+import { smoothWheelZoom, textColorOn } from './graph.js';
 import { showToast as toast } from './panel.js';
 import { getBook, saveBook } from './tabs.js';
 
@@ -149,6 +149,7 @@ function createGraph() {
         saveBook();
     });
     ccy.on('dbltap', 'node.box', evt => shown && shown.onOpenTab(evt.target.data('tab')));
+    smoothWheelZoom(ccy);
 }
 
 /** Where each box goes: where the user put it, else in columns by what feeds what. */
