@@ -1,6 +1,6 @@
 // Sidebar: demand rows, selected-node details, recipe picker, colors and recipes tabs, and the plan notice.
 import { fetchRecipes } from './api.js';
-import { getNodeData, clocksText, buildingsText, builtStatus, inboundUnused } from './graph.js';
+import { getNodeData, allNodeData, clocksText, buildingsText, builtStatus, inboundUnused } from './graph.js';
 import { state } from './state.js';
 
 const EPSILON = 0.0001;
@@ -190,7 +190,6 @@ function renderStats(data) {
 
     const clocks = clocksText(data);
     $('detail-buildings').innerText = data.inbound ? `None (inbound, ${parseFloat(data.inbound.rate).toFixed(2)}/min available)`
-        : data.is_supplied ? 'None (supplied from outside)'
         : clocks ? `${buildingsText(data)} (${clocks})` : buildingsText(data);
     $('detail-shards').innerText = data.power_shards || 0;
     $('detail-output-rate').innerText = parseFloat(data.throughput).toFixed(2) + '/min';
@@ -272,9 +271,6 @@ function renderScaledInputs(data) {
     });
 }
 
-// Recipe name the server reads as "supplied from outside the plan" (calculator.OUTSIDE_SUPPLY)
-const OUTSIDE_SUPPLY = 'Supplied from outside';
-
 async function populateRecipeSelector(itemName, currentRecipeName) {
     const selector = $('recipe-select');
     selector.replaceChildren(new Option('Loading...', ''));
@@ -287,8 +283,7 @@ async function populateRecipeSelector(itemName, currentRecipeName) {
             r.name,
             false,
             r.name === currentRecipeName
-        )), new Option(`${OUTSIDE_SUPPLY} (no buildings or inputs)`, OUTSIDE_SUPPLY, false,
-            currentRecipeName === OUTSIDE_SUPPLY));
+        )));
         selector.disabled = false;
     } catch (e) {
         console.error("Failed to fetch recipes", e);
@@ -318,7 +313,7 @@ export function showNodeDetails(data) {
     const last = groups.find(g => g.count !== undefined);
     $('clock-all').value = rest && rest.clock !== 1 ? +(rest.clock * 100).toFixed(4) : '';
     $('clock-last').value = last ? +(last.clock * 100).toFixed(4) : '';
-    // No buildings to clock on a node supplied from outside
+    // No buildings to clock on inbound production
     $('clock-controls').style.display = data.is_supplied ? 'none' : '';
     // Inbound production is set in the Inbound Production rows, not on the node; the Sink only receives
     const fixed = data.inbound || data.sink;
@@ -330,11 +325,88 @@ export function showNodeDetails(data) {
     $('unmerge-btn').style.display = isMergeTarget ? 'block' : 'none';
 
     renderBuilt(data);
+    renderMoveBranch(fixed ? null : data);
     if (!fixed) populateRecipeSelector(data.output_item, data.recipe_name || data.name);
     renderPreferred(fixed ? null : data);
 
     $('node-details').style.display = 'block';
     updateNodeEmpty();
+}
+
+// --- Move Branch to Inbound (ticket 045) ---
+
+export const NEW_TAB = 'new';
+
+/** What the node's consumers take: the rate that becomes inbound production. */
+export function branchRate(data) {
+    return Object.values(data.parent_demands || {}).reduce((sum, rate) => sum + rate, 0);
+}
+
+/** Why the node's branch can't be moved, or null: the item must be made by this node alone, and not be a demand target. */
+function moveBlocked(data) {
+    const item = data.output_item;
+    if (getDemands().items.includes(item)) return `${item} is a demand target of this plan.`;
+    const makers = allNodeData().filter(n => n.output_item === item && !n.inbound && !n.sink).length;
+    if (makers > 1) return `Merge all ${makers} ${item} nodes first.`;
+    return null;
+}
+
+/** By-products made in the node's branch that the rest of the plan uses as supply. */
+function byproductsUsedElsewhere(data) {
+    const branch = new Set();
+    const stack = [data.id];
+    while (stack.length) {
+        const id = stack.pop();
+        const node = getNodeData(id);
+        if (branch.has(id) || !node || node.inbound) continue;
+        branch.add(id);
+        stack.push(...node.children);
+    }
+    const items = new Set();
+    branch.forEach(id => (getNodeData(id).byproducts || []).forEach(b => {
+        if (Object.keys(b.used || {}).some(consumer => !branch.has(consumer))) items.add(b.item);
+    }));
+    return [...items].sort();
+}
+
+function renderMoveBranch(data) {
+    $('move-branch').style.display = data ? '' : 'none';
+    $('move-branch-form').hidden = true;
+    if (!data) return;
+    const why = moveBlocked(data);
+    $('move-branch-btn').disabled = Boolean(why);
+    $('move-branch-why').innerText = why || '';
+}
+
+/** Opens the destination picker: Undefined, the other tabs, or a new tab. */
+export function openMoveBranch(tabs, activeId) {
+    const data = getNodeData(state.selectedNodeId);
+    if (!data) return;
+    const select = $('move-branch-dest');
+    select.replaceChildren(
+        new Option('Undefined (add the demand target later)', ''),
+        ...tabs.filter(t => t.id !== activeId).map(t => new Option(t.name, t.id)),
+        new Option('New tab…', NEW_TAB)
+    );
+    const rate = branchRate(data);
+    const used = byproductsUsedElsewhere(data);
+    const describe = () => {
+        const lines = [`${rate.toFixed(2)}/min ${data.output_item} becomes inbound production here; this node and its inputs go.`];
+        if (used.length) lines.push(`By-products of this branch used as supply elsewhere in this plan: ${used.join(', ')}. Those nodes grow.`);
+        if (select.value) lines.push(`The destination gets a demand target of ${rate.toFixed(2)}/min, linked on the Chain tab. Undo here doesn't remove it.`);
+        $('move-branch-info').innerText = lines.join('\n');
+    };
+    select.onchange = describe;
+    describe();
+    $('move-branch-form').hidden = false;
+}
+
+export function closeMoveBranch() {
+    $('move-branch-form').hidden = true;
+}
+
+export function moveBranchDestination() {
+    return $('move-branch-dest').value;
 }
 
 /** How many of the node's buildings are built (ticket 037); hidden on nodes without buildings. */
@@ -505,8 +577,8 @@ export function ownRecipeNodes(item) {
 /** Prefer / Use Default Recipe for the node's item, and what's preferred now. */
 function renderPreferred(data) {
     const recipe = data && (data.recipe_name || data.name);
-    $('preferred-controls').style.display = !recipe || recipe === OUTSIDE_SUPPLY ? 'none' : '';
-    if (!recipe || recipe === OUTSIDE_SUPPLY) return;
+    $('preferred-controls').style.display = recipe ? '' : 'none';
+    if (!recipe) return;
     const item = data.output_item;
     const preferred = state.preferred[item];
     const own = ownRecipeNodes(item).length;

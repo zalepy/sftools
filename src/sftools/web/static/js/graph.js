@@ -81,7 +81,7 @@ const cy = cytoscape({
             }
         },
         {
-            // Supplied from outside the plan
+            // Inbound production: supplied from outside the plan
             selector: '.supplied',
             style: {
                 'border-width': 3,
@@ -284,11 +284,11 @@ export function inboundUnused(node) {
 
 /**
  * Buildings needed and built (ticket 037), or null for nodes without buildings to build (inbound
- * production, supplied from outside). Built counts are kept per recipe: after a recipe switch they no
+ * production). Built counts are kept per recipe: after a recipe switch they no
  * longer count, and `stale` holds the old mark.
  */
 export function builtStatus(node) {
-    if (!node || node.inbound || node.is_supplied) return null;
+    if (!node || node.inbound) return null;
     const needed = node.clocks && node.clocks.length ? node.buildings : Math.ceil(parseFloat(node.building_scale) - EPSILON);
     if (!(needed > 0)) return null;
     const mark = state.built[node.id];
@@ -366,7 +366,7 @@ export function renderGraph(nodesData) {
         const clockLine = `${clocks ? `\n${clocks}` : ''}${shards}`;
         const made = node.inbound ? 'inbound'
             : node.sink ? `${node.buildings}× ${node.building}`
-            : node.is_supplied ? 'supplied from outside' : `${buildingsText(node)}× ${node.building}`;
+            : `${buildingsText(node)}× ${node.building}`;
         const of = node.inbound ? ` of ${parseFloat(node.inbound.rate).toFixed(2)}` : '';
         const fluids = node.sink && node.sink.fluids.length ? '\nfluids can\'t be sunk!' : '';
         const label = `${node.output_item}${alternate}\n${parseFloat(node.throughput).toFixed(2)}${of}/m\n(${made})${clockLine}${fluids}`;
@@ -567,6 +567,11 @@ export function refreshBuilt() {
 
 export function hasNodes() {
     return cy.nodes().length > 0;
+}
+
+/** Data of the plan's nodes (not the demand circles or logistics nodes), as returned by the server. */
+export function allNodeData() {
+    return cy.nodes().not('.lnode').map(node => node.data('raw')).filter(raw => raw && !raw.demand);
 }
 
 /** Node data as returned by the server, or null. */

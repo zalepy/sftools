@@ -23,6 +23,11 @@ function freeName(base = 'Plan') {
     return `${base} ${n}`;
 }
 
+/** `base` if no tab has that name, else "base 2", "base 3", ... */
+export function uniqueName(base) {
+    return book.tabs.some(t => t.name === base) ? freeName(base) : base;
+}
+
 /** The saved book; a plan saved before tabs becomes the first tab. */
 export function loadBook() {
     try {

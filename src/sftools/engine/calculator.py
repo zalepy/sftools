@@ -1,10 +1,8 @@
 import math
 from typing import Dict, List, Optional, Tuple
 
-from sftools.domain.enums.building_category import BuildingCategory
 from sftools.domain.enums.demand_type import DemandType
 from sftools.domain.enums.recipe_type import RecipeType
-from sftools.domain.models.building import Building
 from sftools.domain.models.demand import Demand
 from sftools.domain.models.factory_graph import FactoryGraph, SINK, SOLVE, USE
 from sftools.domain.models.item import Item
@@ -13,19 +11,6 @@ from sftools.domain.models.recipe import Recipe
 
 
 RECIPE_TYPE_ORDER = {RecipeType.BASIC: 0, RecipeType.CONVERSION: 1, RecipeType.ALTERNATE: 2}
-
-# Recipe name for a node supplied from outside the plan (e.g. by another factory)
-OUTSIDE_SUPPLY = "Supplied from outside"
-OUTSIDE = Building("Outside the plan", BuildingCategory.SPECIAL, 0, 0, 0, 0)
-
-
-def outside_supply_recipe(item: Item) -> Recipe:
-    """
-    The recipe of a node supplied from outside the plan: no inputs, so switching to it drops the
-    node's inputs like any recipe switch; no buildings or power (see FactoryGraph._set_scale).
-    """
-    return Recipe(OUTSIDE_SUPPLY, OUTSIDE, (item, 1.0), type=RecipeType.OUTSIDE)
-
 
 def _extraction_rank(name: str) -> Tuple[bool, bool]:
     """Extraction recipes are named `<Item> (<purity>) at <Building>`; other recipes rank the same."""
@@ -362,9 +347,7 @@ def build_plan(
 
     A recipe switch keeps the inputs both recipes use, drops the inputs the new recipe doesn't use
     (with everything under them) and builds the new ones. A merge group runs its target's recipe, so
-    the absorbed nodes' inputs that it doesn't use are dropped the same way. The recipe name
-    OUTSIDE_SUPPLY marks a node as supplied from outside the plan: it keeps its rate and loses its
-    inputs and buildings. `inbound` lists (item, rate) supplied from outside the plan: it covers demand
+    the absorbed nodes' inputs that it doesn't use are dropped the same way. `inbound` lists (item, rate) supplied from outside the plan: it covers demand
     for the item before anything is produced (see FactoryGraph.recalculate). `byproducts` says per node
     whether its by-products cover demand elsewhere (USE, or SOLVE to solve a loop they'd close) or go to
     the Sink (SINK); nodes not listed get
@@ -398,10 +381,7 @@ def build_plan(
             report("recipe", node_id, state)
             continue
         node = graph.get_node(node_id)
-        if recipe_name == OUTSIDE_SUPPLY:
-            recipe = outside_supply_recipe(items_map[node.output_item_name])
-        else:
-            recipe = recipes_map.get(recipe_name)
+        recipe = recipes_map.get(recipe_name)
         if recipe is None:
             ignored.append({"kind": "recipe", "node_id": node_id, "reason": f"unknown recipe {recipe_name!r}"})
             continue
@@ -458,11 +438,6 @@ def build_plan(
         state = _entry_state(graph, node_id)
         if state != ACTIVE:
             report("clock", node_id, state)
-            continue
-        if graph.get_node(node_id).is_supplied:
-            # Went with the buildings, when the node switched to outside supply
-            ignored.append({"kind": "clock", "node_id": node_id, "reason": "supplied from outside: no buildings",
-                            "dropped": True})
             continue
         graph.clocks[node_id] = parsed
 

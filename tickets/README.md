@@ -57,3 +57,4 @@ Moved to [done/](done/).
 | [042](done/042-push-output-sides.md) | Output sides pushed, input sides pulled (logistics mode) | feature | P2 | Done |
 | [043](done/043-preferred-recipes.md) | Preferred recipes | feature | P2 | Done |
 | [044](done/044-define-colors.md) | Define item colors | feature | P3 | Done |
+| [045](done/045-move-branch-to-inbound.md) | Move a branch to inbound production; Supplied from outside removed | feature | P2 | Done |

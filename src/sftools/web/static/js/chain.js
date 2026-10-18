@@ -311,6 +311,17 @@ function problem(added) {
     return null;
 }
 
+/** Links a supply to a need from outside the chain tab (ticket 045): null when linked, else why not. */
+export function addLink(from, to) {
+    const added = { from, to };
+    if (chain().links.some(l => linkId(l) === linkId(added))) return null;
+    const why = problem(added);
+    if (why) return why;
+    chain().links.push(added);
+    saveBook();
+    return null;
+}
+
 function deleteSelected() {
     const selected = ccy && ccy.$('edge:selected')[0];
     if (!selected) return;

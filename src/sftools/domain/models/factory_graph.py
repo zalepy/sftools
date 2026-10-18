@@ -295,18 +295,17 @@ class FactoryGraph:
             group_demand[rep_id] = total
             item = rep.output_item_name
             need = total
-            if not rep.is_supplied:
-                amount = min(need, inbound_left.get(item, 0.0))
-                if amount > 0:
-                    inbound_left[item] -= amount
-                    cover(rep, need, amount, self.inbound_used[item])
+            amount = min(need, inbound_left.get(item, 0.0))
+            if amount > 0:
+                inbound_left[item] -= amount
+                cover(rep, need, amount, self.inbound_used[item])
+                need -= amount
+            for entry in byproducts_left.get(item, []):
+                amount = min(need, entry[1])
+                if amount > EPSILON:
+                    entry[1] -= amount
+                    cover(rep, need, amount, self.byproduct_used[(entry[0], item)])
                     need -= amount
-                for entry in byproducts_left.get(item, []):
-                    amount = min(need, entry[1])
-                    if amount > EPSILON:
-                        entry[1] -= amount
-                        cover(rep, need, amount, self.byproduct_used[(entry[0], item)])
-                        need -= amount
             rep.parent_demands = {k: v for k, v in rep.parent_demands.items() if v > EPSILON}
             self._set_scale(rep, need, round_up)
             # Idle: nothing left to make, as it's covered or everything above it is idle. Hidden, unless
@@ -340,8 +339,7 @@ class FactoryGraph:
         groups_of: Dict[str, List[str]] = {}
         for rep_id in members:
             rep = self.all_nodes[rep_id]
-            if not rep.is_supplied:
-                groups_of.setdefault(rep.output_item_name, []).append(rep_id)
+            groups_of.setdefault(rep.output_item_name, []).append(rep_id)
 
         def reaches(start: str, goal: str) -> bool:
             seen, stack = set(), [start]
@@ -376,13 +374,8 @@ class FactoryGraph:
         With round_up, whole buildings: the fixed clock groups (e.g. the last building at 60%) plus as many
         buildings at the node's clock as the rest of the demand needs, rounded up. The count is never set
         directly; it follows the demand and the clocks (ticket 023). Without round_up, the exact fractional
-        scale (used by tests to check that every item balances). A node supplied from outside has no
-        buildings: its scale is just the rate it supplies.
+        scale (used by tests to check that every item balances).
         """
-        if node.is_supplied:
-            node.ideal_building_scale = node.original_building_scale = required_rate / node.base_output_rate
-            node.set_clocks(None)
-            return
         if node.base_output_rate <= 0:
             node.original_building_scale = 0
             node.ideal_building_scale = 0
@@ -509,7 +502,7 @@ class FactoryGraph:
         """
         resolved = {}
         for node in self.all_nodes.values():
-            if node.is_dormant or node.absorbed_by or node.recipe is None or node.is_supplied:
+            if node.is_dormant or node.absorbed_by or node.recipe is None:
                 continue
             if node.recipe.other_outputs(node.output_item_name):
                 if node.id in self.byproduct_choices or self.byproduct_default == USE:
@@ -616,6 +609,6 @@ class FactoryGraph:
             "base_power": node.base_power,
             "is_dormant": node.is_dormant,
             "is_alternate": node.recipe is not None and node.recipe.type == RecipeType.ALTERNATE,
-            "is_supplied": node.is_supplied,
+            "is_supplied": False,  # production nodes; the inbound node is supplied (see _inbound_node)
             "derivation": self.derivation(node),
         }
