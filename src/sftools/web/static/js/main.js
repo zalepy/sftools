@@ -568,6 +568,7 @@ async function loadColors() {
     } catch (e) {
         console.error("Failed to load colors", e);
     }
+    state.defaultColors = defaults;
     state.colors = { ...defaults, ...loadSavedColors() };
     panel.renderColorList();
 }
@@ -575,6 +576,7 @@ async function loadColors() {
 function saveColorChanges() {
     try {
         saveColors(panel.readColorInputs());
+        if (hasNodes()) refreshNodeColors();
         alert('Colors saved in this browser.');
     } catch (e) {
         console.error("Failed to save colors", e);
@@ -641,6 +643,7 @@ $('recipe-select').addEventListener('change', e => switchRecipe(e.target.value))
 $('prefer-btn').addEventListener('click', () => preferSelected(true));
 $('unprefer-btn').addEventListener('click', () => preferSelected(false));
 $('save-colors-btn').addEventListener('click', saveColorChanges);
+panel.initColorDefine();
 $('fit-view-btn').addEventListener('click', fitView);
 
 onNodeSelected(data => {

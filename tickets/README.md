@@ -56,3 +56,4 @@ Moved to [done/](done/).
 | [041](done/041-belts-per-edge.md) | Belts per edge, matched across both ends (logistics mode) | feature | P2 | Done |
 | [042](done/042-push-output-sides.md) | Output sides pushed, input sides pulled (logistics mode) | feature | P2 | Done |
 | [043](done/043-preferred-recipes.md) | Preferred recipes | feature | P2 | Done |
+| [044](done/044-define-colors.md) | Define item colors | feature | P3 | Done |

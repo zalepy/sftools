@@ -166,6 +166,49 @@ def test_colors_are_saved_in_the_browser(page):
     assert page.dialogs == ["Colors saved in this browser."]
 
 
+def color_of(page, item):
+    return page.js(f"[...document.querySelectorAll('#color-list .color-input')].find(i => i.dataset.item === {json.dumps(item)})?.value ?? null")
+
+
+def test_defining_colors(page):
+    """Define adds an item's color (ticket 044); × removes it, or resets a built-in one; Save keeps it."""
+    page.open(page.base_url, plan())
+    page.js("document.querySelector('.tab[data-tab=colors]').click()")
+    rotor = "Smart Plating__Rotor"
+    before = page.js(node_style(rotor, "background-color"))
+
+    page.js("document.getElementById('color-add-item').value = 'Rotorr'; document.getElementById('color-add-btn').click()")
+    assert page.js("document.getElementById('color-add-error').textContent") == "Unknown item: Rotorr"
+    assert color_of(page, "Rotorr") is None
+
+    page.js("""(() => {
+        document.getElementById('color-add-item').value = 'Rotor';
+        document.getElementById('color-add-value').value = '#ab1234';
+        document.getElementById('color-add-btn').click();
+    })()""")
+    assert page.js("document.getElementById('color-add-error').hidden")
+    assert color_of(page, "Rotor") == "#ab1234"
+    assert page.js(node_style(rotor, "background-color")) == before  # not until saved
+    page.js("document.getElementById('save-colors-btn').click()")
+    page.wait_until(f"{node_style(rotor, 'background-color')} === 'rgb(171,18,52)'")
+    assert page.js("JSON.parse(localStorage.getItem('sf_planner_colors'))")["Rotor"] == "#ab1234"
+
+    # × on a built-in item resets it; on Rotor it drops the row
+    page.js("""(() => {
+        const input = [...document.querySelectorAll('#color-list .color-input')].find(i => i.dataset.item === 'Screws');
+        input.value = '#000001';
+        input.parentElement.querySelector('.color-remove').click();
+    })()""")
+    assert color_of(page, "Screws") == "#1e3a8a"
+    page.js("""[...document.querySelectorAll('#color-list .color-item')].find(r => r.dataset.item === 'Rotor')
+        .querySelector('.color-remove').click()""")
+    assert color_of(page, "Rotor") is None
+    page.js("document.getElementById('save-colors-btn').click()")
+    page.wait_until(f"{node_style(rotor, 'background-color')} === {json.dumps(before)}")
+    saved = page.js("JSON.parse(localStorage.getItem('sf_planner_colors'))")
+    assert "Rotor" not in saved and saved["Screws"] == "#1e3a8a"
+
+
 SCREWS = ["Smart Plating__Reinforced Iron Plate__Screws", "Smart Plating__Rotor__Screws",
           "Modular Frame__Reinforced Iron Plate__Screws"]
 CAST = "Alternate: Cast Screws"

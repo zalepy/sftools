@@ -447,7 +447,8 @@ button:disabled {
     gap: 0.5rem;
 }
 
-.color-input {
+.color-input,
+#color-add-value {
     width: 34px;
     height: 34px;
     padding: 0;
@@ -458,11 +459,13 @@ button:disabled {
     overflow: hidden;
 }
 
-.color-input::-webkit-color-swatch-wrapper {
+.color-input::-webkit-color-swatch-wrapper,
+#color-add-value::-webkit-color-swatch-wrapper {
     padding: 0;
 }
 
-.color-input::-webkit-color-swatch {
+.color-input::-webkit-color-swatch,
+#color-add-value::-webkit-color-swatch {
     border: none;
 }
 
@@ -853,4 +856,40 @@ details[open] summary::after {
     background: #1e293b;
     font-size: 0.65rem;
     box-sizing: border-box;
+}
+
+/* Colors tab: × per row, and the Define row (ticket 044) */
+.color-remove {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    line-height: 1;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+
+.color-remove:hover {
+    color: var(--text-primary);
+}
+
+.color-add-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.color-add-row input[type=text] {
+    flex: 1;
+    min-width: 0;
+}
+
+#color-add-value {
+    flex: none;
+}
+
+.color-add-row button {
+    width: auto;
+    margin: 0;
 }
