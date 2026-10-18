@@ -893,3 +893,27 @@ details[open] summary::after {
     width: auto;
     margin: 0;
 }
+
+/* Move Branch to Inbound (ticket 045) */
+#move-branch-form {
+    margin-top: 0.5rem;
+}
+
+#move-branch-info {
+    white-space: pre-line;
+    margin: 0.4rem 0;
+}
+
+.move-branch-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+#move-branch-dest {
+    width: 100%;
+    background: var(--bg-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 0.4rem;
+    border-radius: 4px;
+}

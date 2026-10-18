@@ -180,7 +180,7 @@
                                 <select id="recipe-select" style="width: 100%; background: var(--bg-color); color: var(--text-primary); border: 1px solid var(--border); padding: 0.4rem; border-radius: 4px;">
                                     <option value="">Select Recipe...</option>
                                 </select>
-                                <div class="hint">Inputs both recipes use keep their adjustments. Inputs the new recipe doesn't use are removed, with everything under them. "Supplied from outside" takes the item from outside the plan (e.g. another factory): no buildings or inputs.</div>
+                                <div class="hint">Inputs both recipes use keep their adjustments. Inputs the new recipe doesn't use are removed, with everything under them.</div>
                             </div>
 
                             <!-- Preferred recipe for the item (ticket 043) -->
@@ -279,6 +279,21 @@
                     <button type="button" id="apply-clocks-btn">Apply Clock Speeds</button>
                     </div>
                     <button type="button" id="unmerge-btn" class="secondary" style="margin-top: 0.5rem; display: none;">Unmerge Node</button>
+
+                    <!-- Move the node and its inputs to another plan (ticket 045) -->
+                    <div id="move-branch" class="form-group" style="margin-top: 0.5rem;">
+                        <button type="button" id="move-branch-btn" class="secondary">Move Branch to Inbound&hellip;</button>
+                        <div class="hint" id="move-branch-why"></div>
+                        <div id="move-branch-form" hidden>
+                            <label for="move-branch-dest">Destination plan</label>
+                            <select id="move-branch-dest"></select>
+                            <div class="hint" id="move-branch-info"></div>
+                            <div class="move-branch-actions">
+                                <button type="button" id="move-branch-confirm">Move</button>
+                                <button type="button" id="move-branch-cancel" class="secondary">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
 
                 </section>
 
@@ -388,7 +403,7 @@
                 <ul>
                     <li><span class="swatch border" style="--c: #f59e0b"></span>Production node</li>
                     <li><span class="swatch round" style="--c: #a855f7"></span>Demand target: what you demand, from the node that makes it</li>
-                    <li><span class="swatch border" style="--c: #38bdf8"></span>Supplied from outside: inbound production, or "Supplied from outside"</li>
+                    <li><span class="swatch border" style="--c: #38bdf8"></span>Inbound production: supplied from outside the plan</li>
                     <li><span class="swatch border dashed" style="--c: #22d3ee"></span>Clock speeds set</li>
                     <li><span class="swatch border" style="--c: #f43f5e"></span>Selected</li>
                     <li><span class="swatch round" style="--c: #94a3b8"></span>Sink: by-products that aren't used</li>

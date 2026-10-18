@@ -1,6 +1,5 @@
 import math
 from typing import List, Dict, Optional, Tuple
-from sftools.domain.enums.recipe_type import RecipeType
 from sftools.domain.models.building import Building
 
 # Power draw at clock c is c ** k times the 100% draw (satisfactory.wiki.gg, "Clock speed": 1.321928 = log2 2.5
@@ -144,11 +143,6 @@ class ProductionNode:
     @recipe.setter
     def recipe(self, value):
         self._recipe = value
-
-    @property
-    def is_supplied(self) -> bool:
-        """Supplied from outside the plan: no buildings, inputs or power."""
-        return self._recipe is not None and self._recipe.type == RecipeType.OUTSIDE
 
     @property
     def is_dormant(self):

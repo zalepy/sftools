@@ -11,7 +11,7 @@ import {
 import * as panel from './panel.js';
 import * as history from './history.js';
 import * as tabs from './tabs.js';
-import { openChain, refreshChain, closeChain, isChainOpen } from './chain.js';
+import { openChain, refreshChain, closeChain, isChainOpen, addLink } from './chain.js';
 import * as logisticsView from './logistics.js';
 
 const $ = id => document.getElementById(id);
@@ -357,6 +357,56 @@ async function unmergeSelectedNode() {
     }
 }
 
+// --- Move Branch to Inbound (ticket 045) ---
+
+/** [{item, rate}] with `rate` more of `item` (a new entry if it has none). */
+function withMore(entries, item, rate) {
+    const found = entries.some(e => e.item === item);
+    return found ? entries.map(e => e.item === item ? { ...e, rate: e.rate + rate } : e) : [...entries, { item, rate }];
+}
+
+/**
+ * The selected node's item becomes inbound production of this plan, so the node and its inputs go. The
+ * destination (a tab id, NEW_TAB, or '' for none yet) gets the demand target, linked on the Chain tab.
+ */
+async function moveBranch(destination) {
+    const data = getNodeData(state.selectedNodeId);
+    if (!data) return;
+    const item = data.output_item;
+    const rate = panel.branchRate(data);
+    const before = panel.getDemands();
+    panel.setDemands(before.items, before.rates, withMore(before.inbound, item, rate));
+    try {
+        render(await requestPlan());
+        save();
+    } catch (e) {
+        panel.setDemands(before.items, before.rates, before.inbound);
+        console.error("Move failed", e);
+        alert(`Move failed: ${e.message}`);
+        return;
+    }
+    panel.hideNodeDetails();
+
+    let where = '';
+    if (destination) {
+        const source = tabs.activeTab();
+        let tab;
+        if (destination === panel.NEW_TAB) {
+            tab = tabs.addTab({ ...emptyPlan(), items: [item], rates: [rate] }, tabs.uniqueName(item));
+        } else {
+            tab = tabs.getBook().tabs.find(t => t.id === destination);
+            const plan = tab.plan || emptyPlan();
+            const demands = withMore((plan.items || []).map((it, i) => ({ item: it, rate: parseFloat(plan.rates[i]) })), item, rate);
+            tab.plan = { ...plan, items: demands.map(d => d.item), rates: demands.map(d => d.rate) };
+            tabs.saveBook();
+        }
+        const why = addLink({ tab: tab.id, item }, { tab: source.id, item });
+        refreshChain();
+        where = ` to ${tab.name}` + (why ? `. Not linked on the Chain tab: ${why}` : '');
+    }
+    panel.showToast(`Moved ${rate.toFixed(2)}/min ${item}${where}.`, 6000);
+}
+
 // --- Logistics (ticket 033) ---
 
 function readLogisticsSettings() {
@@ -623,6 +673,9 @@ $('clear-clocks-node-btn').addEventListener('click', clearClocks);
     if (e.key === 'Enter') applyClocks();
 }));
 $('unmerge-btn').addEventListener('click', unmergeSelectedNode);
+$('move-branch-btn').addEventListener('click', () => panel.openMoveBranch(tabs.getBook().tabs, tabs.getBook().active));
+$('move-branch-cancel').addEventListener('click', panel.closeMoveBranch);
+$('move-branch-confirm').addEventListener('click', () => moveBranch(panel.moveBranchDestination()));
 $('undo-btn').addEventListener('click', undo);
 $('redo-btn').addEventListener('click', redo);
 

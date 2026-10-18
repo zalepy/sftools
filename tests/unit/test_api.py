@@ -233,32 +233,15 @@ def test_merged_node_lists_constituent_derivations(client):
     assert [step["item"] for step in rip["constituent_derivations"][0]] == [source.split("__")[0], "Reinforced Iron Plate"]
 
 
-SUPPLIED = "Supplied from outside"
-
-
-def test_node_supplied_from_outside(client):
-    """The node keeps its rate; its inputs, buildings, power and clocks go, quietly."""
+def test_supplied_from_outside_is_gone(client):
+    """Removed with ticket 045: plans that still have it get the node back on its default recipe, with a notice."""
     rip = "Smart Plating__Reinforced Iron Plate"
-    body = calculate(client, recipes={rip: SUPPLIED}, clocks={rip: [{"clock": 0.5}]}).json()
+    body = calculate(client, recipes={rip: "Supplied from outside"}).json()
     nodes = {n["id"]: n for n in body["nodes"]}
-    supplied = nodes[rip]
-    assert supplied["is_supplied"] and supplied["building"] == "Outside the plan"
-    assert supplied["throughput"] == pytest.approx(2.0)  # what Smart Plating needs
-    assert supplied["power"] == 0 and supplied["clocks"] == [] and supplied["scaled_inputs"] == []
-    assert not any(node_id.startswith(rip + "__") for node_id in nodes)
-    assert body["ignored"] == [{"kind": "clock", "node_id": rip, "reason": "supplied from outside: no buildings",
-                                "dropped": True, "replacement": None}]
-    assert not nodes["Smart Plating"]["is_supplied"]
-
-
-def test_merge_into_a_supplied_node_is_supplied_too(client):
-    nodes = calculate(client).json()["nodes"]
-    target, source = sorted(n["id"] for n in nodes_by_item(nodes, "Reinforced Iron Plate"))
-    merged = calculate(client, recipes={target: SUPPLIED}, merges={source: target}).json()["nodes"]
-    rip = nodes_by_item(merged, "Reinforced Iron Plate")
-    assert [n["id"] for n in rip] == [target] and rip[0]["is_supplied"]
-    assert rip[0]["throughput"] == pytest.approx(2 + 3)  # 2 for Smart Plating, 3 for Modular Frame
-    assert not any(n["id"].startswith(source + "__") for n in merged)  # the absorbed node's inputs go too
+    assert nodes[rip]["recipe_name"] == "Reinforced Iron Plate" and not nodes[rip]["is_supplied"]
+    assert any(node_id.startswith(rip + "__") for node_id in nodes)
+    assert body["ignored"] == [{"kind": "recipe", "node_id": rip, "reason": "unknown recipe 'Supplied from outside'",
+                               "dropped": False, "replacement": None}]
 
 
 def test_inbound_production_covers_demand_top_down(client):

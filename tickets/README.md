@@ -5,9 +5,8 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
-| [045](045-move-branch-to-inbound.md) | Move a branch to inbound production | feature | P2 | Open (on hold) |
 
-Next when wanted: 045 (designed, on hold), 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
@@ -58,3 +57,4 @@ Moved to [done/](done/).
 | [042](done/042-push-output-sides.md) | Output sides pushed, input sides pulled (logistics mode) | feature | P2 | Done |
 | [043](done/043-preferred-recipes.md) | Preferred recipes | feature | P2 | Done |
 | [044](done/044-define-colors.md) | Define item colors | feature | P3 | Done |
+| [045](done/045-move-branch-to-inbound.md) | Move a branch to inbound production; Supplied from outside removed | feature | P2 | Done |

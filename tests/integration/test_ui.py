@@ -410,18 +410,67 @@ def node_style(node_id, prop):
     return f"document.getElementById('cy')._cyreg.cy.getElementById({json.dumps(node_id)}).style('{prop}')"
 
 
-def test_supplied_from_outside(page):
-    page.open(page.base_url, plan())
-    switch_recipe(page, RIP_SP, "Supplied from outside")
-    assert page.saved_plan()["recipes"] == {RIP_SP: "Supplied from outside"}
-    assert page.js(label(RIP_SP)) == "Reinforced Iron Plate\n2.00/m\n(supplied from outside)"
-    assert not any(node_id.startswith(RIP_SP + "__") for node_id in page.node_ids())
-    assert page.js(node_style(RIP_SP, "border-color")) == "rgb(56,189,248)"  # sky blue
-    assert page.js("document.getElementById('clock-controls').style.display") == "none"
-    assert page.js("document.getElementById('detail-buildings').textContent") == "None (supplied from outside)"
+BOOK = "JSON.parse(localStorage.getItem('sf_logistics_book'))"
+ROTOR = "Smart Plating__Rotor"
 
-    page.select_node(RIP_MF)
-    assert page.js("document.getElementById('clock-controls').style.display") == ""
+
+def move_branch(page, node_id, destination):
+    """Move Branch to Inbound on the node, to a destination: '' (Undefined), a tab name, or 'New tab'."""
+    page.select_node(node_id)
+    page.js("document.getElementById('move-branch-btn').click()")
+    page.js(f"""(() => {{
+        const select = document.getElementById('move-branch-dest');
+        const option = [...select.options].find(o => {json.dumps(destination)} ? o.text.startsWith({json.dumps(destination)}) : o.value === '');
+        select.value = option.value;
+        select.dispatchEvent(new Event('change'));
+        document.getElementById('move-branch-confirm').click();
+    }})()""")
+
+
+def test_move_branch_needs_a_single_node_that_is_not_a_demand_target(page):
+    """Ticket 045: inbound production covers the item plan-wide, so the item must be made by one node."""
+    page.open(page.base_url, plan())
+    page.select_node(RIP_SP)
+    assert page.js("document.getElementById('move-branch-btn').disabled")
+    assert page.js("document.getElementById('move-branch-why').textContent") == "Merge all 2 Reinforced Iron Plate nodes first."
+    page.select_node("Smart Plating")
+    assert page.js("document.getElementById('move-branch-why').textContent") == "Smart Plating is a demand target of this plan."
+    page.select_node(ROTOR)
+    assert not page.js("document.getElementById('move-branch-btn').disabled")
+    # "Supplied from outside" is gone from the recipes (superseded by this)
+    page.wait_until("!document.getElementById('recipe-select').disabled")
+    assert "Supplied from outside" not in page.js("[...document.getElementById('recipe-select').options].map(o => o.value)")
+
+
+def test_move_branch_to_a_new_tab_then_to_an_existing_one(page):
+    page.open(page.base_url, plan(merges={RIP_MF: RIP_SP}))
+    move_branch(page, ROTOR, "New tab")
+    page.wait_until(f"{SAVED}.inbound.length === 1")
+    assert page.saved_plan()["inbound"] == [{"item": "Rotor", "rate": 2}]
+    assert ROTOR not in page.node_ids() and "inbound:Rotor" in page.node_ids()
+    book = page.js(BOOK)
+    source, new = book["tabs"]
+    assert book["active"] == source["id"]  # stays on the source plan
+    assert (new["name"], new["plan"]["items"], new["plan"]["rates"]) == ("Rotor", ["Rotor"], [2])
+    assert book["chain"]["links"] == [{"from": {"tab": new["id"], "item": "Rotor"}, "to": {"tab": source["id"], "item": "Rotor"}}]
+    assert "Moved 2.00/min Rotor to Rotor." in page.js("document.body.innerText")
+
+    # The merged plates (2 + 3) go to the same tab, as a second demand target
+    move_branch(page, RIP_SP, "Rotor")
+    page.wait_until(f"{SAVED}.inbound.length === 2")
+    assert page.saved_plan()["inbound"][1] == {"item": "Reinforced Iron Plate", "rate": 5}
+    new = page.js(BOOK)["tabs"][1]
+    assert (new["plan"]["items"], new["plan"]["rates"]) == (["Rotor", "Reinforced Iron Plate"], [2, 5])
+    assert len(page.js(BOOK)["chain"]["links"]) == 2
+
+
+def test_move_branch_without_a_destination(page):
+    page.open(page.base_url, plan())
+    move_branch(page, ROTOR, "")
+    page.wait_until(f"{SAVED}.inbound.length === 1")
+    book = page.js(BOOK)
+    assert len(book["tabs"]) == 1 and book["chain"]["links"] == []
+    assert "Moved 2.00/min Rotor." in page.js("document.body.innerText")
 
 
 def test_demand_targets_are_circles_fed_by_their_node(page):

@@ -1,6 +1,6 @@
 # 045 — Move a branch to inbound production
 
-**Type:** feature · **Priority:** P2 · **Status:** Open (designed, implementation on hold) · **Related:** [030](done/030-inbound-production.md), [039](done/039-plan-tabs.md), [040](done/040-chain-tab.md)
+**Type:** feature · **Priority:** P2 · **Status:** Done · **Related:** [030](030-inbound-production.md), [039](039-plan-tabs.md), [040](040-chain-tab.md)
 
 ## Goal
 Migrate a branch from one plan to another. A button on the selected node turns its item into inbound production of the plan it's in, so the node and everything below it disappear there. Optionally the destination plan gets the matching demand target.
@@ -30,3 +30,10 @@ Migrate a branch from one plan to another. A button on the selected node turns i
 ## Notes
 - Whether the node is the only one making the item: count nodes with `output_item` equal to it (by-product makers don't count). A merged node is one node.
 - Chain links and tab plans live in `tabs.js` (`getBook()`, the stored plans); the demand/inbound rows in `panel.js` (`getDemands`, `setDemands`).
+
+## Done (2026-10-18)
+- Backup of master before this change: branch `backup/pre-045`.
+- Removed "Supplied from outside": `OUTSIDE_SUPPLY`, `outside_supply_recipe`, `RecipeType.OUTSIDE`, `ProductionNode.is_supplied` and the checks on it (calculator, factory_graph), the recipe option, hint and legend text. `is_supplied` stays in the node data: false for production nodes, true for the inbound node. A plan that still names the recipe gets it ignored as an unknown recipe (plan notice); `test_supplied_from_outside_is_gone`.
+- Node tab: "Move Branch to Inbound…" (`renderMoveBranch`, disabled with the reason), and a form with the destination and what happens, including by-products of the branch used elsewhere and the undo gap (`openMoveBranch`).
+- `moveBranch` (main.js): the inbound row, recalculated; on failure the rows go back. Then the destination: a new tab named after the item (`tabs.uniqueName`) or the chosen tab's stored plan gets the demand row (added to an existing one); `chain.addLink` links it (or says why not). Toast: "Moved 2.00/min Rotor to Rotor."
+- Browser tests: `test_move_branch_needs_a_single_node_that_is_not_a_demand_target`, `test_move_branch_to_a_new_tab_then_to_an_existing_one`, `test_move_branch_without_a_destination`.
