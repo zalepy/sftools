@@ -5,8 +5,9 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
+| [045](045-move-branch-to-inbound.md) | Move a branch to inbound production | feature | P2 | Open (on hold) |
 
-Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next when wanted: 045 (designed, on hold), 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
