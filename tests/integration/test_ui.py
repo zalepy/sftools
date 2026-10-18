@@ -427,6 +427,18 @@ def test_inbound_production(page):
     page.wait_until(f"{SAVED}.inbound[0].rate === 1")
     assert RIP_SP in page.node_ids()
     assert page.js(label(inbound)).startswith("Reinforced Iron Plate\n1.00 of 1.00/m")
+    assert "#22c55e" not in page.js(badges(inbound))
+
+    # More than the plan uses: a green dot, and the unused rate in the side panel
+    page.js("""(() => {
+        document.querySelector('#inbound-rows input[name=rates]').value = '10';
+        document.querySelector('#demand-form button[type=submit]').click();
+    })()""")
+    page.wait_until(f"{SAVED}.inbound[0].rate === 10")
+    assert page.js(label(inbound)).startswith("Reinforced Iron Plate\n5.00 of 10.00/m")
+    assert "#22c55e" in page.js(badges(inbound))
+    page.select_node(inbound)
+    assert page.js("document.getElementById('detail-surplus-value').textContent") == "+5.00/min unused"
 
 
 def edge_classes(source, target):
