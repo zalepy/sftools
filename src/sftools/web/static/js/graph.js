@@ -277,6 +277,11 @@ export function isExternalDemand(node) {
 
 export const DEMAND_PREFIX = 'demand|';
 
+/** Inbound production per minute that nothing in the plan uses. */
+export function inboundUnused(node) {
+    return parseFloat(node.inbound.rate) - parseFloat(node.inbound.used);
+}
+
 /**
  * Buildings needed and built (ticket 037), or null for nodes without buildings to build (inbound
  * production, supplied from outside). Built counts are kept per recipe: after a recipe switch they no
@@ -292,8 +297,10 @@ export function builtStatus(node) {
     return { needed, built, done: built >= needed, stale: mark && !current ? mark : null };
 }
 
-// Small dot in the top-right corner: blue = a whole building or more spare, green = surplus, red = shortage
+// Small dot in the top-right corner: blue = a whole building or more spare, green = surplus, red = shortage.
+// Inbound production has no buildings: green when some of it goes unused.
 function statusColor(node) {
+    if (node.inbound) return inboundUnused(node) > EPSILON ? '#22c55e' : null;
     const surplus = parseFloat(node.building_scale) - parseFloat(node.ideal_building_scale);
     if (surplus > 1 - EPSILON) return '#3b82f6';
     if (surplus > EPSILON) return '#22c55e';

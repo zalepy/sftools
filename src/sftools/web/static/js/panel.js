@@ -1,6 +1,6 @@
 // Sidebar: demand rows, selected-node details, recipe picker, colors and recipes tabs, and the plan notice.
 import { fetchRecipes } from './api.js';
-import { getNodeData, clocksText, buildingsText, builtStatus } from './graph.js';
+import { getNodeData, clocksText, buildingsText, builtStatus, inboundUnused } from './graph.js';
 import { state } from './state.js';
 
 const EPSILON = 0.0001;
@@ -205,7 +205,11 @@ function renderStats(data) {
         $('detail-clock').innerText = '-';
         return;
     }
-    if (Math.abs(surplus) < EPSILON) {
+    if (data.inbound) {
+        const unused = inboundUnused(data);
+        surplusEl.innerText = unused > EPSILON ? `+${unused.toFixed(2)}/min unused` : 'All used';
+        surplusEl.style.color = unused > EPSILON ? 'var(--status-surplus)' : 'var(--text-secondary)';
+    } else if (Math.abs(surplus) < EPSILON) {
         surplusEl.innerText = 'Perfect Match';
         surplusEl.style.color = 'var(--text-secondary)';
     } else {
