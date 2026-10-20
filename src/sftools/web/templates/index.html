@@ -74,6 +74,13 @@
                             <button type="button" id="import-btn" class="secondary" title="A plan opens in a new tab; a book replaces all the tabs">Import</button>
                             <input type="file" id="import-input" style="display: none;" accept=".json">
                         </div>
+
+                        <!-- The user's note on the plan (ticket 046) -->
+                        <div class="form-group note-group" style="margin-top: 1rem;">
+                            <label for="plan-note">Plan Note</label>
+                            <textarea id="plan-note" rows="4" placeholder="Notes on this plan"></textarea>
+                            <button type="button" id="save-plan-note-btn" class="secondary">Save Note</button>
+                        </div>
                         <div
                             style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
                             <button type="button" id="new-plan-btn" class="secondary" title="Clear the plan and start a fresh one (undo brings it back)">New Plan</button>
@@ -165,6 +172,13 @@
                             <button type="button" id="built-all-btn" class="secondary" style="width: auto; white-space: nowrap;">All Built</button>
                         </div>
                         <div class="hint" id="built-hint"></div>
+                    </div>
+
+                    <!-- The user's note on the node (ticket 046) -->
+                    <div id="node-note-group" class="form-group note-group">
+                        <label for="node-note">Note</label>
+                        <textarea id="node-note" rows="4" placeholder="E.g. where it's built, what's left to do"></textarea>
+                        <button type="button" id="save-node-note-btn" class="secondary">Save Note</button>
                     </div>
 
                     <details id="details-recipe-collapsible">
@@ -395,6 +409,12 @@
             <div id="cy"></div>
 
             <div id="toast" class="toast" role="status" hidden></div>
+
+            <!-- The note of the node the mouse rests on, or of the selected one (ticket 046); over the legend -->
+            <aside id="note-box" class="legend note-box" aria-label="Node note" hidden>
+                <h3 id="note-box-title">Note</h3>
+                <div id="note-box-text"></div>
+            </aside>
 
             <!-- What the colors and shapes mean (ticket 035) -->
             <aside id="legend" class="legend" aria-label="Legend" hidden>

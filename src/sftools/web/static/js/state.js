@@ -15,6 +15,8 @@ export const state = {
     recipes: {},        // node_id -> recipe name
     byproducts: {},     // node_id -> 'use' | 'sink' | 'solve': what its by-products do (tickets 031, 032)
     built: {},          // node_id -> {count, recipe}: buildings already built in the game (ticket 037)
+    notes: {},          // node_id -> text: the user's note on the node (ticket 046)
+    planNote: '',       // the user's note on the whole plan (ticket 046)
     // Logistics mode: what's unlocked, the logistics nodes the user edited ('<node id>|in' / '|out'),
     // where the nodes inside them are drawn (browser only, ticket 036), and the edges given a number of
     // belts ('<producer>><consumer>|<item>' -> count, ticket 041)
@@ -37,6 +39,8 @@ export function snapshot({ items, rates, inbound }) {
         recipes: state.recipes,
         byproducts: state.byproducts,
         built: state.built,
+        notes: state.notes,
+        planNote: state.planNote,
         logistics: state.logistics
     };
 }
@@ -47,6 +51,8 @@ export function applySaved(saved) {
     state.recipes = saved.recipes || {};
     state.byproducts = saved.byproducts || {};
     state.built = saved.built || {};
+    state.notes = saved.notes && typeof saved.notes === 'object' ? saved.notes : {};
+    state.planNote = typeof saved.planNote === 'string' ? saved.planNote : '';
     const logistics = saved.logistics || {};
     state.logistics = {
         settings: { ...DEFAULT_LOGISTICS_SETTINGS, ...logistics.settings },
