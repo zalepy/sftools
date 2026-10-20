@@ -6,8 +6,9 @@ import {
 } from './state.js';
 import {
     renderGraph, refreshNodeColors, refreshBuilt, hasNodes, fitView, resizeGraph, getNodeData, onNodeSelected, reselectNode, onMergeDrop,
-    onByproductSelected, onLogisticsSelected, selectLogistics, onEdgeSelected, getEdgeData
+    onByproductSelected, onLogisticsSelected, selectLogistics, onEdgeSelected, getEdgeData, markSelected
 } from './graph.js';
+import * as notes from './notes.js';
 import * as panel from './panel.js';
 import * as history from './history.js';
 import * as tabs from './tabs.js';
@@ -22,6 +23,7 @@ function currentPlan() {
 
 /** Saves the plan in the browser (in its tab) and records it as an undo step (if it changed). */
 function save() {
+    dropGoneNotes();
     const plan = currentPlan();
     tabs.saveActive(plan);
     history.record(plan);
@@ -39,6 +41,7 @@ async function showPlan(plan, failure = 'Undo/redo failed') {
     const selected = state.selectedNodeId;
     panel.setDemands(plan.items, plan.rates, plan.inbound);
     applySaved(plan);
+    notes.showPlanNote();
     showLogisticsSettings();
     try {
         render(plan.items && plan.items.length ? await requestPlan() : []);
@@ -54,8 +57,69 @@ async function showHistoryStep(plan) {
     if (plan) await showPlan(plan);
 }
 
-const undo = () => showHistoryStep(history.undo());
-const redo = () => showHistoryStep(history.redo());
+const undo = () => leaveNotes() && showHistoryStep(history.undo());
+const redo = () => leaveNotes() && showHistoryStep(history.redo());
+
+// --- Notes (ticket 046) ---
+
+/**
+ * Whether unsaved note edits may go: true when there are none, or the user discards them. `plan`: the
+ * plan's note counts too (it stays on the Planner tab while another node is selected).
+ */
+function leaveNotes({ plan = true } = {}) {
+    const dirty = notes.nodeNoteDirty() || (plan && notes.planNoteDirty());
+    if (!dirty) return true;
+    if (!confirm('Discard unsaved note?')) return false;
+    notes.discardNodeNote();
+    if (plan) notes.showPlanNote();
+    return true;
+}
+
+/** A node's note goes with the node: notes of nodes no longer in the plan are dropped (undo brings them back). */
+function dropGoneNotes() {
+    const gone = Object.keys(state.notes).filter(id => !getNodeData(id));
+    if (!gone.length) return;
+    const kept = { ...state.notes };
+    gone.forEach(id => delete kept[id]);
+    state.notes = kept;
+}
+
+function saveNodeNote() {
+    const [nodeId, text] = notes.readNodeNote();
+    if (!nodeId || !getNodeData(nodeId)) return;
+    const kept = { ...state.notes };
+    if (text.trim()) kept[nodeId] = text; else delete kept[nodeId];
+    state.notes = kept;
+    notes.nodeNoteSaved();
+    save();
+    notes.refreshNoteBox();
+    panel.showToast('Note saved.');
+}
+
+function savePlanNote() {
+    const text = notes.readPlanNote();
+    state.planNote = text.trim() ? text : '';
+    notes.planNoteSaved();
+    save();
+    panel.showToast('Plan note saved.');
+}
+
+/** The recipes of the nodes with a note, before a change that can switch them. */
+function notedRecipes() {
+    return Object.fromEntries(Object.keys(state.notes)
+        .map(id => [id, getNodeData(id)?.recipe_name]).filter(([, recipe]) => recipe));
+}
+
+/** Adds "dd.mm.yy: recipe changed from X to Y" to the notes of the nodes whose recipe changed since `before`. */
+function noteRecipeChanges(before) {
+    Object.entries(before).forEach(([id, recipe]) => {
+        const now = getNodeData(id)?.recipe_name;
+        if (!now || now === recipe || !state.notes[id]) return;
+        const line = `${notes.today()}: recipe changed from ${recipe} to ${now}`;
+        state.notes = { ...state.notes, [id]: `${state.notes[id]}\n${line}` };
+        notes.nodeNoteAppended(id, line);
+    });
+}
 
 // --- Plan tabs (ticket 039) ---
 
@@ -68,6 +132,7 @@ function emptyPlan() {
  * they stay as they are, except for a plan just imported, which brings its own.
  */
 async function switchTab(id, { ownSettings = false, reload = false } = {}) {
+    if (id !== tabs.getBook().active && !reload && !leaveNotes()) return;
     if (isChainOpen()) {
         closeChain();
         tabs.setChainShown(false);
@@ -136,6 +201,8 @@ async function openBook(data) {
     }
     const here = tabs.getBook().tabs.length;
     if (!confirm(`Load this book? Its ${list.length} tab(s) replace the ${here} here; Save Book first to keep them.`)) return;
+    notes.discardNodeNote();
+    notes.showPlanNote();
     history.reset();
     // A book brings its preferred recipes and colors (ticket 043), for this browser's tabs
     const isMap = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -228,6 +295,7 @@ function loadPlan(saved) {
     }
     panel.setDemands(saved.items, saved.rates, saved.inbound);
     applySaved(saved);
+    notes.showPlanNote();
     showLogisticsSettings();
     recalculate();
 }
@@ -264,9 +332,11 @@ async function switchRecipe(recipeName) {
     if (!recipeName || !nodeId) return;
 
     const recipes = { ...state.recipes, [nodeId]: recipeName };
+    const before = notedRecipes();
     try {
         render(await requestPlan({ recipes }));
         state.recipes = recipes;
+        noteRecipeChanges(before);
         save();
         reselectNode(nodeId);
     } catch (e) {
@@ -482,6 +552,7 @@ async function setEdgeBelts(key, count) {
 
 function wireLogistics() {
     onLogisticsSelected((nodeId, side) => {
+        if (!leaveNotes({ plan: false })) return keepSelection();
         panel.hideNodeDetails();
         panel.hideByproductDetails();
         panel.hideEdgeDetails();
@@ -490,6 +561,7 @@ function wireLogistics() {
     });
     $('logistics-zoom-btn').addEventListener('click', e => zoomIn(e.target.dataset.node, e.target.dataset.side));
     onEdgeSelected(edge => {
+        if (!leaveNotes({ plan: false })) return keepSelection();
         panel.hideNodeDetails();
         panel.hideLogisticsDetails();
         if (!edge.byproduct) panel.hideByproductDetails();
@@ -522,10 +594,12 @@ function clearMerges() {
 
 /** Starts a fresh plan: no demands, inbound production or adjustments. Logistics settings stay; undo brings it back. */
 function newPlan() {
-    if (!confirm("Start a new plan? This clears the demands, inbound production and every adjustment. Undo brings the plan back.")) return;
+    if (!confirm("Start a new plan? This clears the demands, inbound production, every adjustment and the notes. Undo brings the plan back.")) return;
     if (logisticsView.isOpen()) logisticsView.closeView();
+    notes.discardNodeNote();
     panel.setDemands();
     applySaved({ logistics: { settings: state.logistics.settings } });
+    notes.showPlanNote();
     panel.hideNodeDetails();
     panel.hideByproductDetails();
     panel.hideEdgeDetails();
@@ -589,9 +663,11 @@ async function changePreferred(preferred, item = null, recipe = null) {
     savePreferred(preferred);
     panel.renderRecipeList();
     if (!hasNodes()) return;
+    const before = notedRecipes();
     try {
         render(await requestPlan({ recipes }));
         state.recipes = recipes;
+        noteRecipeChanges(before);
         save();
         if (state.selectedNodeId) reselectNode(state.selectedNodeId);
         const own = item ? panel.ownRecipeNodes(item).length : 0;
@@ -676,6 +752,8 @@ $('unmerge-btn').addEventListener('click', unmergeSelectedNode);
 $('move-branch-btn').addEventListener('click', () => panel.openMoveBranch(tabs.getBook().tabs, tabs.getBook().active));
 $('move-branch-cancel').addEventListener('click', panel.closeMoveBranch);
 $('move-branch-confirm').addEventListener('click', () => moveBranch(panel.moveBranchDestination()));
+$('save-node-note-btn').addEventListener('click', saveNodeNote);
+$('save-plan-note-btn').addEventListener('click', savePlanNote);
 $('undo-btn').addEventListener('click', undo);
 $('redo-btn').addEventListener('click', redo);
 
@@ -699,7 +777,13 @@ $('save-colors-btn').addEventListener('click', saveColorChanges);
 panel.initColorDefine();
 $('fit-view-btn').addEventListener('click', fitView);
 
+/** Back to the selected node in the graph, after the user kept its unsaved note. */
+function keepSelection() {
+    if (state.selectedNodeId) markSelected(state.selectedNodeId);
+}
+
 onNodeSelected(data => {
+    if (data.id !== state.selectedNodeId && !leaveNotes({ plan: false })) return keepSelection();
     panel.hideByproductDetails();
     panel.hideEdgeDetails();
     panel.hideLogisticsDetails();
@@ -707,6 +791,7 @@ onNodeSelected(data => {
     panel.showTab('node');
 });
 onByproductSelected(makerId => {
+    if (!leaveNotes({ plan: false })) return keepSelection();
     panel.hideNodeDetails();
     panel.hideLogisticsDetails();
     panel.showByproductDetails(getNodeData(makerId));
@@ -719,6 +804,7 @@ wireLogistics();
 }));
 panel.initPanelToggle(resizeGraph);
 panel.initLegendToggle();
+notes.initNoteBox();
 onMergeDrop(mergeNodes);
 
 // Module scripts run after the document is parsed. Colors first, so the first render uses them.

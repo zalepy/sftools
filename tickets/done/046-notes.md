@@ -1,12 +1,12 @@
 # 046 — Notes per node and per plan
 
-**Type:** feature · **Priority:** P3 · **Status:** Open · **Related:** [037](done/037-built-marks.md), [038](done/038-node-tab.md), [039](done/039-plan-tabs.md), [045](done/045-move-branch-to-inbound.md)
+**Type:** feature · **Priority:** P3 · **Status:** Done · **Related:** [037](037-built-marks.md), [038](038-node-tab.md), [039](039-plan-tabs.md), [045](045-move-branch-to-inbound.md)
 
 ## Goal
 Free-text notes in the Planner: one per node (e.g. where it's built, what's left to do) and one for the whole plan. Notes are saved with the plan, so they go into book and plan exports.
 
 ## Decisions (agreed with the user, 2026-10-20)
-- **Node note:** a textarea with its own Save button on the Node tab. It's on production, inbound and demand-target nodes, but not on the Sink or the logistics (zoomed-in) nodes.
+- **Node note:** a textarea with its own Save button on the Node tab. It's on production and inbound nodes, but not on the Sink or the logistics (zoomed-in) nodes. Demand targets were meant to have one too, but a demand circle can't be selected (clicking it selects the node making it), so it has none.
 - **Plan note:** a textarea with its own Save button on the Planner tab, under the demand/inbound rows.
 - **Plain text,** with no length limit.
 - **Save button,** not save-as-you-type. If you select another node, switch tabs, etc. with an unsaved edit, the app asks "Discard unsaved note?".
@@ -24,3 +24,7 @@ Free-text notes in the Planner: one per node (e.g. where it's built, what's left
 - **Out of scope:** Chain tab notes (per Chain node and for the Chain itself). A separate pass can add them if really needed.
 
 ## Notes
+- Implemented 2026-10-20. Notes live in the plan snapshot (`notes`, `planNote`). The "Discard unsaved note?" question comes when selecting another node, edge or logistics node, switching plan tabs, or undo/redo. New Plan and loading a book drop the drafts with their own confirmation.
+- Besides selecting another node, a click on the empty graph also hides the pinned note. The box also hides when the mouse leaves the graph.
+- The dated line is added by a recipe switch on the node and by preferred-recipe changes that switch it, but not by undo/redo or tab switches.
+- Tests: `tests/integration/test_notes.py`.

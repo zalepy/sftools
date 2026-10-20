@@ -2,6 +2,7 @@
 import { fetchRecipes } from './api.js';
 import { getNodeData, allNodeData, clocksText, buildingsText, builtStatus, inboundUnused } from './graph.js';
 import { state } from './state.js';
+import { showNodeNote, pinNote } from './notes.js';
 
 const EPSILON = 0.0001;
 const $ = id => document.getElementById(id);
@@ -328,9 +329,11 @@ export function showNodeDetails(data) {
     renderMoveBranch(fixed ? null : data);
     if (!fixed) populateRecipeSelector(data.output_item, data.recipe_name || data.name);
     renderPreferred(fixed ? null : data);
+    showNodeNote(data);
 
     $('node-details').style.display = 'block';
     updateNodeEmpty();
+    pinNote(data.id);
 }
 
 // --- Move Branch to Inbound (ticket 045) ---
@@ -548,6 +551,7 @@ export function hideNodeDetails() {
     $('node-details').style.display = 'none';
     state.selectedNodeId = null;
     updateNodeEmpty();
+    pinNote(null);
 }
 
 /** Clock groups from the boxes (percent), or null for the default (all at 100%). */

@@ -753,6 +753,28 @@ details[open] summary::after {
     display: none;
 }
 
+.note-box {
+    z-index: 31;  /* over the legend */
+}
+
+#note-box-text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.note-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    background: var(--bg-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.4rem;
+    font: inherit;
+    margin-bottom: 0.4rem;
+}
+
 .legend h3 {
     margin: 0 0 0.5rem;
     font-size: 0.95rem;

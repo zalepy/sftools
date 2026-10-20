@@ -4,5 +4,5 @@ Ideas and considerations that aren't pressing enough for a ticket. Promote an en
 
 ## Planner
 
-- (empty: Note per node became ticket [046](tickets/046-notes.md).)
+- (empty: Note per node became ticket [046](tickets/done/046-notes.md).)
 

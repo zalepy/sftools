@@ -596,6 +596,30 @@ export function onNodeSelected(callback) {
     });
 }
 
+/** Calls enter(node id) / leave() when the mouse goes over / off a node of the plan (not a demand circle). */
+export function onNodeHover(enter, leave) {
+    cy.on('mouseover', 'node[!logistics]', evt => {
+        if (!evt.target.data('raw').demand) enter(evt.target.id());
+    });
+    cy.on('mouseout', 'node[!logistics]', leave);
+    cy.container().addEventListener('mouseleave', leave);  // straight off the graph: no mouseout
+}
+
+/** Calls callback() when the empty graph is clicked. */
+export function onBackgroundTap(callback) {
+    cy.on('tap', evt => {
+        if (evt.target === cy) callback();
+    });
+}
+
+/** Selects a node in the graph without the selection callback (e.g. back to it after a refused change). */
+export function markSelected(nodeId) {
+    setTimeout(() => {
+        cy.$(':selected').unselect();
+        cy.getElementById(nodeId).select();
+    }, 0);
+}
+
 /** Calls callback(production node id, 'in' | 'out') when a logistics node is clicked. */
 export function onLogisticsSelected(callback) {
     cy.on('tap', 'node.lnode', evt => callback(evt.target.data('owner'), evt.target.data('side')));
