@@ -5,8 +5,9 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
+| [046](046-notes.md) | Notes per node and per plan | feature | P3 | Open |
 
-Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next when wanted: 046 (held until the user says go), 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
