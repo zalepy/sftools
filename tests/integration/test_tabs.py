@@ -304,3 +304,47 @@ def test_hidden_links_dont_block_new_ones(page):
     assert page.js(f"{CCY}.edges().length") == 1  # the AW link isn't drawn
     link(page, "s|xyz|Motor", "n|mfg|Motor")
     assert sorted(links(page)) == ["xyz>acu:Motor", "xyz>mfg:Motor"]
+
+
+def drag_tab(page, name, target, after):
+    """Drags the tab `name` onto the left (or right, `after`) half of the tab `target`."""
+    page.js(f"""(() => {{
+        const find = n => [...document.querySelectorAll('.plan-tab')]
+            .find(t => t.querySelector('.plan-tab-name').textContent === n);
+        const source = find({json.dumps(name)}), dest = find({json.dumps(target)});
+        const rect = dest.getBoundingClientRect();
+        const x = {'rect.right - 2' if after else 'rect.left + 2'}, y = rect.top + rect.height / 2;
+        const data = new DataTransfer();
+        const fire = (el, type) => el.dispatchEvent(new DragEvent(type, {{ bubbles: true, cancelable: true, dataTransfer: data, clientX: x, clientY: y }}));
+        fire(source, 'dragstart');
+        fire(dest.querySelector('.plan-tab-name'), 'dragover');
+        fire(dest, 'drop');
+        fire(source, 'dragend');
+    }})()""")
+
+
+def test_tabs_reorder_by_drag_and_drop(page):
+    page.open(page.base_url, ROTORS)
+    page.js("document.getElementById('add-tab-btn').click()")
+    page.wait_until("document.querySelectorAll('.plan-tab').length === 2")
+    page.js("document.getElementById('add-tab-btn').click()")
+    page.wait_until("document.querySelectorAll('.plan-tab').length === 3")
+    assert tab_names(page) == ["Plan 1", "Plan 2", "Plan 3"]
+
+    drag_tab(page, "Plan 3", "Plan 1", after=False)
+    assert tab_names(page) == ["Plan 3", "Plan 1", "Plan 2"]
+    drag_tab(page, "Plan 3", "Plan 2", after=True)
+    assert tab_names(page) == ["Plan 1", "Plan 2", "Plan 3"]
+    drag_tab(page, "Plan 1", "Plan 2", after=True)
+    assert tab_names(page) == ["Plan 2", "Plan 1", "Plan 3"]
+    # Onto itself: nothing moves; no marks are left behind
+    drag_tab(page, "Plan 1", "Plan 1", after=True)
+    assert tab_names(page) == ["Plan 2", "Plan 1", "Plan 3"]
+    assert page.js("document.querySelectorAll('.drop-before, .drop-after, .dragging').length") == 0
+
+    # Kept in the book, with each tab's plan
+    assert [t["name"] for t in page.js(BOOK)["tabs"]] == ["Plan 2", "Plan 1", "Plan 3"]
+    assert next(t for t in page.js(BOOK)["tabs"] if t["name"] == "Plan 1")["plan"]["items"] == ["Rotor"]
+    page.send("Page.reload")
+    page.wait_until("document.querySelectorAll('.plan-tab').length === 3")
+    assert tab_names(page) == ["Plan 2", "Plan 1", "Plan 3"]

@@ -119,6 +119,18 @@ export function removeTab(id) {
     return book.tabs[Math.min(at, book.tabs.length - 1)] || null;
 }
 
+/** Moves a tab before (or after) another one (drag and drop in the strip). */
+function moveTab(id, targetId, after) {
+    if (id === targetId) return;
+    const from = book.tabs.findIndex(t => t.id === id);
+    if (from < 0 || !book.tabs.some(t => t.id === targetId)) return;
+    const [tab] = book.tabs.splice(from, 1);
+    const at = book.tabs.findIndex(t => t.id === targetId);
+    book.tabs.splice(at + (after ? 1 : 0), 0, tab);
+    store();
+    render();
+}
+
 function rename(id, name) {
     const tab = book.tabs.find(t => t.id === id);
     const trimmed = name.trim();
@@ -143,10 +155,63 @@ export function initTabs(callbacks) {
         const name = e.target.closest('.plan-tab-name');
         if (name) startRename(name.closest('.plan-tab').dataset.id);
     });
+    initDrag($('plan-tab-list'));
     $('add-tab-btn').addEventListener('click', () => handlers.onAdd());
     $('chain-tab-btn').addEventListener('click', () => handlers.onChain());
     $('duplicate-tab-btn').addEventListener('click', () => handlers.onDuplicate());
     render();
+}
+
+// --- Reordering by drag and drop ---
+
+const EDGE = 40;         // px from the strip's ends where a drag scrolls it
+const SCROLL_STEP = 12;  // px per dragover event
+
+/** Drag a tab to move it; a bar marks where it lands. Near the ends, the strip scrolls. */
+function initDrag(list) {
+    let dragged = null;
+    let drop = null;  // { id, after }
+
+    const clearMarks = () => list.querySelectorAll('.drop-before, .drop-after, .dragging')
+        .forEach(el => el.classList.remove('drop-before', 'drop-after', 'dragging'));
+
+    list.addEventListener('dragstart', e => {
+        const tab = e.target.closest && e.target.closest('.plan-tab');
+        if (!tab || e.target.closest('input')) return;
+        dragged = tab.dataset.id;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', tab.dataset.id);
+        tab.classList.add('dragging');
+    });
+    list.addEventListener('dragover', e => {
+        if (!dragged) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const box = list.getBoundingClientRect();
+        if (e.clientX < box.left + EDGE) list.scrollLeft -= SCROLL_STEP;
+        else if (e.clientX > box.right - EDGE) list.scrollLeft += SCROLL_STEP;
+        const tab = e.target.closest && e.target.closest('.plan-tab');
+        if (!tab) return;
+        const rect = tab.getBoundingClientRect();
+        const after = e.clientX > rect.left + rect.width / 2;
+        drop = { id: tab.dataset.id, after };
+        list.querySelectorAll('.drop-before, .drop-after').forEach(el => el.classList.remove('drop-before', 'drop-after'));
+        if (tab.dataset.id !== dragged) tab.classList.add(after ? 'drop-after' : 'drop-before');
+    });
+    list.addEventListener('drop', e => {
+        if (!dragged) return;
+        e.preventDefault();
+        const id = dragged;
+        dragged = null;
+        clearMarks();
+        if (drop) moveTab(id, drop.id, drop.after);
+        drop = null;
+    });
+    list.addEventListener('dragend', () => {
+        dragged = null;
+        drop = null;
+        clearMarks();
+    });
 }
 
 /** Renames in place: Enter or leaving the field keeps the name, Esc cancels. */
@@ -168,6 +233,7 @@ export function startRename(id) {
     });
     input.addEventListener('blur', () => finish(true));
     element.replaceWith(input);
+    input.closest('.plan-tab').draggable = false;  // the field's text can be selected with the mouse
     input.focus();
     input.select();
 }
@@ -189,9 +255,10 @@ function render() {
         const element = document.createElement('div');
         element.className = 'plan-tab' + (active ? (chainShown ? ' behind' : ' active') : '');
         element.dataset.id = tab.id;
+        element.draggable = true;
         element.setAttribute('role', 'tab');
         element.setAttribute('aria-selected', String(active && !chainShown));
-        element.title = 'Double-click to rename';
+        element.title = 'Double-click to rename; drag to move';
         const name = Object.assign(document.createElement('span'), { className: 'plan-tab-name', textContent: tab.name });
         const close = Object.assign(document.createElement('button'), {
             type: 'button', className: 'plan-tab-close', textContent: '✕', title: `Close ${tab.name}`

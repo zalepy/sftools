@@ -136,6 +136,19 @@ h1 {
     font-weight: 600;
 }
 
+/* Drag and drop: the tab being moved, and a bar where it lands */
+.plan-tab.dragging {
+    opacity: 0.5;
+}
+
+.plan-tab.drop-before {
+    box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.plan-tab.drop-after {
+    box-shadow: inset -3px 0 0 var(--accent);
+}
+
 /* The active plan, in the side panel while the chain tab is shown */
 .plan-tab.behind {
     color: var(--accent);
