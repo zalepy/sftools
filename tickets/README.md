@@ -5,8 +5,9 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
+| [047](047-fit-last-clock.md) | Fit the last building's clock to the demand | feature | P3 | Open |
 
-Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next when wanted: 047, 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
