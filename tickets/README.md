@@ -5,9 +5,8 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
-| [047](047-fit-last-clock.md) | Fit the last building's clock to the demand | feature | P3 | Open |
 
-Next when wanted: 047, 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
@@ -60,3 +59,4 @@ Moved to [done/](done/).
 | [044](done/044-define-colors.md) | Define item colors | feature | P3 | Done |
 | [045](done/045-move-branch-to-inbound.md) | Move a branch to inbound production; Supplied from outside removed | feature | P2 | Done |
 | [046](done/046-notes.md) | Notes per node and per plan | feature | P3 | Done |
+| [047](done/047-fit-last-clock.md) | Fit the last building's clock to the demand | feature | P3 | Done |

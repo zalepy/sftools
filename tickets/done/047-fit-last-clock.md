@@ -1,6 +1,6 @@
 # 047 — Fit the last building's clock to the demand
 
-**Type:** feature · **Priority:** P3 · **Status:** Open · **Related:** [023](done/023-clock-speeds.md)
+**Type:** feature · **Priority:** P3 · **Status:** Done · **Related:** [023](023-clock-speeds.md)
 
 ## Goal
 A button on the Node tab that sets the Last clock so that the node makes exactly what's demanded: no surplus.
@@ -20,3 +20,7 @@ A button on the Node tab that sets the Last clock so that the node makes exactly
 - **Buttons:** ⚖️ (fit) and 🚫 (clear, replacing the "Clear" text button) as small square buttons after the Last box, as high as the inputs, with tooltips "Fit the last building to the demand" and "Clear the clock speeds". Apply Clock Speeds stays a full-width button below.
 
 ## Notes
+- Implemented 2026-10-20, client-side (`panel.fitLastClock`, `main.fitClock`); the server is unchanged.
+- Step 4 of the rule never happens: with N−1 buildings the last needs 100% + the fraction, which is at most 200%.
+- If the underclocked last would be under 1% (the lowest clock), the fit uses one building fewer, just over 100%, even when that makes 5 or 7.
+- Tests: `tests/integration/test_fit_clock.py`.

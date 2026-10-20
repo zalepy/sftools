@@ -322,6 +322,14 @@ function applyClocks() {
     setClocks(panel.getClockInputs());
 }
 
+/** Sets the last building's clock so the node makes just what's demanded (ticket 047). */
+function fitClock() {
+    const data = getNodeData(state.selectedNodeId);
+    if (!data) return;
+    const fit = panel.fitLastClock(data);
+    if (fit.groups) setClocks(fit.groups);
+}
+
 function clearClocks() {
     panel.clearClockInputs();
     setClocks(null);
@@ -745,6 +753,7 @@ $('built-all-btn').addEventListener('click', e => setBuilt(state.selectedNodeId,
 
 $('apply-clocks-btn').addEventListener('click', applyClocks);
 $('clear-clocks-node-btn').addEventListener('click', clearClocks);
+$('fit-clock-btn').addEventListener('click', fitClock);
 ['clock-all', 'clock-last'].forEach(id => $(id).addEventListener('keydown', e => {
     if (e.key === 'Enter') applyClocks();
 }));
