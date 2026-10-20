@@ -242,6 +242,15 @@ button:disabled {
     cursor: not-allowed;
 }
 
+/* Small square buttons with an emoji, e.g. after the clock boxes */
+button.icon-square {
+    width: 2.4rem;
+    flex: none;
+    padding: 0;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
 .demand-row {
     display: flex;
     gap: 0.5rem;
