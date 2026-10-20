@@ -60,3 +60,4 @@ Moved to [done/](done/).
 | [045](done/045-move-branch-to-inbound.md) | Move a branch to inbound production; Supplied from outside removed | feature | P2 | Done |
 | [046](done/046-notes.md) | Notes per node and per plan | feature | P3 | Done |
 | [047](done/047-fit-last-clock.md) | Fit the last building's clock to the demand | feature | P3 | Done |
+| [048](done/048-reorder-tabs.md) | Reorder plan tabs by drag and drop | feature | P3 | Done |
