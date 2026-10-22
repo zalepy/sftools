@@ -1,7 +1,10 @@
+import re
+
 import pytest
 from fastapi.testclient import TestClient
 
 from sftools.api.app import app
+from sftools.config import STATIC_DIR
 
 
 @pytest.fixture(scope="module")
@@ -212,9 +215,29 @@ def test_static_assets_are_served(client):
         assert response.status_code == 200
         assert response.headers["cache-control"] == "no-cache"
     assert client.get("/static/js/main.js").headers["content-type"].startswith("text/javascript")
-    for module in ("api", "state", "graph", "panel"):
+    for module in ("api", "state", "graph", "panel/node", "actions/plan"):
         assert client.get(f"/static/js/{module}.js").status_code == 200
     assert 'onclick=' not in page and '<style>' not in page
+
+
+def test_module_imports_resolve():
+    """Every name a JS module imports is exported by the module it names (a refactor can't drop one unseen)."""
+    js = STATIC_DIR / "js"
+    named = re.compile(r"import\s*\{([^}]*)\}\s*from\s*'([^']+)'")
+    whole = re.compile(r"import\s*(?:\*\s*as\s+\w+\s+from\s*)?'([^']+)'")
+    exported = re.compile(r"^export\s+(?:async\s+)?(?:function\*?|const|let|class)\s+([\w$]+)", re.M)
+    modules = sorted(js.rglob("*.js"))
+    assert len(modules) > 20
+    for module in modules:
+        source = module.read_text(encoding="utf-8")
+        for names, target in named.findall(source):
+            path = (module.parent / target).resolve()
+            assert path.is_file(), f"{module.name}: no {target}"
+            exports = set(exported.findall(path.read_text(encoding="utf-8")))
+            for name in (n.split(" as ")[0].strip() for n in names.split(",") if n.strip()):
+                assert name in exports, f"{module.relative_to(js)} imports {name} from {target}, which doesn't export it"
+        for target in whole.findall(source):
+            assert (module.parent / target).resolve().is_file(), f"{module.name}: no {target}"
 
 
 def test_nodes_carry_their_derivation(client):

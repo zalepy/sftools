@@ -63,3 +63,6 @@ Moved to [done/](done/).
 | [048](done/048-reorder-tabs.md) | Reorder plan tabs by drag and drop | feature | P3 | Done |
 | [049](done/049-user-guide.md) | User guide, in the repo and in the app | docs | P2 | Done |
 | [050](done/050-ci.md) | CI, lint for bugs, and the release check | chore | P2 | Done |
+| [051](done/051-js-unit-tests.md) | Unit tests for the front end's pure logic | test | P3 | Done |
+| [052](done/052-split-panel-and-main.md) | Split panel.js and main.js; guidance on where code goes | refactor | P3 | Done |
+| [053](done/053-eslint.md) | ESLint for bugs, in CI | chore | P3 | Done |

@@ -30,15 +30,17 @@ sftools is a production planner for Satisfactory. A user enters target items and
 | `src/sftools/api/guide.py`, `src/sftools/web/guide/` | The user guide: `USER_GUIDE.md` and its `images/` (made by `scripts/screenshots.py`), rendered to HTML once at startup for the Guide panel. GitHub shows the same file. |
 | `src/sftools/web/templates/index.html` | Page markup (Jinja: item list, asset version); Cytoscape + dagre from CDN |
 | `src/sftools/web/static/app.css` | Styles |
-| `src/sftools/web/static/js/` | ES modules: `main.js` (entry, plan actions), `api.js`, `state.js` (plan + localStorage), `tabs.js` (plan tabs, the book), `history.js` (undo), `graph.js` (Cytoscape), `panel.js` (sidebar), `notes.js` (notes, the note box), `guide.js` (the Guide panel and the "?" links) |
+| `src/sftools/web/static/js/` | ES modules, layered as in [CLAUDE.md](../CLAUDE.md) ("Code structure"): `main.js` (wiring, startup); `actions/` (what the user does to the plan: `plan.js` requests, renders and saves, plus `node.js`, `tabs.js`, `logistics.js`, `notes.js`, `preferences.js`); `panel/` (the side panel, one module per tab or section); `graph.js` + `graph-style.js` (Cytoscape), `logistics.js` (the zoomed-in view), `chain.js` (the chain tab); `api.js`, `state.js` (plan + localStorage), `tabs.js` (plan tabs, the book), `history.js` (undo), `notes.js` (notes, the note box), `guide.js` (the Guide panel and the "?" links); pure modules, unit-tested in `tests/js/`: `clocks.js`, `node-info.js`, `logistics-placement.js` |
 | `src/sftools/data/` | Scraped game data and the default node color palette |
 | `scripts/scrape/` | Scrapers that regenerate `src/sftools/data/` |
 | `scripts/screenshots.py`, `scripts/release_check.py` | The guide's screenshots (with the browser-test harness); the post-deploy check (waits for the commit on `/healthz`, then runs the browser tests) |
 | `tests/unit/` | Fast tests: engine, graph, game data, API (in-process) |
+| `tests/js/` | Unit tests of the pure JS modules (`node --test`, no packages) |
 | `tests/integration/` | Browser tests: real app + headless Chrome over the DevTools protocol |
 | `tickets/` | Known issues and planned work |
 | `docs/` | This file and ALGO.md: docs about the code, never served (the user guide, which the app serves, lives in the package) |
-| `.github/workflows/` | CI: lint, JS syntax, unit and browser tests on every push |
+| `.github/workflows/` | CI: lint, file sizes, unit and browser tests on every push |
+| `CLAUDE.md` | How to work on the code: workflow, where new code goes, the checks |
 
 Dependency direction: `api → engine → domain`. `domain` imports nothing from the other packages.
 
@@ -132,7 +134,7 @@ The UI and API come from one process at the same origin, so CORS isn't needed an
 
 `/healthz` returns `{"status": "ok", "commit": ...}`: the commit Render deployed (its `RENDER_GIT_COMMIT` variable), or `"local"`. Render deploys every push to master. `scripts/release_check.py` polls `/healthz` until it reports the pushed commit, then runs the browser tests against the site, so they never run against the previous deploy or mid-swap, not even for docs-only pushes.
 
-CI (`.github/workflows/tests.yml`, on every push): `ruff check` with bug-finding rules only (pyflakes and bugbear, `[tool.ruff.lint]` in `pyproject.toml`; no style rules, no formatter), `node --check` on each JS module, the unit tests, and the browser tests in headless Chrome. It reports on the commit; there's no commit hook or branch protection.
+CI (`.github/workflows/tests.yml`, on every push): `ruff check` with bug-finding rules only (pyflakes and bugbear, `[tool.ruff.lint]` in `pyproject.toml`; no style rules, no formatter), ESLint with bug-finding rules only (`eslint.config.mjs`, run with `npx`: no `package.json`), `scripts/check_sizes.py` (warns about files over 500 lines), the Python and JS unit tests, and the browser tests in headless Chrome. Every step runs even when an earlier one fails. It reports on the commit; there's no commit hook or branch protection.
 
 ## Decision log
 

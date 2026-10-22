@@ -1,6 +1,6 @@
-# On every push: lint (bug-finding rules only, see pyproject.toml), JS syntax, unit and browser tests.
-# It reports on the commit; nothing is blocked. The run against the deployed site is a release step
-# (scripts/release_check.py).
+# On every push: lint (bug-finding rules only: ruff, see pyproject.toml; ESLint, see eslint.config.mjs),
+# file sizes, and the unit and browser tests. It reports on the commit; nothing is blocked. The run against
+# the deployed site is a release step (scripts/release_check.py).
 name: tests
 
 on:
@@ -13,13 +13,25 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
       - name: Install
         run: uv sync
       - name: Lint
         run: uvx ruff check src tests scripts
-      - name: JS syntax
-        run: for f in src/sftools/web/static/js/*.js; do node --check "$f"; done
+      - name: JS lint
+        if: ${{ !cancelled() }}  # after a lint failure too: all the results in one run
+        run: npx --yes eslint@10.12.0 src/sftools/web/static/js tests/js
+      - name: File sizes
+        if: ${{ !cancelled() }}
+        run: uv run python scripts/check_sizes.py
       - name: Unit tests
+        if: ${{ !cancelled() }}
         run: uv run pytest -q
+      - name: JS unit tests
+        if: ${{ !cancelled() }}
+        run: node --test "tests/js/*.test.mjs"
       - name: Browser tests (headless Chrome)
+        if: ${{ !cancelled() }}
         run: uv run pytest -q tests/integration
