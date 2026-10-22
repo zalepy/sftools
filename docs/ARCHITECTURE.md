@@ -33,10 +33,12 @@ sftools is a production planner for Satisfactory. A user enters target items and
 | `src/sftools/web/static/js/` | ES modules: `main.js` (entry, plan actions), `api.js`, `state.js` (plan + localStorage), `tabs.js` (plan tabs, the book), `history.js` (undo), `graph.js` (Cytoscape), `panel.js` (sidebar), `notes.js` (notes, the note box), `guide.js` (the Guide panel and the "?" links) |
 | `src/sftools/data/` | Scraped game data and the default node color palette |
 | `scripts/scrape/` | Scrapers that regenerate `src/sftools/data/` |
+| `scripts/screenshots.py`, `scripts/release_check.py` | The guide's screenshots (with the browser-test harness); the post-deploy check (waits for the commit on `/healthz`, then runs the browser tests) |
 | `tests/unit/` | Fast tests: engine, graph, game data, API (in-process) |
 | `tests/integration/` | Browser tests: real app + headless Chrome over the DevTools protocol |
-| `tests/e2e/` | For tests against live environments (none yet) |
 | `tickets/` | Known issues and planned work |
+| `docs/` | This file and ALGO.md: docs about the code, never served (the user guide, which the app serves, lives in the package) |
+| `.github/workflows/` | CI: lint, JS syntax, unit and browser tests on every push |
 
 Dependency direction: `api → engine → domain`. `domain` imports nothing from the other packages.
 

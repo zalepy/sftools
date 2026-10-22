@@ -4,9 +4,8 @@
 |---|---|---|---|
 | `unit/` | Engine, graph, game data, API (in-process `TestClient`) | Nothing; runs in about a second | `uv run pytest` (the default) |
 | `integration/` | The UI in a real browser against a running app | Chrome, Chromium or Edge; starts the app on a free local port | `uv run pytest tests/integration` |
-| `e2e/` | Against a live deployment or live data | Not used yet: the Render deploy is UAT | — |
 
-Run unit tests whenever you like; they're also what the pre-push hook runs.
+Run unit tests whenever you like. CI runs both folders on every push.
 
 ## Integration tests
 
