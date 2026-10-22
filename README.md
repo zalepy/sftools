@@ -30,7 +30,7 @@ Python 3.13 and FastAPI on the server, with uv for packaging. The front end is p
 
 ## How this was built
 
-I set the product direction and made the design decisions: what each feature does, how it should behave in edge cases, and what to leave out. The implementation was written with an AI coding assistant (Claude Code), working from those decisions. Each feature was discussed first and recorded in a ticket, then built on a branch, tested, and released only after the browser tests passed against the deployed site. The [tickets](tickets/README.md) record those decisions, and commits made with the assistant carry a `Co-Authored-By` line.
+I set the product direction and made the design decisions: what each feature does, how it should behave in edge cases, and what to leave out. The implementation was written with an AI coding assistant (Claude Code), working from those decisions. Each feature was discussed first and recorded in a ticket, then built on a branch with tests, released, and checked by running the browser tests against the deployed site. The [tickets](tickets/README.md) record those decisions, and commits made with the assistant carry a `Co-Authored-By` line.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for how it works, [ALGO.md](ALGO.md) for the calculation, and [tickets/](tickets/README.md) for the decisions behind each feature.
 
