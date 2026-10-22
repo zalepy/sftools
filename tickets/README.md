@@ -66,3 +66,4 @@ Moved to [done/](done/).
 | [051](done/051-js-unit-tests.md) | Unit tests for the front end's pure logic | test | P3 | Done |
 | [052](done/052-split-panel-and-main.md) | Split panel.js and main.js; guidance on where code goes | refactor | P3 | Done |
 | [053](done/053-eslint.md) | ESLint for bugs, in CI | chore | P3 | Done |
+| [054](done/054-split-factory-graph.md) | Split factory_graph.py: calculation and UI view | refactor | P3 | Done |

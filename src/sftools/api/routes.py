@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from sftools.api.schemas import PlanRequest, PlanResponse, RecipeChoice, RecipeInfo
 from sftools.config import DEFAULT_COLORS_FILE
+from sftools.domain.models.graph_view import ui_nodes
 from sftools.engine.calculator import build_plan, default_recipe_for
 from sftools.engine.game_data import GameData, get_game_data
 from sftools.engine.logistics import FLUIDS, Settings, attach_logistics
@@ -35,7 +36,7 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
         # e.g. merging nodes with different output items
         raise HTTPException(status_code=400, detail=str(ex)) from ex
 
-    nodes = graph.get_ui_data()
+    nodes = ui_nodes(graph)
     resets = attach_logistics(nodes, lambda item: data.items[item].category in FLUIDS,
                               Settings.parse(plan.logistics.get("settings")), plan.logistics.get("layouts") or {},
                               plan.logistics.get("edges") or {})

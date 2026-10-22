@@ -31,7 +31,7 @@ Rules of thumb:
 
 ### Back end (`src/sftools/`)
 
-`domain/` (game data models, the factory graph), `engine/` (calculation, logistics simulation, loading data), `api/` (FastAPI routes; stateless: everything comes in the request). Same size rule; one concern per module. `engine/logistics.py` is over on purpose (one algorithm, see docs/ALGO.md).
+`domain/` (game data models; the factory graph's calculation in `factory_graph.py`, what the UI gets in `graph_view.py`), `engine/` (calculation, logistics simulation, loading data), `api/` (FastAPI routes; stateless: everything comes in the request). Same size rule; one concern per module. `engine/logistics.py` is over on purpose (one algorithm, see docs/ALGO.md).
 
 ## Tests and checks
 
