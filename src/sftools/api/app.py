@@ -1,5 +1,6 @@
 import hashlib
 import mimetypes
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -65,7 +66,8 @@ def create_app() -> FastAPI:
 
     @app.get("/healthz", include_in_schema=False)
     def healthz():
-        return {"status": "ok"}
+        """Liveness, and the deployed commit (Render sets RENDER_GIT_COMMIT), so a release check waits for its own."""
+        return {"status": "ok", "commit": os.environ.get("RENDER_GIT_COMMIT", "local")}
 
     app.include_router(router)
     app.mount("/static", RevalidatedStaticFiles(directory=STATIC_DIR), name="static")

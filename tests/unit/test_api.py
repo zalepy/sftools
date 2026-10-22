@@ -19,10 +19,15 @@ def nodes_by_item(nodes, item):
 
 
 def test_index_and_health(client):
-    assert client.get("/healthz").json() == {"status": "ok"}
+    assert client.get("/healthz").json() == {"status": "ok", "commit": "local"}
     page = client.get("/")
     assert page.status_code == 200
     assert "Smart Plating" in page.text
+
+
+def test_healthz_reports_the_deployed_commit(client, monkeypatch):
+    monkeypatch.setenv("RENDER_GIT_COMMIT", "3efa699c0ffee")
+    assert client.get("/healthz").json() == {"status": "ok", "commit": "3efa699c0ffee"}
 
 
 def test_calculate_is_deterministic(client):
