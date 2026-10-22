@@ -27,9 +27,10 @@ sftools is a production planner for Satisfactory. A user enters target items and
 | `src/sftools/engine/logistics.py` | Logistics (ticket 033): each node's input/output logistics, suggested layouts, belt-flow simulation, belt tiers per edge |
 | `src/sftools/api/app.py` | FastAPI app factory; serves the UI at `/` and `/healthz` |
 | `src/sftools/api/routes.py`, `schemas.py` | JSON API under `/api` and its request/response models |
+| `src/sftools/api/guide.py`, `src/sftools/web/guide/` | The user guide: `USER_GUIDE.md` and its `images/` (made by `scripts/screenshots.py`), rendered to HTML once at startup for the Guide panel. GitHub shows the same file. |
 | `src/sftools/web/templates/index.html` | Page markup (Jinja: item list, asset version); Cytoscape + dagre from CDN |
 | `src/sftools/web/static/app.css` | Styles |
-| `src/sftools/web/static/js/` | ES modules: `main.js` (entry, plan actions), `api.js`, `state.js` (plan + localStorage), `tabs.js` (plan tabs, the book), `history.js` (undo), `graph.js` (Cytoscape), `panel.js` (sidebar), `notes.js` (notes, the note box) |
+| `src/sftools/web/static/js/` | ES modules: `main.js` (entry, plan actions), `api.js`, `state.js` (plan + localStorage), `tabs.js` (plan tabs, the book), `history.js` (undo), `graph.js` (Cytoscape), `panel.js` (sidebar), `notes.js` (notes, the note box), `guide.js` (the Guide panel and the "?" links) |
 | `src/sftools/data/` | Scraped game data and the default node color palette |
 | `scripts/scrape/` | Scrapers that regenerate `src/sftools/data/` |
 | `tests/unit/` | Fast tests: engine, graph, game data, API (in-process) |
@@ -107,6 +108,8 @@ Names can't contain `__`, `#` or `~`; `tests/unit/test_graph_state.py` covers th
 | GET | `/` | UI page (item list rendered into the page) |
 | GET | `/logistics` | Redirects to `/` (the old address of logistics mode) |
 | GET | `/healthz` | Liveness check for Render |
+| GET | `/guide` | The user guide as an HTML fragment (a contents list, then the text); heading ids match GitHub's, so `#section` links and the "?" links (`data-guide`) work in both |
+| GET | `/guide/images/...` | The guide's screenshots (only the images: the Markdown itself isn't served) |
 | POST | `/api/calculate` | Build the graph for a plan; returns `{"nodes": [...], "ignored": [...]}`. 422 for unknown items, 400 for a merge of different items. |
 | GET | `/api/available_recipes?item_name=` | Recipes for an item (name, type, building, output rate) |
 | GET | `/api/recipe_choices` | Items made by more than one recipe: `[{item, default, recipes}]` (Recipes tab) |

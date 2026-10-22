@@ -776,8 +776,11 @@ const PANEL_KEY = 'sf_planner_panel_collapsed';
 const LEGEND_KEY = 'sf_legend_shown';
 
 /** Wires the header button; `onResize` runs after the graph area changes width. */
-/** The legend (ticket 035): shown or hidden with the header button, remembered in the browser. */
-export function initLegendToggle() {
+/**
+ * The legend (ticket 035): shown or hidden with the header button, remembered in the browser.
+ * `opened` runs when it opens (the guide closes); returns { hide }.
+ */
+export function initLegendToggle({ opened = () => {} } = {}) {
     const button = $('legend-toggle');
     const legend = $('legend');
 
@@ -796,15 +799,28 @@ export function initLegendToggle() {
     }
     setShown(shown);
 
-    button.addEventListener('click', () => {
-        shown = legend.hidden;
-        setShown(shown);
+    function remember() {
         try {
             localStorage.setItem(LEGEND_KEY, shown ? '1' : '0');
         } catch (e) {
             // Not remembered; the legend still toggles
         }
+    }
+
+    button.addEventListener('click', () => {
+        shown = legend.hidden;
+        if (shown) opened();
+        setShown(shown);
+        remember();
     });
+    return {
+        hide() {
+            if (!shown) return;
+            shown = false;
+            setShown(false);
+            remember();
+        }
+    };
 }
 
 export function initPanelToggle(onResize) {

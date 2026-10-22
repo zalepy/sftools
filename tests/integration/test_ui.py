@@ -709,3 +709,31 @@ def test_clearing_clocks_removes_the_dashed_border(page):
     page.wait_until(f"{node}.hasClass('clocked')")
     page.js("document.getElementById('clear-clocks-node-btn').click()")
     page.wait_until(f"!{node}.hasClass('clocked')")
+
+
+def test_guide_panel(page):
+    page.open(page.base_url, plan())
+    guide = "document.getElementById('guide')"
+    legend = "document.getElementById('legend')"
+    page.js("document.getElementById('guide-toggle').click()")
+    page.wait_until("Boolean(document.querySelector('#guide-content h2#clock-speeds'))")
+    assert not page.js(f"{guide}.hidden")
+    page.wait_until("[...document.querySelectorAll('#guide-content img')].some(i => i.complete && i.naturalWidth > 0)")
+
+    # The legend and the guide close each other
+    page.js("document.getElementById('legend-toggle').click()")
+    assert page.js(f"{guide}.hidden") and not page.js(f"{legend}.hidden")
+    page.js("document.getElementById('guide-toggle').click()")
+    assert page.js(f"{legend}.hidden") and not page.js(f"{guide}.hidden")
+    page.js("document.getElementById('guide-close').click()")
+    assert page.js(f"{guide}.hidden")
+
+    # "?" opens it at its section; the contents scroll it too
+    page.select_node(RIP_SP)
+    page.js("document.querySelector('.help-link[data-guide=clock-speeds]').click()")
+    at_top = lambda section: (f"(() => {{ const c = document.getElementById('guide-content'); "
+                              f"return Math.abs(c.querySelector('#{section}').offsetTop - c.scrollTop) < 5; }})()")
+    page.wait_until(at_top("clock-speeds"))
+    assert page.js("document.getElementById('detail-id').textContent") == RIP_SP  # the panel is as it was
+    page.js("document.querySelector('.guide-toc a[href=\"#the-chain-tab\"]').click()")
+    page.wait_until(at_top("the-chain-tab"))

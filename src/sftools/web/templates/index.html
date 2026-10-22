@@ -28,6 +28,8 @@
         <div class="header-right">
         <button type="button" id="legend-toggle" class="icon-btn" aria-controls="legend" aria-expanded="false"
             title="Show the legend">Legend</button>
+        <button type="button" id="guide-toggle" class="icon-btn" aria-controls="guide" aria-expanded="false"
+            title="Show the guide">Guide</button>
         </div>
     </header>
 
@@ -44,7 +46,7 @@
             <!-- Planner Tab -->
             <div id="planner-tab" class="tab-content active">
                 <section>
-                    <h3>Demand Targets</h3>
+                    <h3>Demand Targets <a href="#" class="help-link" data-guide="demand-targets-and-inbound-production" title="Guide: demand targets" aria-label="Guide: demand targets">?</a></h3>
                     <form id="demand-form">
                         <div id="demand-rows">
                             <div class="demand-row">
@@ -56,7 +58,7 @@
                         <button type="button" id="add-row-btn" class="secondary" style="margin-bottom: 0.5rem;">+ Add
                             Item</button>
 
-                        <h3 style="margin-top: 1rem;">Inbound Production</h3>
+                        <h3 style="margin-top: 1rem;">Inbound Production <a href="#" class="help-link" data-guide="demand-targets-and-inbound-production" title="Guide: inbound production" aria-label="Guide: inbound production">?</a></h3>
                         <div class="hint" style="margin-bottom: 0.5rem;">Items supplied from outside the plan (e.g. another factory). They cover demand for the item, top down, before anything is produced.</div>
                         <div id="inbound-rows">
                             <div class="demand-row">
@@ -77,7 +79,7 @@
 
                         <!-- The user's note on the plan (ticket 046) -->
                         <div class="form-group note-group" style="margin-top: 1rem;">
-                            <label for="plan-note">Plan Note</label>
+                            <label for="plan-note">Plan Note <a href="#" class="help-link" data-guide="notes" title="Guide: notes" aria-label="Guide: notes">?</a></label>
                             <textarea id="plan-note" rows="4" placeholder="Notes on this plan"></textarea>
                             <button type="button" id="save-plan-note-btn" class="secondary">Save Note</button>
                         </div>
@@ -98,7 +100,7 @@
                 </section>
 
                 <section id="logistics-settings">
-                    <h3>Logistics</h3>
+                    <h3>Logistics <a href="#" class="help-link" data-guide="logistics" title="Guide: logistics" aria-label="Guide: logistics">?</a></h3>
                     <div class="hint" style="margin-bottom: 0.5rem;">What you have unlocked. Belts and pipes are planned with these.</div>
                     <div class="settings-row">
                         <label for="belt-tier">Belts up to</label>
@@ -128,7 +130,7 @@
 
                 <!-- Logistics side details (a selected logistics node) -->
                 <section id="logistics-details">
-                    <h3 id="logistics-title">Logistics</h3>
+                    <h3><span id="logistics-title">Logistics</span> <a href="#" class="help-link" data-guide="the-zoomed-in-view" title="Guide: logistics nodes" aria-label="Guide: logistics nodes">?</a></h3>
                     <div class="stat-row">
                         <span class="stat-label">Splitters and mergers:</span>
                         <span class="stat-value" id="logistics-complexity">-</span>
@@ -151,7 +153,7 @@
 
                 <!-- Node Details Panel (Appears on Selection) -->
                 <section id="node-details">
-                    <h3>Selected Node</h3>
+                    <h3>Selected Node <a href="#" class="help-link" data-guide="working-with-a-node" title="Guide: nodes" aria-label="Guide: nodes">?</a></h3>
 
                     <div class="stat-row">
                         <span class="stat-label">Item:</span>
@@ -165,7 +167,7 @@
 
                     <!-- Buildings already built in the game (ticket 037) -->
                     <div id="built-controls" class="form-group" style="margin-top: 0.5rem;">
-                        <label for="built-count">Built</label>
+                        <label for="built-count">Built <a href="#" class="help-link" data-guide="built-marks" title="Guide: built marks" aria-label="Guide: built marks">?</a></label>
                         <div style="display: flex; gap: 0.5rem; align-items: center;">
                             <input type="number" id="built-count" min="0" step="1" placeholder="0" style="width: 5rem;">
                             <span id="built-of" style="white-space: nowrap; color: var(--text-secondary);">of 0</span>
@@ -176,13 +178,13 @@
 
                     <!-- The user's note on the node (ticket 046) -->
                     <div id="node-note-group" class="form-group note-group">
-                        <label for="node-note">Note</label>
+                        <label for="node-note">Note <a href="#" class="help-link" data-guide="notes" title="Guide: notes" aria-label="Guide: notes">?</a></label>
                         <textarea id="node-note" rows="4" placeholder="E.g. where it's built, what's left to do"></textarea>
                         <button type="button" id="save-node-note-btn" class="secondary">Save Note</button>
                     </div>
 
                     <details id="details-recipe-collapsible">
-                        <summary>Recipe Details</summary>
+                        <summary>Recipe Details <a href="#" class="help-link" data-guide="recipes" title="Guide: recipes" aria-label="Guide: recipes">?</a></summary>
                         <div class="details-content">
                             <div class="stat-row">
                                 <span class="stat-label">Active Recipe:</span>
@@ -281,7 +283,7 @@
 
                     <div id="clock-controls">
                     <div class="form-group" style="margin-top: 1rem;">
-                        <label>Clock Speed (%)</label>
+                        <label>Clock Speed (%) <a href="#" class="help-link" data-guide="clock-speeds" title="Guide: clock speeds" aria-label="Guide: clock speeds">?</a></label>
                         <div style="display: flex; gap: 0.5rem;">
                             <input type="number" id="clock-all" min="1" max="250" step="any" placeholder="All: 100" title="Clock of all buildings">
                             <input type="number" id="clock-last" min="1" max="250" step="any" placeholder="Last: same" title="Clock of the last building">
@@ -297,7 +299,7 @@
 
                     <!-- Move the node and its inputs to another plan (ticket 045) -->
                     <div id="move-branch" class="form-group" style="margin-top: 0.5rem;">
-                        <button type="button" id="move-branch-btn" class="secondary">Move Branch to Inbound&hellip;</button>
+                        <div class="help-row"><button type="button" id="move-branch-btn" class="secondary">Move Branch to Inbound&hellip;</button> <a href="#" class="help-link" data-guide="move-branch-to-inbound" title="Guide: Move Branch to Inbound" aria-label="Guide: Move Branch to Inbound">?</a></div>
                         <div class="hint" id="move-branch-why"></div>
                         <div id="move-branch-form" hidden>
                             <label for="move-branch-dest">Destination plan</label>
@@ -314,7 +316,7 @@
 
                 <!-- Edge details: its belts (ticket 041) -->
                 <section id="edge-details">
-                    <h3 id="edge-title">Edge</h3>
+                    <h3><span id="edge-title">Edge</span> <a href="#" class="help-link" data-guide="logistics" title="Guide: belts per edge" aria-label="Guide: belts per edge">?</a></h3>
                     <div class="stat-row">
                         <span class="stat-label">Item:</span>
                         <span class="stat-value" id="edge-item">-</span>
@@ -337,7 +339,7 @@
 
                 <!-- By-product details (appear when a by-product edge is selected) -->
                 <section id="byproduct-details">
-                    <h3>By-product</h3>
+                    <h3>By-product <a href="#" class="help-link" data-guide="by-products-and-the-sink" title="Guide: by-products" aria-label="Guide: by-products">?</a></h3>
                     <div class="stat-row">
                         <span class="stat-label">Item:</span>
                         <span class="stat-value" id="byproduct-item">-</span>
@@ -367,7 +369,7 @@
             <!-- Recipes Tab: the preferred recipe of every item made by more than one (ticket 043) -->
             <div id="recipes-tab" class="tab-content">
                 <section>
-                    <h3>Preferred Recipes</h3>
+                    <h3>Preferred Recipes <a href="#" class="help-link" data-guide="recipes" title="Guide: recipes" aria-label="Guide: recipes">?</a></h3>
                     <p class="hint">Every node of an item runs its recipe here, in every tab, unless the node has a recipe switched of its own. Highlighted: not the default. Kept in this browser and in Save Book.</p>
                     <div class="recipe-filter-row">
                         <input type="search" id="recipe-filter" placeholder="Filter items" aria-label="Filter items">
@@ -381,7 +383,7 @@
             <!-- Colors Tab -->
             <div id="colors-tab" class="tab-content">
                 <section>
-                    <h3>Node Color Mapping</h3>
+                    <h3>Node Color Mapping <a href="#" class="help-link" data-guide="colors" title="Guide: colors" aria-label="Guide: colors">?</a></h3>
                     <p class="hint" style="margin-bottom: 1rem;">Colors are based on the output item of the node. &times; resets a built-in color, or removes one you added.</p>
                     <div id="color-list">
                         <!-- Polulated by JS -->
@@ -415,6 +417,15 @@
             <aside id="note-box" class="legend note-box" aria-label="Node note" hidden>
                 <h3 id="note-box-title">Note</h3>
                 <div id="note-box-text"></div>
+            </aside>
+
+            <!-- The user guide (USER_GUIDE.md, rendered by the server); where the legend is -->
+            <aside id="guide" class="guide" aria-label="Guide" hidden>
+                <div class="guide-header">
+                    <strong>Guide</strong>
+                    <button type="button" id="guide-close" class="icon-btn" title="Close the guide" aria-label="Close the guide">&#x2715;</button>
+                </div>
+                <div id="guide-content" class="guide-content">Loading&hellip;</div>
             </aside>
 
             <!-- What the colors and shapes mean (ticket 035) -->
@@ -468,7 +479,7 @@
             <div id="logistics-view" class="logistics-view" hidden>
                 <div class="logistics-toolbar">
                     <button type="button" id="lv-back" class="secondary" title="Back to the production plan (Esc)">&larr; Back</button>
-                    <strong id="lv-title">Logistics</strong>
+                    <strong id="lv-title">Logistics</strong> <a href="#" class="help-link" data-guide="the-zoomed-in-view" title="Guide: the zoomed-in view" aria-label="Guide: the zoomed-in view">?</a>
                     <select id="lv-item" title="Item for new splitters, mergers and buffers"></select>
                     <button type="button" class="secondary lv-add" data-kind="splitter">+ Splitter</button>
                     <button type="button" class="secondary lv-add" data-kind="merger">+ Merger</button>
@@ -489,7 +500,7 @@
             <!-- Chain tab (ticket 040): how the plan tabs feed each other -->
             <div id="chain-view" class="logistics-view" hidden>
                 <div class="logistics-toolbar">
-                    <strong>Chain: how the plans feed each other</strong>
+                    <strong>Chain: how the plans feed each other</strong> <a href="#" class="help-link" data-guide="the-chain-tab" title="Guide: the Chain tab" aria-label="Guide: the Chain tab">?</a>
                     <button type="button" class="secondary" id="chain-fit">Fit</button>
                     <button type="button" class="secondary" id="chain-delete" disabled title="Delete the selected link (Delete)">Delete</button>
                 </div>

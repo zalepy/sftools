@@ -2,13 +2,14 @@ import hashlib
 import mimetypes
 
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from sftools import __version__
 from sftools.api.routes import router
-from sftools.config import STATIC_DIR, TEMPLATES_DIR
+from sftools.api.guide import guide_html
+from sftools.config import GUIDE_DIR, STATIC_DIR, TEMPLATES_DIR
 from sftools.engine.game_data import get_game_data
 
 
@@ -44,6 +45,7 @@ def create_app() -> FastAPI:
 
     # Load game data at startup so the first request is fast and bad data fails the deploy.
     get_game_data()
+    guide_html()  # a guide that doesn't render fails the deploy too
 
     @app.get("/", include_in_schema=False)
     def index(request: Request):
@@ -56,12 +58,19 @@ def create_app() -> FastAPI:
         """The old address of logistics mode, the only mode since simple mode was removed."""
         return RedirectResponse("/", status_code=301)
 
+    @app.get("/guide", include_in_schema=False, response_class=HTMLResponse)
+    def guide():
+        """The user guide as an HTML fragment, for the Guide panel."""
+        return HTMLResponse(guide_html(), headers={"Cache-Control": "no-cache"})
+
     @app.get("/healthz", include_in_schema=False)
     def healthz():
         return {"status": "ok"}
 
     app.include_router(router)
     app.mount("/static", RevalidatedStaticFiles(directory=STATIC_DIR), name="static")
+    # Only the guide's images: the Markdown is served rendered, by /guide
+    app.mount("/guide/images", RevalidatedStaticFiles(directory=GUIDE_DIR / "images"), name="guide-images")
     return app
 
 
