@@ -40,7 +40,7 @@ def grep_recipe(item_dict: dict, data: str, links: Dict[str, str] = None) -> dic
     recipe = {'building': name_n_building[0][1]}
     # [0] is the card header, [1] ingredients, [2] outputs; anything after belongs to the next card
     columns = data.split('<div class="col-6">')[1:3]
-    for column_flag, column in zip(('ingredient', 'output'), columns):
+    for column_flag, column in zip(('ingredient', 'output'), columns, strict=False):  # a card may lack its outputs column
         for counter, (rate, stack, name, href) in enumerate(RECIPE_ENTRY.findall(column), start=1):
             name = clean_str(name)
             recipe[f'{column_flag}{counter}_rate'] = clean_str(rate)

@@ -128,6 +128,10 @@ Names can't contain `__`, `#` or `~`; `tests/unit/test_graph_state.py` covers th
 
 The UI and API come from one process at the same origin, so CORS isn't needed and there is nothing to deploy separately.
 
+`/healthz` returns `{"status": "ok", "commit": ...}`: the commit Render deployed (its `RENDER_GIT_COMMIT` variable), or `"local"`. Render deploys every push to master. `scripts/release_check.py` polls `/healthz` until it reports the pushed commit, then runs the browser tests against the site, so they never run against the previous deploy or mid-swap, not even for docs-only pushes.
+
+CI (`.github/workflows/tests.yml`, on every push): `ruff check` with bug-finding rules only (pyflakes and bugbear, `[tool.ruff.lint]` in `pyproject.toml`; no style rules, no formatter), `node --check` on each JS module, the unit tests, and the browser tests in headless Chrome. It reports on the commit; there's no commit hook or branch protection.
+
 ## Decision log
 
 - **src layout + uv** (2026-10): an installable package, so imports and data paths don't depend on the working directory; dependencies are locked in `uv.lock`.

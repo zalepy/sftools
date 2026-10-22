@@ -5,7 +5,7 @@ from typing import Dict
 
 import requests
 
-from pull_items_data import clean_str, grep_recipes
+from pull_items_data import grep_recipes
 
 DATA_DIR = Path(__file__).resolve().parents[2] / 'src' / 'sftools' / 'data'
 

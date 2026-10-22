@@ -261,5 +261,5 @@ def test_tabs_share_what_is_unlocked(page):
     page.js("document.getElementById('add-tab-btn').click()")
     page.wait_until(f"{CY}.nodes().length === 0")
     assert page.js("document.getElementById('belt-tier').value") == "3"
-    assert page.js(f"JSON.parse(localStorage.getItem('sf_logistics_book')).tabs.length") == 2
+    assert page.js("JSON.parse(localStorage.getItem('sf_logistics_book')).tabs.length") == 2
     assert saved(page)["logistics"]["settings"] == {"belt_tier": 3, "pipe_tier": 1, "smart": False}

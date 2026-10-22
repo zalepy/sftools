@@ -1,0 +1,25 @@
+# On every push: lint (bug-finding rules only, see pyproject.toml), JS syntax, unit and browser tests.
+# It reports on the commit; nothing is blocked. The run against the deployed site is a release step
+# (scripts/release_check.py).
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - name: Install
+        run: uv sync
+      - name: Lint
+        run: uvx ruff check src tests scripts
+      - name: JS syntax
+        run: for f in src/sftools/web/static/js/*.js; do node --check "$f"; done
+      - name: Unit tests
+        run: uv run pytest -q
+      - name: Browser tests (headless Chrome)
+        run: uv run pytest -q tests/integration

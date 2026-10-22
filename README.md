@@ -1,5 +1,7 @@
 # sftools
 
+[![tests](https://github.com/zalepy/sftools/actions/workflows/tests.yml/badge.svg)](https://github.com/zalepy/sftools/actions/workflows/tests.yml)
+
 A production planner for the factory-building game [Satisfactory](https://www.satisfactorygame.com/). You say what you want to make and how fast. sftools works out the production chain down to the miners as an interactive graph, then plans the belts, pipes, splitters and mergers between the buildings. You adjust the plan to the way you want to build it.
 
 ![A plan for 10 Modular Frames a minute](src/sftools/web/guide/images/overview.png)
@@ -22,7 +24,7 @@ A production planner for the factory-building game [Satisfactory](https://www.sa
 - **Logistics simulation:** output sides are pushed (splitters share evenly, belts back up), input sides are pulled. Suggested layouts group outputs by destination and build input manifolds; edited layouts are kept until the plan changes under them.
 - **Stable node ids:** nodes are identified by their path in the chain, so recipe switches, merges, clocks and notes stay attached to the right node as the plan is recalculated.
 - **A stateless server:** the browser keeps the plan and sends it whole to `/api/calculate`; the server holds no session state.
-- **Browser tests without a framework:** a small harness drives headless Chrome over the DevTools protocol. The same tests run against the deployed site after every release, and the same harness takes the guide's screenshots.
+- **Browser tests without a framework:** a small harness drives headless Chrome over the DevTools protocol. CI runs them on every push, and they're run again against the deployed site after each release, once it reports the new commit. The same harness takes the guide's screenshots.
 
 ## Stack
 
@@ -65,11 +67,13 @@ uv run --group scrape python scripts/scrape/pull_all_data.py
 
 See [scripts/scrape/README.md](scripts/scrape/README.md) for details.
 
-### Pre-push check
-To run the tests before every push, create `.git/hooks/pre-push`:
+### CI and release check
+Every push runs [the tests workflow](.github/workflows/tests.yml): ruff (bug-finding rules only, see `pyproject.toml`), a JS syntax check, the unit tests and the browser tests. It reports on the commit and blocks nothing.
+
+After pushing to master, the release check waits until the deployed site's `/healthz` reports the pushed commit, then runs the browser tests against it:
+
 ```bash
-#!/bin/sh
-uv run pytest -q || { echo "Tests failed! Push aborted."; exit 1; }
+uv run python scripts/release_check.py
 ```
 
 ## Deployment (Render)

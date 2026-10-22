@@ -33,7 +33,7 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
         )
     except ValueError as ex:
         # e.g. merging nodes with different output items
-        raise HTTPException(status_code=400, detail=str(ex))
+        raise HTTPException(status_code=400, detail=str(ex)) from ex
 
     nodes = graph.get_ui_data()
     resets = attach_logistics(nodes, lambda item: data.items[item].category in FLUIDS,

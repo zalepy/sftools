@@ -30,3 +30,8 @@ build-backend = "uv_build"
 # Unit tests by default; integration tests: uv run pytest tests/integration (see tests/README.md)
 testpaths = ["tests/unit"]
 addopts = "--import-mode=importlib"
+
+[tool.ruff.lint]
+# Rules that find bugs (pyflakes, bugbear), not style. B008 flags FastAPI's Depends(...) defaults.
+select = ["F", "B"]
+ignore = ["B008"]
