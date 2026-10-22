@@ -90,7 +90,7 @@ def calculate_demands(items_map, root_demands_list: List[Demand], round_up: bool
     queue: List[Tuple[Demand, str, Optional[ProductionNode], frozenset]] = []
 
     root_ids = root_node_ids([d.item.name for d in root_demands_list])
-    for d, root_id in zip(root_demands_list, root_ids):
+    for d, root_id in zip(root_demands_list, root_ids, strict=True):
         queue.append((d, root_id, None, frozenset()))
 
     processed_count = 0

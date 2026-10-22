@@ -536,7 +536,6 @@ def test_inbound_production(page):
 
 
 def edge_classes(source, target):
-    cy = "document.getElementById('cy')._cyreg.cy"
     return f"{EDGES}.filter(e => end(e.source()) === {json.dumps(source)} && end(e.target()) === {json.dumps(target)}).classes()"
 
 
@@ -568,7 +567,6 @@ def test_calculate_uses_byproducts_and_an_edge_sends_them_to_the_sink(page):
     assert page.js(edge_classes(ALU_ALUMINA, "Aluminum Ingot")) == ["byproduct", "used"]
     assert page.js(edge_classes(ALU_ALUMINA, "sink")) == ["byproduct"]  # 25 left over
 
-    cy = "document.getElementById('cy')._cyreg.cy"
     page.js(f"void {EDGES}.filter(e => end(e.source()) === {json.dumps(ALU_ALUMINA)} && end(e.target()) === 'Aluminum Ingot').emit('tap')")
     assert page.js("document.getElementById('byproduct-details').style.display") == "block"
     assert page.js("document.getElementById('node-details').style.display") == "none"
@@ -589,7 +587,6 @@ def test_solving_a_byproduct_loop(page):
     page.open(page.base_url, plan(items=["Water"], rates=[100], recipes={"Water": "Battery"}, byproducts={scrap: "use"}))
     assert page.js(edge_classes(scrap, "sink")) == ["byproduct", "invalid", "loop"]
 
-    cy = "document.getElementById('cy')._cyreg.cy"
     page.js(f"void {EDGES}.filter(e => end(e.source()) === {json.dumps(scrap)} && end(e.target()) === 'sink').emit('tap')")
     assert page.js("document.getElementById('byproduct-solve-btn').textContent") == "Solve Loop"
     page.js("document.getElementById('byproduct-solve-btn').click()")

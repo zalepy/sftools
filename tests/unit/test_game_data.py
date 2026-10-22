@@ -77,16 +77,15 @@ def test_exact_rates_stay_within_the_scraped_rounding(game, raw_items):
     """Recomputing never moves a rate by more than the two-decimal rounding of the source."""
     _, recipes = game
     scraped = {name: details for entry in raw_items for name, details in (entry.get("recipes") or {}).items()}
+    def listed(details, prefixes):  # by position: an item can be both input and output (Water in Distilled Silica)
+        return [(details[f"{p}_name"], parse_number(details[f"{p}_rate"])) for p in prefixes if details.get(f"{p}_name")]
+
     for name, recipe in recipes.items():
         details = scraped[name]
-
-        def listed(prefixes):  # by position: an item can be both input and output (Water in Distilled Silica)
-            return [(details[f"{p}_name"], parse_number(details[f"{p}_rate"])) for p in prefixes if details.get(f"{p}_name")]
-
-        for loaded, scraped_entries in ((recipe.ingredients, listed([f"ingredient{i}" for i in range(1, 5)])),
-                                        (recipe.outputs(), listed(["output1", "output2"]))):
+        for loaded, scraped_entries in ((recipe.ingredients, listed(details, [f"ingredient{i}" for i in range(1, 5)])),
+                                        (recipe.outputs(), listed(details, ["output1", "output2"]))):
             assert [item.name for item, _ in loaded] == [item for item, _ in scraped_entries], name
-            for (item, rate), (_, listed_rate) in zip(loaded, scraped_entries):
+            for (item, rate), (_, listed_rate) in zip(loaded, scraped_entries, strict=True):
                 assert rate == pytest.approx(listed_rate, abs=0.0051), (name, item.name)
 
 

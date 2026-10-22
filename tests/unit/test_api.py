@@ -189,7 +189,7 @@ def test_dropped_merge_target_leaves_the_others_merged(client):
 
 def test_entries_from_older_plans_are_not_marked_dropped(client):
     body = calculate(client, demands=[{"item": "Smart Plating", "rate": 2}],
-                     clocks={f"Smart Plating__Reinforced Iron Plate__Alternate: Bolted Iron Plate>Screws": [{"clock": 2}]}).json()
+                     clocks={"Smart Plating__Reinforced Iron Plate__Alternate: Bolted Iron Plate>Screws": [{"clock": 2}]}).json()
     assert [(e["kind"], e["dropped"]) for e in body["ignored"]] == [("clock", False)]
 
 

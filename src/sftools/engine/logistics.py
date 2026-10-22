@@ -647,18 +647,18 @@ def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid, supply: Opt
                 main = [i for i, b in enumerate(out) if not b.get("overflow")]
                 extra = [i for i, b in enumerate(out) if b.get("overflow")]
                 shares = [0.0] * len(out)
-                for i, share in zip(main, _water_fill(inflow, [limits[i] for i in main])):
+                for i, share in zip(main, _water_fill(inflow, [limits[i] for i in main]), strict=True):
                     shares[i] = share
                 left = inflow - sum(shares)
-                for i, share in zip(extra, _water_fill(left, [spaces[i] for i in extra])):
+                for i, share in zip(extra, _water_fill(left, [spaces[i] for i in extra]), strict=True):
                     shares[i] = share
                 left = inflow - sum(shares)
                 if push and left > EPSILON:  # the overflow is full too: the main outputs take what they have room for
-                    for i, share in zip(main, _water_fill(left, [spaces[i] - shares[i] for i in main])):
+                    for i, share in zip(main, _water_fill(left, [spaces[i] - shares[i] for i in main]), strict=True):
                         shares[i] += share
             else:
                 shares = _water_fill(inflow, spaces)
-            for belt, share in zip(out, shares):
+            for belt, share in zip(out, shares, strict=True):
                 flow[belt["id"]] = share
         # What each belt can take, from the end back. Inputs share it fairly: one that carries less than it
         # may (all its supply) keeps that, and the rest is split evenly among those that would send more.
@@ -670,15 +670,15 @@ def simulate(layout: Dict, spec: Dict, settings: Settings, is_fluid, supply: Opt
                 node = nodes[node_id]
                 total = sink_total(node) if role(node) == "sink" else sum(takes[b["id"]] for b in outs[node_id])
                 into = ins[node_id]
-                for belt, share in zip(into, _fair(total, [offer(b, takes) for b in into])):
+                for belt, share in zip(into, _fair(total, [offer(b, takes) for b in into]), strict=True):
                     takes[belt["id"]] = min(belt["capacity"], share)
 
         shared = {}  # each exit's share of its edge's rate
         for members in pools.values():
             into = [(b, m) for m in members for b in ins[m]]
-            for (belt, member), share in zip(into, _fair(nodes[members[0]]["rate"], [offer(b, accept) for b, m in into])):
+            for (_, member), share in zip(into, _fair(nodes[members[0]]["rate"], [offer(b, accept) for b, m in into]), strict=True):
                 shared[member] = shared.get(member, 0.0) + share
-        back(accept, lambda node: shared.get(node["id"], 0.0) if node["kind"] == EXIT
+        back(accept, lambda node, shared=shared: shared.get(node["id"], 0.0) if node["kind"] == EXIT
              else math.inf if node["kind"] == BUFFER else node["rate"])
         if push:
             back(room, lambda node: math.inf)
@@ -786,13 +786,13 @@ def attach_logistics(nodes: List[Dict], is_fluid, settings: Settings, layouts: D
     resets = []
     specs = side_specs(nodes, is_fluid)
     by_id = {node["id"]: node for node in nodes}
-    for key, layout in (layouts or {}).items():
+    for key in layouts or {}:
         if key not in specs:
             resets.append({"key": key, "reason": "the node isn't in the plan any more"})
     # Edges with both ends: matched belt by belt when the plan sets their count, else bundled
     exits, entries = set(), set()
     for spec in specs.values():
-        for item, sub in spec["items"].items():
+        for sub in spec["items"].values():
             if spec["side"] == "out":
                 exits.update(e[4] for e in sub["sinks"])
             else:
@@ -844,7 +844,7 @@ def attach_logistics(nodes: List[Dict], is_fluid, settings: Settings, layouts: D
             shares = _water_fill(total, [taken[edge][b] for b in belts] if edge in taken else [math.inf] * len(belts))
             capacity = settings.capacity(is_fluid(edge.rsplit("|", 1)[1]))
             more = _water_fill(total - sum(shares), [capacity - share for share in shares])
-            new_supply.update({(edge, belt): share + extra for belt, share, extra in zip(belts, shares, more)})
+            new_supply.update({(edge, belt): share + extra for belt, share, extra in zip(belts, shares, more, strict=True)})
         if taken and _close(new_supply, supply):
             break
         supply = new_supply
