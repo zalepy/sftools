@@ -272,13 +272,18 @@ function renderScaledInputs(data) {
     });
 }
 
+// Each fill of the recipe list; a response for an earlier one (another node, clicked before) is dropped
+let recipeRequest = 0;
+
 async function populateRecipeSelector(itemName, currentRecipeName) {
     const selector = $('recipe-select');
     selector.replaceChildren(new Option('Loading...', ''));
     selector.disabled = true;
+    const request = ++recipeRequest;
 
     try {
         const recipes = await fetchRecipes(itemName);
+        if (request !== recipeRequest) return;
         selector.replaceChildren(...recipes.map(r => new Option(
             `${r.name} (${r.type}${r.byproduct ? ', by-product' : ''})`,
             r.name,
@@ -287,6 +292,7 @@ async function populateRecipeSelector(itemName, currentRecipeName) {
         )));
         selector.disabled = false;
     } catch (e) {
+        if (request !== recipeRequest) return;
         console.error("Failed to fetch recipes", e);
         selector.replaceChildren(new Option('Error loading', ''));
     }
