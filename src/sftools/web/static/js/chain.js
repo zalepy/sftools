@@ -3,8 +3,9 @@
 // need of the same item, which also records that the connection is routed in the game. Nothing here
 // changes a plan: rates are derived from the plans, and highlights show where they don't add up.
 import { state } from './state.js';
-import { smoothWheelZoom, textColorOn } from './graph.js';
-import { showToast as toast } from './panel.js';
+import { smoothWheelZoom } from './graph.js';
+import { textColorOn } from './node-info.js';
+import { showToast as toast } from './panel/messages.js';
 import { getBook, saveBook } from './tabs.js';
 
 const $ = id => document.getElementById(id);

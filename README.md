@@ -50,6 +50,7 @@ Requires [uv](https://docs.astral.sh/uv/).
 uv sync                                            # create .venv with app + dev dependencies
 uv run uvicorn sftools.api.app:app --reload        # http://127.0.0.1:8000
 uv run pytest                                      # unit tests (about a second)
+node --test "tests/js/*.test.mjs"                  # JS unit tests (pure modules)
 uv run pytest tests/integration                    # browser tests (needs Chrome/Edge)
 uv run python scripts/screenshots.py               # refresh the user guide's screenshots
 ```
@@ -68,7 +69,7 @@ uv run --group scrape python scripts/scrape/pull_all_data.py
 See [scripts/scrape/README.md](scripts/scrape/README.md) for details.
 
 ### CI and release check
-Every push runs [the tests workflow](.github/workflows/tests.yml): ruff (bug-finding rules only, see `pyproject.toml`), a JS syntax check, the unit tests and the browser tests. It reports on the commit and blocks nothing.
+Every push runs [the tests workflow](.github/workflows/tests.yml): ruff and ESLint (bug-finding rules only, see `pyproject.toml` and `eslint.config.mjs`), a file-size check, the Python and JS unit tests and the browser tests. It reports on the commit and blocks nothing.
 
 After pushing to master, the release check waits until the deployed site's `/healthz` reports the pushed commit, then runs the browser tests against it:
 

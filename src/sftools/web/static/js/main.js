@@ -1,729 +1,44 @@
-// Entry point: plan actions and UI wiring.
+// Entry point: wires the page's controls to the actions (actions/), then loads the plan.
 import * as api from './api.js';
+import { state, downloadPlan, downloadBook, loadPreferred } from './state.js';
 import {
-    state, snapshot, applySaved, downloadPlan, downloadBook, isBook, readPlanFile,
-    loadSavedColors, saveColors, dropIgnoredEntries, PLAN_MODE, wrongMode, loadPreferred, savePreferred
-} from './state.js';
-import {
-    renderGraph, refreshNodeColors, refreshBuilt, hasNodes, fitView, resizeGraph, getNodeData, onNodeSelected, reselectNode, onMergeDrop,
-    onByproductSelected, onLogisticsSelected, selectLogistics, onEdgeSelected, getEdgeData, markSelected
+    hasNodes, fitView, resizeGraph, getNodeData, refreshNodeColors, onNodeSelected, onMergeDrop,
+    onByproductSelected, onLogisticsSelected, onEdgeSelected
 } from './graph.js';
 import * as notes from './notes.js';
 import * as guide from './guide.js';
-import * as panel from './panel.js';
 import * as history from './history.js';
 import * as tabs from './tabs.js';
-import { openChain, refreshChain, closeChain, isChainOpen, addLink } from './chain.js';
-import * as logisticsView from './logistics.js';
-
-const $ = id => document.getElementById(id);
-
-function currentPlan() {
-    return snapshot(panel.getDemands());
-}
-
-/** Saves the plan in the browser (in its tab) and records it as an undo step (if it changed). */
-function save() {
-    dropGoneNotes();
-    const plan = currentPlan();
-    tabs.saveActive(plan);
-    history.record(plan);
-    updateHistoryButtons();
-    refreshChain();
-}
-
-function updateHistoryButtons() {
-    $('undo-btn').disabled = !history.canUndo();
-    $('redo-btn').disabled = !history.canRedo();
-}
-
-/** Shows a plan (from the history, or a tab's): the server recalculates it like any other. */
-async function showPlan(plan, failure = 'Undo/redo failed') {
-    const selected = state.selectedNodeId;
-    panel.setDemands(plan.items, plan.rates, plan.inbound);
-    applySaved(plan);
-    notes.showPlanNote();
-    showLogisticsSettings();
-    try {
-        render(plan.items && plan.items.length ? await requestPlan() : []);
-        save();
-        if (selected && getNodeData(selected)) reselectNode(selected); else panel.hideNodeDetails();
-    } catch (e) {
-        console.error(failure, e);
-        alert(`${failure}: ${e.message}`);
-    }
-}
-
-async function showHistoryStep(plan) {
-    if (plan) await showPlan(plan);
-}
+import { $ } from './panel/common.js';
+import { showTab, initPanelToggle, initLegendToggle } from './panel/shell.js';
+import { addRow, addInboundRow } from './panel/planner.js';
+import { showNodeDetails, hideNodeDetails, getBuiltCount } from './panel/node.js';
+import { openMoveBranch, closeMoveBranch, moveBranchDestination } from './panel/move-branch.js';
+import {
+    showLogisticsDetails, hideLogisticsDetails, showEdgeDetails, hideEdgeDetails, showByproductDetails, hideByproductDetails
+} from './panel/selection.js';
+import { initRecipeList } from './panel/recipes.js';
+import { initColorDefine } from './panel/colors.js';
+import {
+    currentPlan, showHistoryStep, recalculate, loadPlan, clearAllClocks, clearMerges, newPlan, clearBuilt
+} from './actions/plan.js';
+import { leaveNotes, keepSelection, saveNodeNote, savePlanNote } from './actions/notes.js';
+import { switchTab, showChain, addTab, duplicateTab, closeTab, importFile } from './actions/tabs.js';
+import {
+    applyClocks, fitClock, clearClocks, switchRecipe, mergeNodes, unmergeSelectedNode, setBuilt, setByproductChoice, moveBranch
+} from './actions/node.js';
+import { changeLogisticsSettings, zoomIn, setEdgeBelts } from './actions/logistics.js';
+import { setPreferred, changePreferred, preferSelected, loadColors, saveColorChanges } from './actions/preferences.js';
 
 const undo = () => leaveNotes() && showHistoryStep(history.undo());
 const redo = () => leaveNotes() && showHistoryStep(history.redo());
 
-// --- Notes (ticket 046) ---
-
-/**
- * Whether unsaved note edits may go: true when there are none, or the user discards them. `plan`: the
- * plan's note counts too (it stays on the Planner tab while another node is selected).
- */
-function leaveNotes({ plan = true } = {}) {
-    const dirty = notes.nodeNoteDirty() || (plan && notes.planNoteDirty());
-    if (!dirty) return true;
-    if (!confirm('Discard unsaved note?')) return false;
-    notes.discardNodeNote();
-    if (plan) notes.showPlanNote();
-    return true;
-}
-
-/** A node's note goes with the node: notes of nodes no longer in the plan are dropped (undo brings them back). */
-function dropGoneNotes() {
-    const gone = Object.keys(state.notes).filter(id => !getNodeData(id));
-    if (!gone.length) return;
-    const kept = { ...state.notes };
-    gone.forEach(id => delete kept[id]);
-    state.notes = kept;
-}
-
-function saveNodeNote() {
-    const [nodeId, text] = notes.readNodeNote();
-    if (!nodeId || !getNodeData(nodeId)) return;
-    const kept = { ...state.notes };
-    if (text.trim()) kept[nodeId] = text; else delete kept[nodeId];
-    state.notes = kept;
-    notes.nodeNoteSaved();
-    save();
-    notes.refreshNoteBox();
-    panel.showToast('Note saved.');
-}
-
-function savePlanNote() {
-    const text = notes.readPlanNote();
-    state.planNote = text.trim() ? text : '';
-    notes.planNoteSaved();
-    save();
-    panel.showToast('Plan note saved.');
-}
-
-/** The recipes of the nodes with a note, before a change that can switch them. */
-function notedRecipes() {
-    return Object.fromEntries(Object.keys(state.notes)
-        .map(id => [id, getNodeData(id)?.recipe_name]).filter(([, recipe]) => recipe));
-}
-
-/** Adds "dd.mm.yy: recipe changed from X to Y" to the notes of the nodes whose recipe changed since `before`. */
-function noteRecipeChanges(before) {
-    Object.entries(before).forEach(([id, recipe]) => {
-        const now = getNodeData(id)?.recipe_name;
-        if (!now || now === recipe || !state.notes[id]) return;
-        const line = `${notes.today()}: recipe changed from ${recipe} to ${now}`;
-        state.notes = { ...state.notes, [id]: `${state.notes[id]}\n${line}` };
-        notes.nodeNoteAppended(id, line);
-    });
-}
-
-// --- Plan tabs (ticket 039) ---
-
-function emptyPlan() {
-    return { mode: PLAN_MODE, items: [], rates: [], inbound: [] };
-}
-
-/**
- * Shows another tab, with its own undo history. Logistics settings (what's unlocked) are the game's, so
- * they stay as they are, except for a plan just imported, which brings its own.
- */
-async function switchTab(id, { ownSettings = false, reload = false } = {}) {
-    if (id !== tabs.getBook().active && !reload && !leaveNotes()) return;
-    if (isChainOpen()) {
-        closeChain();
-        tabs.setChainShown(false);
-    }
-    if (id === tabs.getBook().active && !reload) return;
-    if (logisticsView.isOpen()) logisticsView.closeView();
-    const settings = state.logistics.settings;
-    tabs.setActive(id);
-    history.useTab(id);
-    state.selectedNodeId = null;
-    panel.hideNodeDetails();
-    panel.hideByproductDetails();
-    panel.hideEdgeDetails();
-    panel.hideLogisticsDetails();
-    panel.hidePlanNotice();
-    const plan = tabs.activeTab().plan || emptyPlan();
-    await showPlan(ownSettings ? plan : { ...plan, logistics: { ...plan.logistics, settings } }, 'Opening the tab failed');
-    updateHistoryButtons();
-}
-
-/** Shows the chain tab (ticket 040) over the graph; the side panel keeps the active plan. */
-function showChain() {
-    if (isChainOpen()) return;
-    if (logisticsView.isOpen()) logisticsView.closeView();
-    tabs.setChainShown(true);
-    openChain(id => switchTab(id));
-}
-
-function addTab() {
-    switchTab(tabs.addTab(emptyPlan()).id);
-}
-
-function duplicateTab() {
-    const copy = JSON.parse(JSON.stringify(currentPlan()));
-    switchTab(tabs.addTab(copy, `${tabs.activeTab().name} (copy)`).id);
-}
-
-async function closeTab(id) {
-    const tab = tabs.getBook().tabs.find(t => t.id === id);
-    if (!tab) return;
-    const planned = tab.plan && tab.plan.items && tab.plan.items.length;
-    const links = tabs.getBook().chain.links.filter(l => l.from.tab === id || l.to.tab === id).length;
-    const linked = links ? ` Its ${links} link${links === 1 ? '' : 's'} in the chain tab go too.` : '';
-    if ((planned || links) && !confirm(`Close "${tab.name}"? Its plan is removed from this browser; Export Plan or Save Book first to keep it.${linked}`)) return;
-    if (tabs.getBook().tabs.length === 1) tabs.addTab(emptyPlan());  // there's always a tab
-    const chainShown = isChainOpen();
-    const next = tabs.removeTab(id);
-    history.forget(id);
-    if (next) {
-        await switchTab(next.id, { reload: true });
-        if (chainShown) showChain();
-    }
-    refreshChain();
-}
-
-/** Replaces all the tabs with a saved book's (Save Book, ticket 039). */
-async function openBook(data) {
-    const list = data.tabs.filter(tab => tab && typeof tab === 'object').map((tab, i) => ({
-        id: typeof tab.id === 'string' && tab.id ? tab.id : tabs.newTabId(),
-        name: typeof tab.name === 'string' && tab.name.trim() ? tab.name.trim() : `Plan ${i + 1}`,
-        plan: tab.plan || null
-    }));
-    if (!list.length) {
-        alert('This book has no plans.');
-        return;
-    }
-    const here = tabs.getBook().tabs.length;
-    if (!confirm(`Load this book? Its ${list.length} tab(s) replace the ${here} here; Save Book first to keep them.`)) return;
-    notes.discardNodeNote();
-    notes.showPlanNote();
-    history.reset();
-    // A book brings its preferred recipes and colors (ticket 043), for this browser's tabs
-    const isMap = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-    if (isMap(data.preferred)) {
-        savePreferred(data.preferred);
-        panel.renderRecipeList();
-    }
-    if (isMap(data.colors)) {
-        saveColors({ ...state.colors, ...data.colors });
-        panel.renderColorList();
-    }
-    tabs.replaceBook(list, data.active, data.chain);
-    await switchTab(tabs.getBook().active, { ownSettings: true, reload: true });
-}
-
-/**
- * Sends the plan (with optional candidate merges/recipes/clocks/byproducts) and returns the graph
- * nodes. Entries the server ignored are dropped from the candidate objects; callers keep them on success.
- * By-product choices are the server's (see resolved_byproduct_choices): Calculate passes
- * byproductsDefault 'use', so by-products are used unless set otherwise; other changes leave new ones
- * going to the Sink (ticket 031).
- */
-async function requestPlan({
-    merges = state.merges, recipes = state.recipes, clocks = state.clocks,
-    byproducts = state.byproducts, byproductsDefault = 'sink', layouts = state.logistics.layouts,
-    edges = state.logistics.edges
-} = {}) {
-    const { items, rates, inbound } = panel.getDemands();
-    const { nodes, ignored, byproducts: resolved, logisticsResets } = await api.calculate({
-        demands: items.map((item, i) => ({ item, rate: rates[i] })),
-        inbound,
-        recipes,
-        merges,
-        clocks,
-        byproducts,
-        byproducts_default: byproductsDefault,
-        preferred: state.preferred,
-        logistics: { settings: state.logistics.settings, layouts, edges }
-    });
-    state.byproducts = resolved;
-    // The dashed border shows the clocks of the plan just calculated; callers keep them in state afterwards
-    nodes.forEach(node => { node.clocks_set = Boolean(clocks[node.id]); });
-    // Edited logistics nodes whose buildings or edges changed go back to the suggested layout
-    if (logisticsResets.length) {
-        logisticsResets.forEach(reset => {
-            delete layouts[reset.key];
-            delete state.logistics.positions[reset.key];
-        });
-        const names = logisticsResets.map(reset => {
-            const [nodeId, side] = reset.key.split('|');
-            return `${panel.nodeLabel(nodeId)} (${side === 'out' ? 'output' : 'input'})`;
-        });
-        panel.showToast(`Logistics reset to the suggested layout: ${names.join(', ')}. Undo to get yours back.`, 6000);
-    }
-    if (ignored.length) {
-        dropIgnoredEntries(ignored, { merges, recipes, clocks });
-        // Entries on inputs a recipe no longer uses go quietly: that is what the switch (or merge) asked for
-        const stale = ignored.filter(entry => !entry.dropped);
-        if (stale.length) panel.showPlanNotice(stale);
-    }
-    return nodes;
-}
-
-/** Draws the graph, and the zoomed-in logistics view if it's open. */
-function render(nodes) {
-    renderGraph(nodes);
-    if (logisticsView.isOpen()) {
-        const view = logisticsView.current();
-        logisticsView.refreshView(nodes.find(n => n.id === view.nodeId));
-    }
-}
-
-async function recalculate(options = {}) {
-    if (panel.getDemands().items.length === 0) return;
-    try {
-        render(await requestPlan(options));
-        save();
-    } catch (e) {
-        console.error("Calculation failed", e);
-        alert(`Calculation failed: ${e.message}`);
-    }
-}
-
-function loadPlan(saved) {
-    if (!saved) return;
-    const wrong = wrongMode(saved);
-    if (wrong) {
-        alert(wrong);
-        return;
-    }
-    panel.setDemands(saved.items, saved.rates, saved.inbound);
-    applySaved(saved);
-    notes.showPlanNote();
-    showLogisticsSettings();
-    recalculate();
-}
-
-// --- Node actions ---
-
-async function setClocks(groups) {
-    const nodeId = state.selectedNodeId;
-    if (!nodeId) return;
-    const clocks = { ...state.clocks };
-    if (groups) clocks[nodeId] = groups; else delete clocks[nodeId];
-    try {
-        render(await requestPlan({ clocks }));
-        state.clocks = clocks;
-        save();
-        reselectNode(nodeId);
-    } catch (e) {
-        console.error("Clock change failed", e);
-        alert(`Clock change failed: ${e.message}`);
-    }
-}
-
-function applyClocks() {
-    setClocks(panel.getClockInputs());
-}
-
-/** Sets the last building's clock so the node makes just what's demanded (ticket 047). */
-function fitClock() {
-    const data = getNodeData(state.selectedNodeId);
-    if (!data) return;
-    const fit = panel.fitLastClock(data);
-    if (fit.groups) setClocks(fit.groups);
-}
-
-function clearClocks() {
-    panel.clearClockInputs();
-    setClocks(null);
-}
-
-async function switchRecipe(recipeName) {
-    const nodeId = state.selectedNodeId;
-    if (!recipeName || !nodeId) return;
-
-    const recipes = { ...state.recipes, [nodeId]: recipeName };
-    const before = notedRecipes();
-    try {
-        render(await requestPlan({ recipes }));
-        state.recipes = recipes;
-        noteRecipeChanges(before);
-        save();
-        reselectNode(nodeId);
-    } catch (e) {
-        console.error("Recipe switch failed", e);
-        alert(`Recipe switch failed: ${e.message}`);
-    }
-}
-
-async function mergeNodes(sourceId, targetId) {
-    // Flattening: anything merged into the source now points at the target
-    const merges = { ...state.merges };
-    for (const id in merges) {
-        if (merges[id] === sourceId) merges[id] = targetId;
-    }
-    merges[sourceId] = targetId;
-
-    // The merged node runs on the target's clocks
-    const clocks = { ...state.clocks };
-    delete clocks[sourceId];
-
-    // Allowed, but worth a heads-up: the merged node runs the target's recipe
-    const source = getNodeData(sourceId);
-    const target = getNodeData(targetId);
-    const recipesDiffer = source && target && source.recipe_name !== target.recipe_name;
-
-    try {
-        render(await requestPlan({ merges, clocks }));
-        state.merges = merges;
-        state.clocks = clocks;
-        save();
-        if (recipesDiffer) {
-            panel.showToast(`Merged nodes with different recipes: ${source.recipe_name} into ${target.recipe_name}. The merged node runs ${target.recipe_name}.`);
-        }
-    } catch (e) {
-        console.error("Merge failed", e);
-        alert(`Merge failed: ${e.message}`);
-    }
-}
-
-/** Records how many of a node's buildings are built (ticket 037); 0 removes the mark. Needs no server. */
-function setBuilt(nodeId, count) {
-    const data = getNodeData(nodeId);
-    if (!data) return;
-    const built = { ...state.built };
-    if (count > 0) built[nodeId] = { count, recipe: data.recipe_name }; else delete built[nodeId];
-    state.built = built;
-    refreshBuilt();
-    save();
-    panel.renderBuilt(data);
-}
-
-/** Uses a node's by-products as supply, sends them to the Sink, or solves the loop they'd close. */
-async function setByproductChoice(makerId, choice) {
-    const byproducts = { ...state.byproducts, [makerId]: choice };
-    try {
-        render(await requestPlan({ byproducts }));
-        save();
-        if (getNodeData(makerId)) panel.showByproductDetails(getNodeData(makerId));
-        else panel.hideByproductDetails();
-    } catch (e) {
-        console.error("By-product change failed", e);
-        alert(`By-product change failed: ${e.message}`);
-    }
-}
-
-async function unmergeSelectedNode() {
-    const nodeId = state.selectedNodeId;
-    if (!nodeId) return;
-
-    // The nodes split back out keep the recipe the merged node was switched to (ticket 043)
-    const merges = { ...state.merges };
-    const recipes = { ...state.recipes };
-    for (const id in merges) {
-        if (merges[id] !== nodeId) continue;
-        delete merges[id];
-        if (state.recipes[nodeId]) recipes[id] = state.recipes[nodeId];
-    }
-
-    try {
-        render(await requestPlan({ merges, recipes }));
-        state.merges = merges;
-        state.recipes = recipes;
-        save();
-        panel.hideNodeDetails();
-    } catch (e) {
-        console.error("Unmerge failed", e);
-        alert(`Unmerge failed: ${e.message}`);
-    }
-}
-
-// --- Move Branch to Inbound (ticket 045) ---
-
-/** [{item, rate}] with `rate` more of `item` (a new entry if it has none). */
-function withMore(entries, item, rate) {
-    const found = entries.some(e => e.item === item);
-    return found ? entries.map(e => e.item === item ? { ...e, rate: e.rate + rate } : e) : [...entries, { item, rate }];
-}
-
-/**
- * The selected node's item becomes inbound production of this plan, so the node and its inputs go. The
- * destination (a tab id, NEW_TAB, or '' for none yet) gets the demand target, linked on the Chain tab.
- */
-async function moveBranch(destination) {
-    const data = getNodeData(state.selectedNodeId);
-    if (!data) return;
-    const item = data.output_item;
-    const rate = panel.branchRate(data);
-    const before = panel.getDemands();
-    panel.setDemands(before.items, before.rates, withMore(before.inbound, item, rate));
-    try {
-        render(await requestPlan());
-        save();
-    } catch (e) {
-        panel.setDemands(before.items, before.rates, before.inbound);
-        console.error("Move failed", e);
-        alert(`Move failed: ${e.message}`);
-        return;
-    }
-    panel.hideNodeDetails();
-
-    let where = '';
-    if (destination) {
-        const source = tabs.activeTab();
-        let tab;
-        if (destination === panel.NEW_TAB) {
-            tab = tabs.addTab({ ...emptyPlan(), items: [item], rates: [rate] }, tabs.uniqueName(item));
-        } else {
-            tab = tabs.getBook().tabs.find(t => t.id === destination);
-            const plan = tab.plan || emptyPlan();
-            const demands = withMore((plan.items || []).map((it, i) => ({ item: it, rate: parseFloat(plan.rates[i]) })), item, rate);
-            tab.plan = { ...plan, items: demands.map(d => d.item), rates: demands.map(d => d.rate) };
-            tabs.saveBook();
-        }
-        const why = addLink({ tab: tab.id, item }, { tab: source.id, item });
-        refreshChain();
-        where = ` to ${tab.name}` + (why ? `. Not linked on the Chain tab: ${why}` : '');
-    }
-    panel.showToast(`Moved ${rate.toFixed(2)}/min ${item}${where}.`, 6000);
-}
-
-// --- Logistics (ticket 033) ---
-
-function readLogisticsSettings() {
-    return {
-        belt_tier: parseInt($('belt-tier').value, 10),
-        pipe_tier: parseInt($('pipe-tier').value, 10),
-        smart: $('smart-splitters').checked
-    };
-}
-
-function showLogisticsSettings() {
-    const settings = state.logistics.settings;
-    $('belt-tier').value = String(settings.belt_tier);
-    $('pipe-tier').value = String(settings.pipe_tier);
-    $('smart-splitters').checked = settings.smart;
-}
-
-async function changeLogisticsSettings() {
-    state.logistics.settings = readLogisticsSettings();
-    await recalculate();
-}
-
-/** Applies an edited layout of one side (null: back to the suggested one). */
-async function setLayout(nodeId, side, layout) {
-    const key = `${nodeId}|${side}`;
-    const layouts = { ...state.logistics.layouts };
-    if (layout) layouts[key] = layout; else delete layouts[key];
-    if (!layout) delete state.logistics.positions[key];  // the suggested layout, drawn as suggested
-    try {
-        render(await requestPlan({ layouts }));
-        state.logistics.layouts = layouts;
-        save();
-        selectLogistics(nodeId, side);
-    } catch (e) {
-        console.error("Logistics change failed", e);
-        alert(`Logistics change failed: ${e.message}`);
-    }
-}
-
-function zoomIn(nodeId, side, select = null) {
-    const node = getNodeData(nodeId);
-    if (!node || !node.logistics || !node.logistics[side]) {
-        panel.showToast("That end isn't in the plan's logistics: it's the demand, the Sink or inbound production.");
-        return;
-    }
-    logisticsView.openView(node, side, {
-        onChange: layout => setLayout(nodeId, side, layout),
-        describe: panel.nodeLabel,
-        onMove: save,
-        onBelts: setEdgeBelts,
-        onOpen: zoomIn
-    }, select);
-}
-
-/**
- * Sets how many belts an edge has (ticket 041); null goes back to the fewest its rate needs. The layouts
- * of both its ends are suggested again (the server resets edited ones, with a notice).
- */
-async function setEdgeBelts(key, count) {
-    const edges = { ...state.logistics.edges };
-    if (count === null) delete edges[key]; else edges[key] = count;
-    try {
-        render(await requestPlan({ edges }));
-        state.logistics.edges = edges;
-        save();
-        const edge = getEdgeData(key);
-        if (edge) panel.showEdgeDetails(edge); else panel.hideEdgeDetails();
-    } catch (e) {
-        console.error("Belt change failed", e);
-        alert(`Belt change failed: ${e.message}`);
-    }
-}
-
-function wireLogistics() {
-    onLogisticsSelected((nodeId, side) => {
-        if (!leaveNotes({ plan: false })) return keepSelection();
-        panel.hideNodeDetails();
-        panel.hideByproductDetails();
-        panel.hideEdgeDetails();
-        panel.showLogisticsDetails(getNodeData(nodeId), side);
-        panel.showTab('node');
-    });
-    $('logistics-zoom-btn').addEventListener('click', e => zoomIn(e.target.dataset.node, e.target.dataset.side));
-    onEdgeSelected(edge => {
-        if (!leaveNotes({ plan: false })) return keepSelection();
-        panel.hideNodeDetails();
-        panel.hideLogisticsDetails();
-        if (!edge.byproduct) panel.hideByproductDetails();
-        panel.showEdgeDetails(edge);
-        panel.showTab('node');
-    });
-    $('edge-belt-more').addEventListener('click', e => setEdgeBelts(e.target.dataset.key, parseInt(e.target.dataset.count, 10) + 1));
-    $('edge-belt-fewer').addEventListener('click', e => setEdgeBelts(e.target.dataset.key, parseInt(e.target.dataset.count, 10) - 1));
-    $('edge-belt-default').addEventListener('click', e => setEdgeBelts(e.target.dataset.key, null));
-    ['belt-tier', 'pipe-tier', 'smart-splitters'].forEach(id => $(id).addEventListener('change', changeLogisticsSettings));
-}
-
-// --- Plan-wide actions ---
-
-function clearAllClocks() {
-    if (confirm("Clear all clock speeds? Every node goes back to 100%.")) {
-        state.clocks = {};
-        save();
-        recalculate();
-    }
-}
-
-function clearMerges() {
-    if (confirm("Clear all node merges? This will restore the default tree structure.")) {
-        state.merges = {};
-        save();
-        recalculate();
-    }
-}
-
-/** Starts a fresh plan: no demands, inbound production or adjustments. Logistics settings stay; undo brings it back. */
-function newPlan() {
-    if (!confirm("Start a new plan? This clears the demands, inbound production, every adjustment and the notes. Undo brings the plan back.")) return;
-    if (logisticsView.isOpen()) logisticsView.closeView();
-    notes.discardNodeNote();
-    panel.setDemands();
-    applySaved({ logistics: { settings: state.logistics.settings } });
-    notes.showPlanNote();
-    panel.hideNodeDetails();
-    panel.hideByproductDetails();
-    panel.hideEdgeDetails();
-    panel.hideLogisticsDetails();
-    panel.hidePlanNotice();
-    renderGraph([]);
-    save();
-}
-
-function clearBuilt() {
-    if (confirm("Clear all built marks? Every node counts as not built.")) {
-        state.built = {};
-        refreshBuilt();
-        save();
-        const data = getNodeData(state.selectedNodeId);
-        if (data) panel.renderBuilt(data);
-    }
-}
-
-/** Opens a plan file in a new tab, or a book file in place of all the tabs. */
-async function importFile(input) {
-    const file = input.files[0];
-    if (!file) return;
-    input.value = ''; // allow importing the same file again
-    let data;
-    try {
-        data = await readPlanFile(file);
-    } catch (err) {
-        alert("Failed to parse JSON file.");
-        console.error(err);
-        return;
-    }
-    const wrong = data && wrongMode(data);
-    if (wrong) {
-        alert(wrong);
-        return;
-    }
-    if (isBook(data)) {
-        await openBook(data);
-        return;
-    }
-    const name = typeof data.name === 'string' && data.name.trim() ? data.name.trim() : file.name.replace(/\.json$/i, '');
-    await switchTab(tabs.addTab(data, name).id, { ownSettings: true });
-}
-
-// --- Preferred recipes (ticket 043) ---
-
-/** Prefers a recipe for an item (null, or its default: back to the default), in every tab. */
-function setPreferred(item, recipe) {
-    const preferred = { ...state.preferred };
-    if (recipe && recipe !== panel.defaultRecipe(item)) preferred[item] = recipe; else delete preferred[item];
-    return changePreferred(preferred, item, preferred[item]);
-}
-
-/** Replaces the preferred recipes; recalculates the plan shown. `item`/`recipe`: the one just preferred. */
-async function changePreferred(preferred, item = null, recipe = null) {
-    const previous = state.preferred;
-    // A node's own choice of the same recipe goes: it follows the preferred one from now on
-    const recipes = Object.fromEntries(Object.entries(state.recipes)
-        .filter(([id, name]) => !(recipe && name === recipe && getNodeData(id)?.output_item === item)));
-    savePreferred(preferred);
-    panel.renderRecipeList();
-    if (!hasNodes()) return;
-    const before = notedRecipes();
-    try {
-        render(await requestPlan({ recipes }));
-        state.recipes = recipes;
-        noteRecipeChanges(before);
-        save();
-        if (state.selectedNodeId) reselectNode(state.selectedNodeId);
-        const own = item ? panel.ownRecipeNodes(item).length : 0;
-        if (own) panel.showToast(`${own} ${item} node${own === 1 ? '' : 's'} here keep${own === 1 ? 's' : ''} a recipe of ${own === 1 ? 'its' : 'their'} own.`);
-    } catch (e) {
-        savePreferred(previous);
-        panel.renderRecipeList();
-        console.error("Preferred recipe change failed", e);
-        alert(`Preferred recipe change failed: ${e.message}`);
-    }
-}
-
-function preferSelected(prefer) {
-    const data = getNodeData(state.selectedNodeId);
-    if (data) setPreferred(data.output_item, prefer ? data.recipe_name : null);
-}
-
-// --- Colors ---
-
-async function loadColors() {
-    let defaults = {};
-    try {
-        defaults = await api.fetchDefaultColors();
-    } catch (e) {
-        console.error("Failed to load colors", e);
-    }
-    state.defaultColors = defaults;
-    state.colors = { ...defaults, ...loadSavedColors() };
-    panel.renderColorList();
-}
-
-function saveColorChanges() {
-    try {
-        saveColors(panel.readColorInputs());
-        if (hasNodes()) refreshNodeColors();
-        alert('Colors saved in this browser.');
-    } catch (e) {
-        console.error("Failed to save colors", e);
-    }
-}
-
-// --- Tabs ---
+// --- Side panel tabs ---
 
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
         const tabId = tab.dataset.tab;
-        panel.showTab(tabId);
+        showTab(tabId);
 
         // Colors may have changed on the colors tab
         if (tabId !== 'colors' && hasNodes()) {
@@ -732,15 +47,15 @@ document.querySelectorAll('.tab').forEach(tab => {
     });
 });
 
-// --- Wiring ---
+// --- Planner tab ---
 
 // Calculate uses by-products as supply unless set otherwise; nothing else does (ticket 031)
 $('demand-form').addEventListener('submit', e => {
     e.preventDefault();
     recalculate({ byproductsDefault: 'use' });
 });
-$('add-row-btn').addEventListener('click', panel.addRow);
-$('add-inbound-btn').addEventListener('click', panel.addInboundRow);
+$('add-row-btn').addEventListener('click', addRow);
+$('add-inbound-btn').addEventListener('click', addInboundRow);
 $('new-plan-btn').addEventListener('click', newPlan);
 $('export-btn').addEventListener('click', () => downloadPlan(currentPlan(), tabs.activeTab().name));
 $('save-book-btn').addEventListener('click', () => downloadBook(tabs.getBook()));
@@ -749,9 +64,13 @@ $('import-input').addEventListener('change', e => importFile(e.target));
 $('clear-clocks-btn').addEventListener('click', clearAllClocks);
 $('clear-merges-btn').addEventListener('click', clearMerges);
 $('clear-built-btn').addEventListener('click', clearBuilt);
-$('built-count').addEventListener('change', () => setBuilt(state.selectedNodeId, panel.getBuiltCount()));
-$('built-all-btn').addEventListener('click', e => setBuilt(state.selectedNodeId, parseInt(e.target.dataset.count, 10)));
+['belt-tier', 'pipe-tier', 'smart-splitters'].forEach(id => $(id).addEventListener('change', changeLogisticsSettings));
+$('save-plan-note-btn').addEventListener('click', savePlanNote);
 
+// --- Node tab ---
+
+$('built-count').addEventListener('change', () => setBuilt(state.selectedNodeId, getBuiltCount()));
+$('built-all-btn').addEventListener('click', e => setBuilt(state.selectedNodeId, parseInt(e.target.dataset.count, 10)));
 $('apply-clocks-btn').addEventListener('click', applyClocks);
 $('clear-clocks-node-btn').addEventListener('click', clearClocks);
 $('fit-clock-btn').addEventListener('click', fitClock);
@@ -759,11 +78,29 @@ $('fit-clock-btn').addEventListener('click', fitClock);
     if (e.key === 'Enter') applyClocks();
 }));
 $('unmerge-btn').addEventListener('click', unmergeSelectedNode);
-$('move-branch-btn').addEventListener('click', () => panel.openMoveBranch(tabs.getBook().tabs, tabs.getBook().active));
-$('move-branch-cancel').addEventListener('click', panel.closeMoveBranch);
-$('move-branch-confirm').addEventListener('click', () => moveBranch(panel.moveBranchDestination()));
+$('move-branch-btn').addEventListener('click', () => openMoveBranch(tabs.getBook().tabs, tabs.getBook().active));
+$('move-branch-cancel').addEventListener('click', closeMoveBranch);
+$('move-branch-confirm').addEventListener('click', () => moveBranch(moveBranchDestination()));
 $('save-node-note-btn').addEventListener('click', saveNodeNote);
-$('save-plan-note-btn').addEventListener('click', savePlanNote);
+$('recipe-select').addEventListener('change', e => switchRecipe(e.target.value));
+$('prefer-btn').addEventListener('click', () => preferSelected(true));
+$('unprefer-btn').addEventListener('click', () => preferSelected(false));
+['byproduct-toggle-btn', 'byproduct-solve-btn'].forEach(id => $(id).addEventListener('click', e => {
+    const { maker, choice } = e.target.dataset;
+    setByproductChoice(maker, choice);
+}));
+$('logistics-zoom-btn').addEventListener('click', e => zoomIn(e.target.dataset.node, e.target.dataset.side));
+$('edge-belt-more').addEventListener('click', e => setEdgeBelts(e.target.dataset.key, parseInt(e.target.dataset.count, 10) + 1));
+$('edge-belt-fewer').addEventListener('click', e => setEdgeBelts(e.target.dataset.key, parseInt(e.target.dataset.count, 10) - 1));
+$('edge-belt-default').addEventListener('click', e => setEdgeBelts(e.target.dataset.key, null));
+
+// --- Colors tab ---
+
+$('save-colors-btn').addEventListener('click', saveColorChanges);
+initColorDefine();
+
+// --- Undo and redo ---
+
 $('undo-btn').addEventListener('click', undo);
 $('redo-btn').addEventListener('click', redo);
 
@@ -780,43 +117,51 @@ document.addEventListener('keydown', e => {
         redo();
     }
 });
-$('recipe-select').addEventListener('change', e => switchRecipe(e.target.value));
-$('prefer-btn').addEventListener('click', () => preferSelected(true));
-$('unprefer-btn').addEventListener('click', () => preferSelected(false));
-$('save-colors-btn').addEventListener('click', saveColorChanges);
-panel.initColorDefine();
-$('fit-view-btn').addEventListener('click', fitView);
 
-/** Back to the selected node in the graph, after the user kept its unsaved note. */
-function keepSelection() {
-    if (state.selectedNodeId) markSelected(state.selectedNodeId);
-}
+// --- Graph: selecting shows it on the Node tab, unless the user keeps an unsaved note ---
 
 onNodeSelected(data => {
     if (data.id !== state.selectedNodeId && !leaveNotes({ plan: false })) return keepSelection();
-    panel.hideByproductDetails();
-    panel.hideEdgeDetails();
-    panel.hideLogisticsDetails();
-    panel.showNodeDetails(data);
-    panel.showTab('node');
+    hideByproductDetails();
+    hideEdgeDetails();
+    hideLogisticsDetails();
+    showNodeDetails(data);
+    showTab('node');
 });
 onByproductSelected(makerId => {
     if (!leaveNotes({ plan: false })) return keepSelection();
-    panel.hideNodeDetails();
-    panel.hideLogisticsDetails();
-    panel.showByproductDetails(getNodeData(makerId));
-    panel.showTab('node');
+    hideNodeDetails();
+    hideLogisticsDetails();
+    showByproductDetails(getNodeData(makerId));
+    showTab('node');
 });
-wireLogistics();
-['byproduct-toggle-btn', 'byproduct-solve-btn'].forEach(id => $(id).addEventListener('click', e => {
-    const { maker, choice } = e.target.dataset;
-    setByproductChoice(maker, choice);
-}));
-panel.initPanelToggle(resizeGraph);
-const legend = panel.initLegendToggle({ opened: guide.closeGuide });
+onLogisticsSelected((nodeId, side) => {
+    if (!leaveNotes({ plan: false })) return keepSelection();
+    hideNodeDetails();
+    hideByproductDetails();
+    hideEdgeDetails();
+    showLogisticsDetails(getNodeData(nodeId), side);
+    showTab('node');
+});
+onEdgeSelected(edge => {
+    if (!leaveNotes({ plan: false })) return keepSelection();
+    hideNodeDetails();
+    hideLogisticsDetails();
+    if (!edge.byproduct) hideByproductDetails();
+    showEdgeDetails(edge);
+    showTab('node');
+});
+onMergeDrop(mergeNodes);
+$('fit-view-btn').addEventListener('click', fitView);
+
+// --- Header ---
+
+initPanelToggle(resizeGraph);
+const legend = initLegendToggle({ opened: guide.closeGuide });
 guide.initGuide({ opened: legend.hide });
 notes.initNoteBox();
-onMergeDrop(mergeNodes);
+
+// --- Startup ---
 
 // Module scripts run after the document is parsed. Colors first, so the first render uses them.
 await loadColors();
@@ -827,7 +172,7 @@ try {
 } catch (e) {
     console.error("Failed to load recipe choices", e);
 }
-panel.initRecipeList(recipeChoices, setPreferred);
+initRecipeList(recipeChoices, setPreferred);
 $('recipe-reset-all').addEventListener('click', () => {
     if (Object.keys(state.preferred).length && confirm('Every item back to its default recipe, in every tab?')) changePreferred({});
 });
