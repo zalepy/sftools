@@ -1,6 +1,7 @@
 """Plan replay keeps adjustments and structure (tickets 006, 007, 016, 022)."""
 import pytest
 
+from sftools.domain.models.graph_view import ui_nodes
 from sftools.engine.calculator import build_plan
 from sftools.engine.game_data import get_game_data
 
@@ -47,7 +48,7 @@ def test_unmerge_restores_the_plan_exactly(data):
 
 def test_merged_links_point_to_the_target_in_ui_data(data):
     graph = build_plan(data.items, data.recipes, TWO_ROOTS, merges={RIP_MF: RIP_SP})
-    ui = {n["id"]: n for n in graph.get_ui_data()}
+    ui = {n["id"]: n for n in ui_nodes(graph)}
     assert RIP_MF not in ui
     assert RIP_SP in ui["Modular Frame"]["children"]
     assert sorted(ui[RIP_SP]["parents"]) == ["Modular Frame", "Smart Plating"]

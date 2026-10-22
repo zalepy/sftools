@@ -21,7 +21,7 @@ The `FactoryGraph` class serves as the stateful orchestrator for the production 
 
 ### 1. Master Graph vs. UI Representation
 - **Master Graph**: Stores every `ProductionNode` ever created for the current demand set, including those that are currently "absorbed" (merged) or dormant.
-- **UI Representation**: The `get_ui_data()` method generates a reduced version of the graph for the frontend. It aggregates values for merged groups and maps relationships (parents/children) to their respective "representative" nodes.
+- **UI Representation**: `graph_view.ui_nodes(graph)` generates a reduced version of the graph for the frontend. It aggregates values for merged groups and maps relationships (parents/children) to their respective "representative" nodes.
 
 ### 2. Stateful Merging
 - **`apply_merge(source, target)`**: Non-destructively merges two nodes.
