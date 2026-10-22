@@ -30,7 +30,7 @@ Python 3.13 and FastAPI on the server, with uv for packaging. The front end is p
 
 ## Game data
 
-The recipes, items and buildings live in the app's own JSON files under `src/sftools/data/`. They describe the game, and any source of those numbers works. They can be gathered by exploring the game; that's how the spreadsheet planner sftools grew out of got its data. The current files were scraped from [Satisfactory-Calculator](https://satisfactory-calculator.com) on 2026-10-11, first to check the hand-gathered data, then kept because it's the quickest way to refresh it after a game update (see [Updating game data](#updating-game-data)). The scraper is a convenience, not a dependency: the app only reads the JSON files.
+The recipes, items and buildings live in the app's own JSON files under `src/sftools/data/`. They describe the game, and any source of those numbers works. They can be gathered by exploring the game: sftools grew out of a spreadsheet planner whose data was collected that way. The current files were scraped from [Satisfactory-Calculator](https://satisfactory-calculator.com) on 2026-10-11, first to check the hand-gathered data, then kept because it's the quickest way to refresh it after a game update (see [Updating game data](#updating-game-data)). The scraper is a convenience, not a dependency: the app only reads the JSON files.
 
 Satisfactory and its game data belong to Coffee Stain Studios. sftools is a fan-made tool, not affiliated with or endorsed by Coffee Stain Studios.
 
