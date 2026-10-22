@@ -40,7 +40,7 @@ Satisfactory and its game data belong to Coffee Stain Studios. sftools is a fan-
 
 I set the product direction and made the design decisions: what each feature does, how it should behave in edge cases, and what to leave out. The implementation was written with an AI coding assistant (Claude Code), working from those decisions. Each feature was discussed first and recorded in a ticket, then built on a branch with tests, released, and checked by running the browser tests against the deployed site. The [tickets](tickets/README.md) record those decisions, and commits made with the assistant carry a `Co-Authored-By` line.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for how it works, [ALGO.md](ALGO.md) for the calculation, and [tickets/](tickets/README.md) for the decisions behind each feature.
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for how it works, [ALGO.md](docs/ALGO.md) for the calculation, and [tickets/](tickets/README.md) for the decisions behind each feature.
 
 ## Local development
 
