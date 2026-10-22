@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    textColorOn, builtStatus, statusColor, clocksText, buildingsText, inboundUnused
+    textColorOn, builtStatus, statusColor, clocksText, buildingsText, inboundUnused, generatorsText
 } from '../../src/sftools/web/static/js/node-info.js';
 
 test('text contrasts with the node color', () => {
@@ -40,4 +40,9 @@ test('built marks count for the recipe they were made for', () => {
     const stale = { count: 2, recipe: 'Alternate: Steel Rotor' };
     assert.deepEqual(builtStatus(node, { Rotor: stale }), { needed: 3, built: 0, done: false, stale });
     assert.equal(builtStatus({ inbound: { rate: 1 } }, {}), null);
+});
+
+test('generators: how many, and how many the Fuel keeps running (ticket 055)', () => {
+    const node = { buildings: 4, building: 'Fuel Generator', generators: { fuel: 66.6667, fed: 3.33333, power: 833.33 } };
+    assert.equal(generatorsText(node), '4× Fuel Generator, 3.33 fed');
 });

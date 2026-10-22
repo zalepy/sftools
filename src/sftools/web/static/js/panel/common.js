@@ -19,6 +19,8 @@ export function nodeLabel(nodeId) {
     if (nodeId === 'External Demand') return 'External Demand';
     const raw = getNodeData(nodeId);
     if (!raw) return nodeId;
+    if (raw.burn) return `${raw.output_item} (burning residue)`;
+    if (raw.generators) return raw.building;
     const path = nodeId.split('__');
     return path.length > 1 ? `${raw.output_item} (in ${path.at(-2)})` : `${raw.output_item} (demand)`;
 }

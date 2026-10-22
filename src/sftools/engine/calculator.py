@@ -8,6 +8,7 @@ from sftools.domain.models.factory_graph import FactoryGraph, SINK, SOLVE, USE
 from sftools.domain.models.item import Item
 from sftools.domain.models.production_node import ProductionNode
 from sftools.domain.models.recipe import Recipe
+from sftools.domain.models.residue import BURN_RECIPE, add_burner
 
 
 RECIPE_TYPE_ORDER = {RecipeType.BASIC: 0, RecipeType.CONVERSION: 1, RecipeType.ALTERNATE: 2}
@@ -427,6 +428,7 @@ def build_plan(
         if not _drop_unused_inputs_of_merged(graph):
             break
     ignored.extend(merge_ignored)
+    add_burner(graph, recipes_map.get(BURN_RECIPE))
 
     graph.clocks = {}
     for node_id, groups in (clocks or {}).items():

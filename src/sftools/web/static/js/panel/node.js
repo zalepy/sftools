@@ -1,7 +1,7 @@
 // The Node tab's selected node: its recipe and stats, input breakdown, clocks, built marks and preferred recipe.
 import { fetchRecipes } from '../api.js';
 import { getNodeData } from '../graph.js';
-import { clocksText, buildingsText, builtStatus, inboundUnused } from '../node-info.js';
+import { clocksText, buildingsText, builtStatus, inboundUnused, generatorsText } from '../node-info.js';
 import { fitLastClock, clockGroups, clockBoxes } from '../clocks.js';
 import { state } from '../state.js';
 import { showNodeNote, pinNote } from '../notes.js';
@@ -62,6 +62,7 @@ function renderStats(data) {
 
     const clocks = clocksText(data);
     $('detail-buildings').innerText = data.inbound ? `None (inbound, ${parseFloat(data.inbound.rate).toFixed(2)}/min available)`
+        : data.generators ? generatorsText(data)
         : clocks ? `${buildingsText(data)} (${clocks})` : buildingsText(data);
     $('detail-shards').innerText = data.power_shards || 0;
     $('detail-output-rate').innerText = parseFloat(data.throughput).toFixed(2) + '/min';
@@ -73,6 +74,14 @@ function renderStats(data) {
         const fluids = data.sink.fluids;
         surplusEl.innerText = fluids.length ? `Fluids can't be sunk: ${fluids.join(', ')}` : 'All by-products sunk';
         surplusEl.style.color = fluids.length ? 'var(--status-shortage)' : 'var(--text-secondary)';
+        $('detail-clock').innerText = '-';
+        return;
+    }
+    if (data.generators) {
+        // Generated power, the average the Fuel gives; the last Generators burn with gaps (ticket 055)
+        $('detail-output-rate').innerText = `${data.generators.fuel.toFixed(2)}/min Fuel burned`;
+        surplusEl.innerText = `Underfed ones burn with gaps: ${data.generators.power.toFixed(2)} MW on average`;
+        surplusEl.style.color = 'var(--text-secondary)';
         $('detail-clock').innerText = '-';
         return;
     }
@@ -192,10 +201,11 @@ export function showNodeDetails(data) {
     renderFitClock(data);
     // No buildings to clock on inbound production
     $('clock-controls').style.display = data.is_supplied ? 'none' : '';
-    // Inbound production is set in the Inbound Production rows, not on the node; the Sink only receives
-    const fixed = data.inbound || data.sink;
+    // Inbound production is set in the Inbound Production rows, not on the node; the Sink and the
+    // Generators only receive, and the burn Refinery always runs Residual Fuel (ticket 055)
+    const fixed = data.inbound || data.sink || data.generators || data.burn;
     $('details-recipe-collapsible').style.display = fixed ? 'none' : '';
-    if (data.sink) $('clock-controls').style.display = 'none';
+    if (data.sink || data.generators) $('clock-controls').style.display = 'none';
 
     // Unmerge is offered on merge targets
     const isMergeTarget = Object.values(state.merges).includes(data.id);

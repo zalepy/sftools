@@ -2,7 +2,7 @@
 // cytoscape and cytoscapeDagre are globals from the CDN scripts in index.html.
 import { state } from './state.js';
 import { GRAPH_STYLE } from './graph-style.js';
-import { textColorOn, isExternalDemand, builtStatus, statusColor, clocksText, buildingsText } from './node-info.js';
+import { textColorOn, isExternalDemand, builtStatus, statusColor, clocksText, buildingsText, generatorsText } from './node-info.js';
 
 const DEFAULT_NODE_COLOR = '#334155';
 const MERGE_DISTANCE = 60;
@@ -138,15 +138,18 @@ export function renderGraph(nodesData) {
         const clockLine = `${clocks ? `\n${clocks}` : ''}${shards}`;
         const made = node.inbound ? 'inbound'
             : node.sink ? `${node.buildings}× ${node.building}`
+            : node.generators ? generatorsText(node)
             : `${buildingsText(node)}× ${node.building}`;
         const of = node.inbound ? ` of ${parseFloat(node.inbound.rate).toFixed(2)}` : '';
         const fluids = node.sink && node.sink.fluids.length ? '\nfluids can\'t be sunk!' : '';
-        const label = `${node.output_item}${alternate}\n${parseFloat(node.throughput).toFixed(2)}${of}/m\n(${made})${clockLine}${fluids}`;
+        const unit = node.generators ? ' MW' : '/m';
+        const label = `${node.output_item}${alternate}\n${parseFloat(node.throughput).toFixed(2)}${of}${unit}\n(${made})${clockLine}${fluids}`;
         const color = colorFor(node.output_item);
         const classes = [
             node.clocks_set && 'clocked',
             node.is_supplied && 'supplied',
             node.sink && 'sink',
+            node.generators && 'generators',
             fluids && 'invalid',
             isDone(node) && 'done'
         ].filter(Boolean);
@@ -448,8 +451,9 @@ export function onMergeDrop(callback) {
 
         const targetNode = overlapping[0];
         if (dragData.output_item !== targetNode.data('raw').output_item) return;
-        // Inbound production, the Sink and demand targets aren't nodes of the plan
-        if ([dragData, targetNode.data('raw')].some(data => data.inbound || data.sink || data.demand)) return;
+        // Inbound production, the Sink, the Generators and demand targets aren't nodes of the plan; the
+        // burn Refinery only takes the residue left over (ticket 055)
+        if ([dragData, targetNode.data('raw')].some(data => data.inbound || data.sink || data.generators || data.burn || data.demand)) return;
 
         // Let Cytoscape finish the drag before the graph is re-rendered
         setTimeout(() => callback(dragNode.id(), targetNode.id()), 50);

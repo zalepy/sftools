@@ -1,6 +1,7 @@
 """
 What the UI gets from a calculated FactoryGraph: the shown nodes (a merge group as its target), their
-by-products, the Sink and inbound production in the shape of nodes, and each node's derivation.
+by-products, the Sink, the Fuel Generators and inbound production in the shape of nodes, and each node's
+derivation.
 """
 import math
 from typing import Dict, List, Optional
@@ -9,6 +10,7 @@ from sftools.domain.enums.item_categories import ItemCategory
 from sftools.domain.enums.recipe_type import RecipeType
 from sftools.domain.models.factory_graph import EPSILON, NEGLIGIBLE, FactoryGraph, external_demand
 from sftools.domain.models.production_node import ProductionNode
+from sftools.domain.models.residue import BURN_ID, GENERATORS_ID, RESIDUE
 
 INBOUND_PREFIX = "inbound:"  # ID of the node showing an item's inbound production, e.g. 'inbound:Iron Ingot'
 SINK_ID = "sink"
@@ -17,6 +19,9 @@ SINK_ID = "sink"
 SINK_POWER = 30
 SINK_INPUT_RATE = 1200
 FLUIDS = {ItemCategory.LIQUIDS, ItemCategory.GAS}  # can't be sunk
+# The Fuel Generator isn't in the scraped data either: 250 MW from 20 Fuel/min (750 MJ each), satisfactory.wiki.gg
+GENERATOR_POWER = 250
+GENERATOR_FUEL = 20
 
 
 def ui_nodes(graph: FactoryGraph) -> List[Dict]:
@@ -65,20 +70,24 @@ def ui_nodes(graph: FactoryGraph) -> List[Dict]:
         data["byproducts"] = byproducts_of(graph, node)
         # What the user demands of the group (demand rows), even where inbound production covers it
         data["external_demand"] = sum(external_demand(member) for member in [node, *constituents])
+        if node.id == BURN_ID:
+            data["parents"] = [GENERATORS_ID]  # not a node of the graph (see generators_node)
+            data["burn"] = True
 
         shown.append(data)
 
     sink = sink_node(graph, [data["id"] for data in shown])
+    generators = generators_node(graph)
     shown.extend(inbound_node(graph, item) for item in graph.inbound)
-    if sink:
-        shown.append(sink)
+    shown.extend(extra for extra in (sink, generators) if extra)
     return shown
 
 
 def byproducts_of(graph: FactoryGraph, node: ProductionNode) -> List[Dict]:
     """
     The node's by-products: {item, rate made, fluid, choice (USE or SINK), loop (a use left out as a
-    loop), used ({consumer id: rate} covered by it)}. What isn't used goes to the Sink.
+    loop), used ({consumer id: rate} covered by it), burn (Heavy Oil Residue: what's left over is burned,
+    used by the burn Refinery)}. What isn't used goes to the Sink.
     """
     if node.recipe is None:
         return []
@@ -86,6 +95,7 @@ def byproducts_of(graph: FactoryGraph, node: ProductionNode) -> List[Dict]:
         "item": item.name,
         "rate": rate * node.building_scale,
         "fluid": item.category in FLUIDS,
+        "burn": item.name == RESIDUE,
         "choice": graph.byproduct_choice(node.id),
         "loop": (node.id, item.name) in graph.byproduct_loops,
         "solving": (node.id, item.name) in graph.byproduct_solving,
@@ -126,6 +136,35 @@ def sink_node(graph: FactoryGraph, node_ids: List[str]) -> Optional[Dict]:
         "is_dormant": False, "is_alternate": False, "is_supplied": False,
         "derivation": [], "is_merged": False, "constituent_ids": [], "constituent_derivations": [],
         "sink": {"inputs": inputs, "fluids": sorted({e["item"] for e in inputs if e["fluid"]})},
+    }
+
+
+def generators_node(graph: FactoryGraph) -> Optional[Dict]:
+    """
+    The Fuel Generators burning the burn Refinery's Fuel (ticket 055), in the shape of a serialized node with
+    no output. As many as the Fuel needs at 100%, without clocks: the last ones are underfed and burn with
+    gaps, so the count follows the residue with nothing to readjust. Power is what the Fuel gives on average.
+    `generators`: {fuel, fed (generators' worth of Fuel), power}.
+    """
+    burner = graph.get_node(BURN_ID)
+    if burner is None or BURN_ID in graph.unused:
+        return None
+    fuel = burner.parent_demands.get(GENERATORS_ID, 0)
+    fed = fuel / GENERATOR_FUEL
+    count = math.ceil(fed - EPSILON)
+    power = fed * GENERATOR_POWER
+    item = burner.output_item_name
+    return {
+        "id": GENERATORS_ID, "name": "Fuel Generator", "recipe_name": "Fuel Generator", "building": "Fuel Generator",
+        "building_scale": fed, "original_building_scale": fed, "buildings": count,
+        "clocks": [{"count": count, "clock": 1.0}], "power_shards": 0, "ideal_building_scale": fed,
+        "throughput": power, "power": power, "output_item": "Power",
+        "parents": [], "children": [BURN_ID], "parent_demands": {},
+        "scaled_inputs": [{"item": item, "rate": fuel}], "base_output_rate": 0,
+        "base_inputs": [{"item": item, "rate": GENERATOR_FUEL}], "base_power": GENERATOR_POWER,
+        "is_dormant": False, "is_alternate": False, "is_supplied": False,
+        "derivation": [], "is_merged": False, "constituent_ids": [], "constituent_derivations": [],
+        "generators": {"fuel": fuel, "fed": fed, "power": power},
     }
 
 

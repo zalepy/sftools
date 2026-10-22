@@ -115,6 +115,8 @@ Example: Iron Plate for the frames needs 4.5 Constructors. ⚖️ sets 4 Constru
 
 Some recipes make a second product, e.g. Heavy Oil Residue from the Plastic recipe. Every by-product goes to one round **Sink** node, on a dotted edge with its rate. The Sink counts its power. Fluids can't be sunk in the game: their edges turn red and the Sink gets a thick red border until you deal with them.
 
+Heavy Oil Residue is the exception: what's left of it is **burned for power**, as in the game. It goes to a Refinery running Residual Fuel (60 residue into 40 Fuel a minute), whose Fuel goes to a round **Fuel Generator** node (20 Fuel a minute each, 250 MW). The Refinery is a node like any other, with clocks and Built counts, but always runs Residual Fuel. The Generators have no clocks: there are as many as the Fuel needs, rounded up, and the node says how many the Fuel keeps running, e.g. `4× Fuel Generator, 3.33 fed`. The last ones burn with gaps, which makes the same power on average, so when you make more or less Plastic the count simply follows. The power shown is that average. For residue, the by-product's button reads **Burn for Power** instead of Send to Sink.
+
 **Calculate** uses by-products to cover demand for the same item elsewhere in the plan, shown as dashed sky-blue edges from the maker. Other changes (recipe switches, merges, clocks) don't: a by-product that appears then goes to the Sink.
 
 Click a by-product edge to see what's made, used and sunk, and switch between **Use as Supply** and **Send to Sink**. That choice is kept.

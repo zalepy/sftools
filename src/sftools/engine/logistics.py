@@ -137,6 +137,13 @@ def side_specs(nodes: List[Dict], is_fluid) -> Dict[str, Dict]:
         if not clocks or node.get("is_supplied") or node.get("inbound") or node.get("sink"):
             continue
         scale = sum(clocks)
+        if node.get("generators"):
+            # Fuel Generators (ticket 055) only take in
+            specs[f"{node['id']}|in"] = {"node": node["id"], "side": "in", "items": {base["item"]: {
+                "sources": entries.get(node["id"], {}).get(base["item"], []),
+                "sinks": [(f"b{i}", base["rate"] * clock, None) for i, clock in enumerate(clocks, 1)],
+            } for base in node["base_inputs"]}}
+            continue
         out: Dict[str, Dict] = {}
         main = node["output_item"]
         out[main] = {

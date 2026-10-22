@@ -81,6 +81,17 @@ export const GRAPH_STYLE = [
         }
     },
     {
+        // Where the residue's Fuel is burned (ticket 055): no output, like the Sink
+        selector: '.generators',
+        style: {
+            'shape': 'ellipse',
+            'width': 120,
+            'height': 120,
+            'border-width': 3,
+            'border-color': '#f59e0b'
+        }
+    },
+    {
         // Fluids can't be sunk: the Sink only holds them as a placeholder
         selector: '.sink.invalid',
         style: {
