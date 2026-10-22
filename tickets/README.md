@@ -61,3 +61,4 @@ Moved to [done/](done/).
 | [046](done/046-notes.md) | Notes per node and per plan | feature | P3 | Done |
 | [047](done/047-fit-last-clock.md) | Fit the last building's clock to the demand | feature | P3 | Done |
 | [048](done/048-reorder-tabs.md) | Reorder plan tabs by drag and drop | feature | P3 | Done |
+| [049](done/049-user-guide.md) | User guide, in the repo and in the app | docs | P2 | Done |

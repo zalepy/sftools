@@ -9,6 +9,7 @@ import {
     onByproductSelected, onLogisticsSelected, selectLogistics, onEdgeSelected, getEdgeData, markSelected
 } from './graph.js';
 import * as notes from './notes.js';
+import * as guide from './guide.js';
 import * as panel from './panel.js';
 import * as history from './history.js';
 import * as tabs from './tabs.js';
@@ -812,7 +813,8 @@ wireLogistics();
     setByproductChoice(maker, choice);
 }));
 panel.initPanelToggle(resizeGraph);
-panel.initLegendToggle();
+const legend = panel.initLegendToggle({ opened: guide.closeGuide });
+guide.initGuide({ opened: legend.hide });
 notes.initNoteBox();
 onMergeDrop(mergeNodes);
 
