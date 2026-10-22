@@ -25,7 +25,9 @@ def label(node_id):
 
 def switch_recipe(page, node_id, recipe):
     page.select_node(node_id)
-    page.wait_until("!document.getElementById('recipe-select').disabled")
+    # The node's recipes load from the server: wait for this one to be offered (the list may still hold the
+    # previous node's recipes, and be enabled)
+    page.wait_until(f"[...document.getElementById('recipe-select').options].some(o => o.value === {json.dumps(recipe)})")
     page.js(f"""(() => {{
         const select = document.getElementById('recipe-select');
         select.value = {json.dumps(recipe)};
@@ -737,3 +739,21 @@ def test_guide_panel(page):
     assert page.js("document.getElementById('detail-id').textContent") == RIP_SP  # the panel is as it was
     page.js("document.querySelector('.guide-toc a[href=\"#the-chain-tab\"]').click()")
     page.wait_until(at_top("the-chain-tab"))
+
+
+def test_recipe_list_is_the_selected_nodes_when_responses_cross(page):
+    """A slow recipe list for the node selected before doesn't replace the selected node's."""
+    page.open(page.base_url, plan())
+    page.js("""(() => {
+        const original = window.fetch;
+        window.fetch = (url, ...rest) => String(url).includes('item_name=Smart%20Plating')
+            ? new Promise(resolve => setTimeout(() => resolve(original(url, ...rest)), 600))
+            : original(url, ...rest);
+        return true;
+    })()""")
+    page.select_node("Smart Plating")
+    page.select_node(RIP_SP)
+    page.wait(1.2)
+    options = page.js("[...document.getElementById('recipe-select').options].map(o => o.value)")
+    assert "Alternate: Bolted Iron Plate" in options
+    assert "Alternate: Plastic Smart Plating" not in options

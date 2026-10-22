@@ -7,7 +7,9 @@ TWO_ROOTS = {"items": ["Smart Plating", "Modular Frame"], "rates": [2, 2],
 
 def switch_recipe(page, node_id, recipe):
     page.select_node(node_id)
-    page.wait_until("!document.getElementById('recipe-select').disabled")
+    # The node's recipes load from the server: wait for this one to be offered (the list may still hold the
+    # previous node's recipes, and be enabled)
+    page.wait_until(f"[...document.getElementById('recipe-select').options].some(o => o.value === {json.dumps(recipe)})")
     page.js(f"""(() => {{
         const select = document.getElementById('recipe-select');
         select.value = {json.dumps(recipe)};
