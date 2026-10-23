@@ -63,6 +63,14 @@ export function clocksText(node, separator = ' × ') {
     return groups.map(g => `${g.count}${separator}${+(g.clock * 100).toFixed(2)}%`).join(' + ');
 }
 
+/**
+ * The Fuel Generators burning the residue's Fuel (ticket 055): how many, how many of them the Fuel keeps
+ * running, and the power they make on average, e.g. "4× Fuel Generator, 3.33 fed".
+ */
+export function generatorsText(node) {
+    return `${node.buildings}× ${node.building}, ${node.generators.fed.toFixed(2)} fed`;
+}
+
 /** Number of buildings: whole with clocks, otherwise the fractional scale. */
 export function buildingsText(node) {
     return node.clocks && node.clocks.length ? `${node.buildings}` : parseFloat(node.building_scale).toFixed(2);

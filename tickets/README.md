@@ -67,3 +67,4 @@ Moved to [done/](done/).
 | [052](done/052-split-panel-and-main.md) | Split panel.js and main.js; guidance on where code goes | refactor | P3 | Done |
 | [053](done/053-eslint.md) | ESLint for bugs, in CI | chore | P3 | Done |
 | [054](done/054-split-factory-graph.md) | Split factory_graph.py: calculation and UI view | refactor | P3 | Done |
+| [055](done/055-burn-residue.md) | Burn Heavy Oil Residue for power | feature | P2 | Done |

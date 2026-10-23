@@ -40,6 +40,8 @@ def balance(graph):
     for node in graph.all_nodes.values():
         if not node.is_dormant and node.external_demand:
             needed[node.output_item_name] += node.external_demand
+        # The burn Refinery's Fuel goes to the Generators, which aren't a node (ticket 055)
+        needed[node.output_item_name] += node.parent_demands.get("generators", 0)
     return {item: (made[item], needed[item]) for item in made}
 
 

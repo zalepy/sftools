@@ -15,7 +15,7 @@ export function branchRate(data) {
 function moveBlocked(data) {
     const item = data.output_item;
     if (getDemands().items.includes(item)) return `${item} is a demand target of this plan.`;
-    const makers = allNodeData().filter(n => n.output_item === item && !n.inbound && !n.sink).length;
+    const makers = allNodeData().filter(n => n.output_item === item && !n.inbound && !n.sink && !n.burn).length;
     if (makers > 1) return `Merge all ${makers} ${item} nodes first.`;
     return null;
 }

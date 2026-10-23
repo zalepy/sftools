@@ -65,7 +65,10 @@ export function showByproductDetails(maker) {
     if (!maker || !maker.byproducts || !maker.byproducts.length) return hideByproductDetails();
     const byproducts = maker.byproducts;
     const made = byproducts.reduce((sum, b) => sum + b.rate, 0);
-    const used = byproducts.reduce((sum, b) => sum + Object.values(b.used).reduce((s, r) => s + r, 0), 0);
+    // Heavy Oil Residue left over is burned, as a use by the burn Refinery (ticket 055)
+    const burned = byproducts.reduce((sum, b) => sum + (b.used.burn || 0), 0);
+    const used = byproducts.reduce((sum, b) => sum + Object.values(b.used).reduce((s, r) => s + r, 0), 0) - burned;
+    const burns = byproducts.some(b => b.burn);
     const choice = byproducts[0].choice;
 
     $('byproduct-item').innerText = byproducts.map(b => b.item).join(', ');
@@ -73,25 +76,27 @@ export function showByproductDetails(maker) {
     $('byproduct-maker').title = derivationText(maker.derivation || []);
     $('byproduct-rate').innerText = `${made.toFixed(2)}/min`;
     $('byproduct-used').innerText = `${used.toFixed(2)}/min`;
+    $('byproduct-sunk-label').innerText = burns ? 'Burned for power:' : 'To the Sink:';
     $('byproduct-sunk').innerText = `${(made - used).toFixed(2)}/min`;
 
     const loop = byproducts.find(b => b.loop);
+    const away = burns ? 'is burned for power' : 'goes to the Sink';
     const hints = [];
     if (choice === 'use' && loop) {
-        hints.push('Using it would feed a node above its own maker (a loop), so it goes to the Sink. Solve Loop balances it.');
+        hints.push(`Using it would feed a node above its own maker (a loop), so it ${away}. Solve Loop balances it.`);
     } else if (choice === 'solve' && loop && !loop.settled) {
-        hints.push(`The loop didn't settle in ${loop.rounds} rounds, so it goes to the Sink.`);
+        hints.push(`The loop didn't settle in ${loop.rounds} rounds, so it ${away}.`);
     } else if (choice === 'solve' && loop) {
         hints.push(`Loop solved (${loop.rounds} rounds).`);
     }
     if (choice !== 'sink' && made - used > EPSILON && !(loop && choice === 'use')) {
-        hints.push('More is made than the plan needs; the rest goes to the Sink.');
+        hints.push(`More is made than the plan needs; the rest ${away}.`);
     }
-    if (byproducts.some(b => b.fluid) && made - used > EPSILON) hints.push("Fluids can't be sunk.");
+    if (byproducts.some(b => b.fluid && !b.burn) && made - used > EPSILON) hints.push("Fluids can't be sunk.");
     $('byproduct-hint').innerText = hints.join(' ');
 
     const button = $('byproduct-toggle-btn');
-    button.innerText = choice === 'sink' ? 'Use as Supply' : 'Send to Sink';
+    button.innerText = choice === 'sink' ? 'Use as Supply' : burns ? 'Burn for Power' : 'Send to Sink';
     button.dataset.maker = maker.id;
     button.dataset.choice = choice === 'sink' ? 'use' : 'sink';
     // Solving is offered on loops only; "use" leaves a loop out

@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional, Set, Tuple
 import math
 from sftools.domain.models.production_node import ProductionNode
+from sftools.domain.models.residue import BURN_ID, burn
 
 EPSILON = 1e-9
 # A by-product left over below this (per min) isn't sent to the Sink: it's rounding, e.g. a clock of
@@ -139,6 +140,14 @@ class FactoryGraph:
 
     def recalculate(self, round_up: bool = False):
         """
+        Propagates demand top-down and sets every node's scale (see _propagate), solving the by-product
+        loops the plan asks to solve (see _solve), then burns the Heavy Oil Residue left over (see residue.burn).
+        """
+        self._solve(round_up)
+        burn(self, round_up)
+
+    def _solve(self, round_up: bool):
+        """
         Propagates demand top-down and sets every node's scale (see _propagate).
 
         A by-product loop the plan asks to solve (SOLVE) can't be ordered: its maker's output depends on
@@ -197,7 +206,8 @@ class FactoryGraph:
         by-product goes to the Sink, unless the plan asks to solve it: then `loop_supply` (what its maker
         made in the round before, see recalculate) is there from the start.
         """
-        active = {node_id: node for node_id, node in self.all_nodes.items() if not node.is_dormant}
+        # The burn Refinery is sized afterwards, from what's left over (see residue.burn)
+        active = {node_id: node for node_id, node in self.all_nodes.items() if not node.is_dormant and node_id != BURN_ID}
         for node in active.values():
             external_demand(node)  # record it before parent_demands is rebuilt below
         rep_of ={node_id: self._representative(node, active).id for node_id, node in active.items()}
