@@ -62,7 +62,7 @@ export default [
     },
     {
         files: ['tests/js/**/*.mjs'],
-        languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: globals(['console']) },
+        languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: globals(['console', 'URL']) },
         rules: BUGS,
     },
 ];

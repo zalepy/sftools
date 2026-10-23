@@ -231,6 +231,14 @@ The **Colors** tab sets the color of each item's nodes.
 
 Colors are kept in your browser and in Save Book.
 
+## Reference layouts
+
+**Layouts** in the header opens worked examples to build from: fixed layouts, not plans, so nothing in them changes with your tabs. Each one is a schematic, not to scale: one square is a building's place, pipes are raised over the striped belts on the floor, and the numbers along a pipe are what it carries after each building. Hover a building, pipe or marker to see what it is. A table of the numbers and a note follow the drawing.
+
+The first one, **Crude Oil to Turbofuel power**, refines 1350 Crude Oil/min into Fuel (23 Refineries), then Turbofuel (40 Refineries with Compacted Coal from below), which dives down to 100 Fuel Generators for 25,000 MW. Its Polymer Resin leaves on two belts, to be sunk.
+
+![The Crude Oil to Turbofuel power layout](images/layouts.png)
+
 ## Saving, loading and undo
 
 - **Saving:** your tabs are saved in your browser as you work.

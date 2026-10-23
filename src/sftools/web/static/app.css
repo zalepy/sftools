@@ -1072,3 +1072,61 @@ details[open] summary::after {
     padding: 0.4rem;
     border-radius: 4px;
 }
+
+/* Reference layouts (ticket 056): in the guide's drawer; the drawing scrolls sideways if it's wider */
+.layout-drawing {
+    overflow-x: auto;
+    margin: 0.75rem 0;
+}
+
+.layout-svg {
+    display: block;
+    margin: 0 auto;
+    background: var(--bg-color);
+    border-radius: 4px;
+}
+
+.layout-svg text {
+    text-anchor: middle;
+    dominant-baseline: central;
+    font-size: 11px;
+    pointer-events: none;
+}
+
+.layout-svg .layout-total {
+    fill: #0f172a;
+    font-size: 9px;
+    font-weight: 600;
+}
+
+.layout-svg .layout-label {
+    font-weight: 600;
+}
+
+.layout-svg .layout-note {
+    fill: var(--text-secondary);
+    pointer-events: auto;
+}
+
+.layout-svg g:hover > rect,
+.layout-svg g:hover > polyline {
+    filter: brightness(1.3);
+}
+
+.layout-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.layout-table th,
+.layout-table td {
+    text-align: left;
+    padding: 0.25rem 0.4rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+
+.layout-note-text {
+    color: var(--text-secondary);
+}

@@ -28,6 +28,8 @@
         <div class="header-right">
         <button type="button" id="legend-toggle" class="icon-btn" aria-controls="legend" aria-expanded="false"
             title="Show the legend">Legend</button>
+        <button type="button" id="layouts-toggle" class="icon-btn" aria-controls="layouts" aria-expanded="false"
+            title="Show reference layouts">Layouts</button>
         <button type="button" id="guide-toggle" class="icon-btn" aria-controls="guide" aria-expanded="false"
             title="Show the guide">Guide</button>
         </div>
@@ -426,6 +428,15 @@
                     <button type="button" id="guide-close" class="icon-btn" title="Close the guide" aria-label="Close the guide">&#x2715;</button>
                 </div>
                 <div id="guide-content" class="guide-content">Loading&hellip;</div>
+            </aside>
+
+            <!-- Reference layouts (ticket 056): fixed builds to copy; where the guide is -->
+            <aside id="layouts" class="guide layouts" aria-label="Layouts" hidden>
+                <div class="guide-header">
+                    <strong>Layouts</strong>
+                    <button type="button" id="layouts-close" class="icon-btn" title="Close the layouts" aria-label="Close the layouts">&#x2715;</button>
+                </div>
+                <div id="layouts-content" class="guide-content">Loading&hellip;</div>
             </aside>
 
             <!-- What the colors and shapes mean (ticket 035) -->

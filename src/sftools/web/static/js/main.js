@@ -7,6 +7,7 @@ import {
 } from './graph.js';
 import * as notes from './notes.js';
 import * as guide from './guide.js';
+import * as layouts from './layouts.js';
 import * as history from './history.js';
 import * as tabs from './tabs.js';
 import { $ } from './panel/common.js';
@@ -157,8 +158,10 @@ $('fit-view-btn').addEventListener('click', fitView);
 // --- Header ---
 
 initPanelToggle(resizeGraph);
-const legend = initLegendToggle({ opened: guide.closeGuide });
-guide.initGuide({ opened: legend.hide });
+// The legend, the guide and the layouts share a place: opening one closes the others
+const legend = initLegendToggle({ opened: () => { guide.closeGuide(); layouts.closeLayouts(); } });
+guide.initGuide({ opened: () => { legend.hide(); layouts.closeLayouts(); } });
+layouts.initLayouts({ opened: () => { legend.hide(); guide.closeGuide(); } });
 notes.initNoteBox();
 
 // --- Startup ---

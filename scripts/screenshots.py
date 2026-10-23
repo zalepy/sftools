@@ -115,6 +115,19 @@ def chain(page, url):
     capture_graph(page, "chain", "ccy")
 
 
+def layouts(page, url):
+    """The reference layout's drawing (ticket 056), in a window tall enough for all of it."""
+    page.send("Emulation.setDeviceMetricsOverride", width=WINDOW[0], height=1700, deviceScaleFactor=1, mobile=False)
+    try:
+        page.open(url, FRAMES)
+        page.js("document.getElementById('layouts-toggle').click()")
+        page.wait_until("Boolean(document.querySelector('#layouts-content .layout-svg'))")
+        page.wait(0.3)
+        capture(page, "layouts", "#layouts-content .layout-drawing")
+    finally:
+        page.send("Emulation.setDeviceMetricsOverride", width=WINDOW[0], height=WINDOW[1], deviceScaleFactor=1, mobile=False)
+
+
 def main():
     executable = find_browser()
     if not executable:
@@ -135,7 +148,7 @@ def main():
         page = Page(debug_port)
         page.send("Emulation.setDeviceMetricsOverride", width=WINDOW[0], height=WINDOW[1], deviceScaleFactor=1, mobile=False)
         try:
-            for shot in (overview, node, logistics, chain):
+            for shot in (overview, node, logistics, chain, layouts):
                 shot(page, url)
         finally:
             page.close()
