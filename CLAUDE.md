@@ -21,7 +21,7 @@ Files stay small and do one thing. `scripts/check_sizes.py` warns in CI about an
 | `panel/` | The side panel, one module per tab or section: reads its inputs, renders what it's given. Doesn't call the server or save. `common.js` holds `$`, `nodeLabel` and other shared bits. | yes |
 | `graph.js`, `logistics.js`, `chain.js` | The Cytoscape views: the plan graph, the zoomed-in logistics view, the chain of tabs. | yes |
 | `state.js`, `tabs.js`, `history.js` | The plan in memory and in localStorage, the book of tabs, undo. | `tabs.js` draws the tab bar |
-| Pure modules: `clocks.js`, `node-info.js`, `logistics-placement.js` | Calculations and text from data. **No DOM, no Cytoscape, no imports of modules that touch them**, so Node can import them: they're unit-tested in `tests/js/`. | no |
+| Pure modules: `clocks.js`, `node-info.js`, `logistics-placement.js`, `layout-svg.js` | Calculations and text from data. **No DOM, no Cytoscape, no imports of modules that touch them**, so Node can import them: they're unit-tested in `tests/js/`. | no |
 
 Rules of thumb:
 - A new feature: its actions in `actions/<area>.js`, its panel section in `panel/<section>.js`, its wiring in `main.js`. A new area gets a new module, not a bigger old one.

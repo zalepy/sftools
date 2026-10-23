@@ -1,6 +1,6 @@
 # 056 — Reference layouts: crude oil to Turbofuel power
 
-**Type:** feature · **Priority:** P3 · **Status:** Open · **Related:** [049](done/049-user-guide.md)
+**Type:** feature · **Priority:** P3 · **Status:** Done · **Related:** [049](049-user-guide.md)
 
 ## Goal
 A worked example to build from: a fixed layout that turns 1350 Crude Oil/min into Turbofuel and burns it for power, drawn as a schematic in the app. It replaces the color-coded cells of the user's spreadsheet (C26:V56). It isn't a plan: nothing is calculated from the user's input.
@@ -34,3 +34,11 @@ A worked example to build from: a fixed layout that turns 1350 Crude Oil/min int
 3. The unit test of the numbers against the game data.
 4. The header button and drawer (or page); browser tests that it opens, draws, and closes the Guide and Legend.
 5. A section in the user guide pointing to it.
+
+## Notes
+- Implemented 2026-10-23, transcribed from the sheet ("scratch", C26:R56; x = column − C, y = row − 26): `static/layouts/turbofuel-power.json` (listed in `index.json`), drawn by `layout-svg.js` (pure) in the `layouts.js` drawer (the guide's, 560 px: the 16-square drawing fits).
+- Each building's edge and number take the color of the Fuel pipe it's on, as the sheet's green and blue numbers did. The top three are numbered 21–23 (the sheet counts them as 21, 0.5, 22: 2.5 Refineries' worth).
+- Belts are striped and wider than pipes, drawn under them; red markers where the Turbofuel pipes dive down, lilac where the resin belts leave.
+- The green pipe carries 500 for 22 Turbofuel Refineries (495) and the yellow 400 for 18 (405): they join at the bottom corners, so the test checks the Fuel per item, not per pipe.
+- The sheet's note of 160 generator places (20 × 2 × 4 floors) is kept in the note; 100 are needed.
+- Tests: `tests/unit/test_layouts.py`, `tests/js/layout-svg.test.mjs`, `tests/integration/test_layouts.py`. `scripts/screenshots.py` captures `guide/images/layouts.png` for the guide's new section.
