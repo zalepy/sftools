@@ -17,7 +17,7 @@ def test_layouts_drawer(page):
     assert not page.js(hidden("layouts"))
     assert page.js("document.querySelector('#layouts-content h2').textContent") == "Crude Oil to Turbofuel power"
     assert page.js("document.querySelectorAll('#layouts-content .layout-building').length") == 63
-    assert page.js("document.querySelectorAll('#layouts-content .layout-table tbody tr').length") == 4
+    assert page.js("document.querySelectorAll('#layouts-content .layout-table tbody tr').length") == 5
     title = "document.querySelector('#layouts-content .layout-building title').textContent"
     assert page.js(title) == "Refinery 21: Fuel at 83.334%, into the green Fuel pipe"
     # The drawing fits the drawer: no sideways scrolling
