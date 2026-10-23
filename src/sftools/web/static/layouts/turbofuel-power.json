@@ -96,7 +96,8 @@
     {"step": "Crude Oil → Fuel", "recipe": "Fuel", "buildings": "20 Refineries at 100%, 3 at 83.334%", "in": [["Crude Oil", 1350]], "out": [["Fuel", 900], ["Polymer Resin", 675]]},
     {"step": "Fuel → Turbofuel", "recipe": "Turbofuel", "buildings": "40 Refineries at 100%", "in": [["Fuel", 900], ["Compacted Coal", 600]], "out": [["Turbofuel", 750]]},
     {"step": "Turbofuel → power", "generators": 100, "buildings": "100 Fuel Generators", "in": [["Turbofuel", 750]], "out": [["MW", 25000]]},
-    {"step": "Polymer Resin", "buildings": "Sunk (2 Mk.4 belts)", "in": [["Polymer Resin", 675]], "out": []}
+    {"step": "Polymer Resin", "buildings": "Sunk (2 Mk.4 belts)", "in": [["Polymer Resin", 675]], "out": []},
+    {"step": "Compacted Coal supply (not drawn)", "recipe": "Alternate: Compacted Coal", "count": 24, "buildings": "24 Assemblers at 100%", "in": [["Coal", 600], ["Sulfur", 600]], "out": [["Compacted Coal", 600]]}
   ],
   "note": "The Fuel Generators are below, on up to 4 floors with a footprint matching the Refineries above (20 positions × 2 per position × 4 floors: room for 160). Each of the 4 red pipe ends dives down to 25 of them: 100 in all, 7.5 Turbofuel/min each."
 }

@@ -48,8 +48,19 @@ def flows(layout, recipes):
 @pytest.mark.parametrize("layout", layouts(), ids=lambda layout: layout["id"])
 def test_the_table_matches_the_buildings(layout, recipes):
     by_recipe = flows(layout, recipes)
+    used = defaultdict(float)  # what the layout's buildings take, net
+    for made in by_recipe.values():
+        for item, rate in made.items():
+            used[item] -= rate
     for row in layout["table"]:
-        if "recipe" in row:
+        if "count" in row:
+            # A supply built elsewhere, e.g. the Compacted Coal: `count` buildings make what the layout takes
+            recipe = recipes[row["recipe"]]
+            assert dict((i.name, r * row["count"]) for i, r in recipe.ingredients) == pytest.approx(dict(row["in"])), row["step"]
+            assert dict((i.name, r * row["count"]) for i, r in recipe.outputs()) == pytest.approx(dict(row["out"])), row["step"]
+            for item, rate in row["out"]:
+                assert used[item] == pytest.approx(rate, abs=0.01), row["step"]
+        elif "recipe" in row:
             made = by_recipe[row["recipe"]]
             assert {item: -rate for item, rate in made.items() if rate < 0} == pytest.approx(dict(row["in"]), abs=0.01), row["step"]
             assert {item: rate for item, rate in made.items() if rate > 0} == pytest.approx(dict(row["out"]), abs=0.01), row["step"]
