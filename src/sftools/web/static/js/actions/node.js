@@ -1,4 +1,5 @@
 // Actions on the selected node: clocks, recipe, merges, built marks, by-products, and moving its branch.
+import * as api from '../api.js';
 import { state } from '../state.js';
 import { refreshBuilt, getNodeData, reselectNode } from '../graph.js';
 import * as tabs from '../tabs.js';
@@ -136,12 +137,34 @@ export function setBuilt(nodeId, count) {
 }
 
 /** Uses a node's by-products as supply, sends them to the Sink, or solves the loop they'd close. */
-export async function setByproductChoice(makerId, choice) {
-    const byproducts = { ...state.byproducts, [makerId]: choice };
+const recipesUsing = new Map();  // item -> the recipes that take it (ticket 059), as the server said
+
+/** Shows a maker's by-product (all of them without `item`), with what can be made from it. */
+export async function selectByproduct(makerId, item = null) {
+    let recipes = [];
+    if (item) {
+        try {
+            if (!recipesUsing.has(item)) recipesUsing.set(item, await api.fetchRecipesUsing(item));
+            recipes = recipesUsing.get(item);
+        } catch (e) {
+            console.error("Failed to load the recipes using " + item, e);
+        }
+    }
+    showByproductDetails(getNodeData(makerId), item, recipes);
+}
+
+/**
+ * Sets what the maker does with its by-product `item` (with all of them without it; ticket 059): a choice,
+ * Make from it ({choice: 'make', recipe, to}), or null for none of its own.
+ */
+export async function setByproductChoice(makerId, choice, item = null) {
+    const key = item ? `${makerId}|${item}` : makerId;
+    const byproducts = { ...state.byproducts, [key]: choice };
+    if (choice === null) delete byproducts[key];
     try {
         render(await requestPlan({ byproducts }));
         save();
-        if (getNodeData(makerId)) showByproductDetails(getNodeData(makerId));
+        if (getNodeData(makerId)) await selectByproduct(makerId, item);
         else hideByproductDetails();
     } catch (e) {
         console.error("By-product change failed", e);

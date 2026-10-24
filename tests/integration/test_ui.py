@@ -610,7 +610,7 @@ def test_calculate_uses_byproducts_and_an_edge_sends_them_to_the_sink(page):
     assert page.js("document.getElementById('byproduct-toggle-btn').textContent") == "Send to Sink"
 
     page.js("document.getElementById('byproduct-toggle-btn').click()")
-    page.wait_until(f"{SAVED}.byproducts[{json.dumps(ALU_ALUMINA)}] === 'sink'")
+    page.wait_until(f"{SAVED}.byproducts[{json.dumps(ALU_ALUMINA + '|Silica')}] === 'sink'")  # per by-product (ticket 059)
     cy_edges = f"{EDGES}.filter(e => end(e.source()) === {json.dumps(ALU_ALUMINA)} && end(e.target()) === 'Aluminum Ingot')"
     assert page.js(f"{cy_edges}.length") == 0  # no by-product edge any more
     assert "Aluminum Ingot__Silica" in page.node_ids()
@@ -626,7 +626,7 @@ def test_solving_a_byproduct_loop(page):
     page.js(f"void {EDGES}.filter(e => end(e.source()) === {json.dumps(scrap)} && end(e.target()) === 'sink').emit('tap')")
     assert page.js("document.getElementById('byproduct-solve-btn').textContent") == "Solve Loop"
     page.js("document.getElementById('byproduct-solve-btn').click()")
-    page.wait_until(f"{SAVED}.byproducts[{json.dumps(scrap)}] === 'solve'")
+    page.wait_until(f"{SAVED}.byproducts[{json.dumps(scrap + '|Water')}] === 'solve'")
     assert page.js(edge_classes(scrap, "Water")) == ["byproduct", "used", "loop"]
     assert "(loop, solved)" in page.js(f"{EDGES}.filter(e => end(e.source()) === {json.dumps(scrap)} && end(e.target()) === 'Water').data('label')")
     assert page.js("document.getElementById('byproduct-hint').textContent").startswith("Loop solved")

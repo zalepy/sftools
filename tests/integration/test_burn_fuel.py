@@ -33,7 +33,7 @@ def test_a_solid_fuel_is_burned_or_sent_to_the_sink(page):
 
     # For a while, e.g. until the water is routed in
     page.js(click("byproduct-sink-btn"))
-    page.wait_until(f"({SAVED}.byproducts || {{}})['Rocket Fuel'] === 'sink'")
+    page.wait_until(f"({SAVED}.byproducts || {{}})['Rocket Fuel|Compacted Coal'] === 'sink'")
     page.wait_until(f"{CY}.getElementById('coal-generators').length === 0")
     assert "Water" not in page.node_ids()
     page.wait_until("document.getElementById('byproduct-sink-btn').textContent === 'Burn for Power'")
@@ -41,7 +41,7 @@ def test_a_solid_fuel_is_burned_or_sent_to_the_sink(page):
     assert "only for a while" in page.js(text("byproduct-hint"))
 
     page.js(click("byproduct-sink-btn"))
-    page.wait_until(f"({SAVED}.byproducts || {{}})['Rocket Fuel'] === 'burn'")
+    page.wait_until(f"({SAVED}.byproducts || {{}})['Rocket Fuel|Compacted Coal'] === 'burn'")
     page.wait_until(f"{CY}.getElementById('coal-generators').length > 0")
     assert page.js(text("byproduct-sink-btn")) == "Send to Sink"
 

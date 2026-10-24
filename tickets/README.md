@@ -5,9 +5,8 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
-| [059](059-make-from-a-byproduct.md) | Make something from a by-product | feature | P2 | Open |
 
-Next: 059; when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
@@ -72,3 +71,4 @@ Moved to [done/](done/).
 | [056](done/056-reference-layouts.md) | Reference layouts: crude oil to Turbofuel power | feature | P3 | Done |
 | [057](done/057-supply-driven-power.md) | Supply-driven power plans: use the inbound as the limit | feature | P2 | Done |
 | [058](done/058-burn-fuel-byproducts.md) | Burn fuel by-products for power | feature | P2 | Done |
+| [059](done/059-make-from-a-byproduct.md) | Make something from a by-product | feature | P2 | Done |

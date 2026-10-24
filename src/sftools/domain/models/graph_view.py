@@ -8,7 +8,7 @@ from typing import Dict, List, Optional
 
 from sftools.domain.enums.item_categories import ItemCategory
 from sftools.domain.enums.recipe_type import RecipeType
-from sftools.domain.models.factory_graph import EPSILON, NEGLIGIBLE, FactoryGraph, external_demand
+from sftools.domain.models.factory_graph import EPSILON, MAKE, NEGLIGIBLE, FactoryGraph, external_demand
 from sftools.domain.models.power import FUELS, GENERATORS, burns, generator_nodes
 from sftools.domain.models.production_node import ProductionNode
 from sftools.domain.models.residue import BURN_ID, GENERATORS_ID, RESIDUE
@@ -71,6 +71,14 @@ def ui_nodes(graph: FactoryGraph) -> List[Dict]:
         if node.id == BURN_ID:
             data["parents"] = [GENERATORS_ID]  # not a node of the graph (see power.generator_nodes)
             data["burn"] = True
+        branch = graph.branches.get(node.id)
+        if branch is not None:
+            # Made from a by-product (ticket 059): its output is a supply (for the Chain tab) or goes to the Sink
+            data["made_from"] = {"maker": branch.maker, "item": branch.byproduct, "recipe": branch.recipe,
+                                 "to": branch.to}
+            if branch.to == "sink":
+                data["parent_demands"][SINK_ID] = data["parent_demands"].pop("External Demand", 0.0)
+                data["external_demand"] = 0.0
 
         shown.append(data)
 
@@ -96,11 +104,13 @@ def byproducts_of(graph: FactoryGraph, node: ProductionNode) -> List[Dict]:
         "item": item.name,
         "rate": rate * node.building_scale,
         "fluid": item.category in FLUIDS,
-        "burn": item.name == RESIDUE or burns(item.name, item.category in FLUIDS, graph.byproduct_choices.get(node.id)),
+        "burn": (item.name == RESIDUE and graph.recorded_choice(node.id, item.name) != MAKE)
+        or burns(item.name, item.category in FLUIDS, graph.recorded_choice(node.id, item.name)),
         "fuel": item.name in FUELS,
         "burned": sum(rate for consumer, rate in graph.byproduct_used.get((node.id, item.name), {}).items()
                       if consumer == BURN_ID or consumer in GENERATORS),
-        "choice": graph.byproduct_choice(node.id),
+        "choice": graph.byproduct_choice(node.id, item.name),
+        "make": graph.byproduct_makes.get((node.id, item.name)),
         "loop": (node.id, item.name) in graph.byproduct_loops,
         "solving": (node.id, item.name) in graph.byproduct_solving,
         "settled": graph.loop_settled, "rounds": graph.loop_rounds,
@@ -111,12 +121,15 @@ def byproducts_of(graph: FactoryGraph, node: ProductionNode) -> List[Dict]:
 def sink_node(shown: List[Dict]) -> Optional[Dict]:
     """
     The Sink, in the shape of a serialized node, if any shown node has a by-product left after what is
-    used as supply: `sink.inputs` lists each ({from, item, rate, fluid, waste, loop}). Fluids and nuclear waste
-    can't be sunk; they are listed anyway, so the rest of the plan calculates, and `sink.fluids` and
-    `sink.waste` flag them (tickets 024, 057).
+    used as supply, or makes something from a by-product for the Sink (ticket 059, `made`): `sink.inputs` lists
+    each ({from, item, rate, fluid, waste, loop, made}). Fluids and nuclear waste can't be sunk; they are listed
+    anyway, so the rest of the plan calculates, and `sink.fluids` and `sink.waste` flag them (tickets 024, 057).
     """
     inputs = []
     for data in shown:
+        if (data.get("made_from") or {}).get("to") == "sink" and data["parent_demands"].get(SINK_ID, 0) >= NEGLIGIBLE:
+            inputs.append({"from": data["id"], "item": data["output_item"], "rate": data["parent_demands"][SINK_ID],
+                           "fluid": False, "waste": False, "loop": False, "made": True})
         for byproduct in data.get("byproducts") or []:
             amount = byproduct["rate"] - sum(byproduct["used"].values())
             if amount >= NEGLIGIBLE:

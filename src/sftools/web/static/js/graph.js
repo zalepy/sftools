@@ -172,9 +172,10 @@ export function renderGraph(nodesData) {
     // Demand targets: one circle per demanded item, fed by the nodes that make it
     const demands = {};
     nodesData.filter(isExternalDemand).forEach(node => {
-        const demand = demands[node.output_item] ||= { item: node.output_item, rate: 0, makers: [] };
+        const demand = demands[node.output_item] ||= { item: node.output_item, rate: 0, makers: [], made: false };
         demand.rate += node.external_demand;
         demand.makers.push(node.id);
+        demand.made ||= Boolean(node.made_from);  // made from a by-product, for the Chain tab (ticket 059)
     });
     Object.values(demands).forEach(demand => {
         const color = colorFor(demand.item);
@@ -182,7 +183,7 @@ export function renderGraph(nodesData) {
             group: 'nodes',
             data: {
                 id: DEMAND_PREFIX + demand.item,
-                label: `${demand.item}\n${demand.rate.toFixed(2)}/m\n(demand)`,
+                label: `${demand.item}\n${demand.rate.toFixed(2)}/m\n(${demand.made ? 'supply' : 'demand'})`,
                 raw: { id: DEMAND_PREFIX + demand.item, output_item: demand.item, demand },
                 backgroundColor: color,
                 textColor: textColorOn(color)
@@ -232,7 +233,7 @@ export function renderGraph(nodesData) {
                 const belts = (byproduct.edge_belts || {})[consumer];
                 elements.push({
                     group: 'edges',
-                    data: { source: node.id, target: consumer, maker: node.id,
+                    data: { source: node.id, target: consumer, maker: node.id, byproduct: byproduct.item,
                         label: `${rate.toFixed(2)}/m ${byproduct.item}${solved}${beltText(belts)}`,
                         edge: edgeInfo(belts, node.id, consumer, byproduct.item, rate, true) },
                     classes: ['byproduct', 'used', byproduct.solving && 'loop'].filter(Boolean)
@@ -244,13 +245,15 @@ export function renderGraph(nodesData) {
         sink.sink.inputs.forEach(input => {
             if (!nodeMap[input.from]) return;
             const loop = input.loop ? ' (loop)' : '';
-            const maker = (nodeMap[input.from].byproducts || []).find(b => b.item === input.item);
+            // Made from a by-product for the Sink (ticket 059) is the node's own output, not a by-product
+            const maker = input.made ? nodeMap[input.from] : (nodeMap[input.from].byproducts || []).find(b => b.item === input.item);
             const belts = ((maker || {}).edge_belts || {}).sink;
             elements.push({
                 group: 'edges',
-                data: { source: input.from, target: sink.id, label: `${input.rate.toFixed(2)}/m ${input.item}${loop}${beltText(belts)}`, maker: input.from,
-                    edge: edgeInfo(belts, input.from, 'sink', input.item, input.rate, true) },
-                classes: ['byproduct', (input.fluid || input.waste) && 'invalid', input.loop && 'loop'].filter(Boolean)
+                data: { source: input.from, target: sink.id, label: `${input.rate.toFixed(2)}/m ${input.item}${loop}${beltText(belts)}`,
+                    ...(!input.made && { maker: input.from, byproduct: input.item }),
+                    edge: edgeInfo(belts, input.from, 'sink', input.item, input.rate, !input.made) },
+                classes: [!input.made && 'byproduct', (input.fluid || input.waste) && 'invalid', input.loop && 'loop'].filter(Boolean)
             });
         });
     });
@@ -424,9 +427,9 @@ export function getEdgeData(key) {
     return edge ? edge.data('edge') : null;
 }
 
-/** Calls callback(maker node id) when a by-product edge is clicked. */
+/** Calls callback(maker node id, by-product item) when a by-product edge is clicked. */
 export function onByproductSelected(callback) {
-    cy.on('tap', 'edge.byproduct', evt => callback(evt.target.data('maker')));
+    cy.on('tap', 'edge.byproduct', evt => callback(evt.target.data('maker'), evt.target.data('byproduct')));
 }
 
 /** Re-runs the selection callback for a node, e.g. after the graph was re-rendered. */
@@ -455,7 +458,7 @@ export function onMergeDrop(callback) {
         if (dragData.output_item !== targetNode.data('raw').output_item) return;
         // Inbound production, the Sink, the Generators and demand targets aren't nodes of the plan; the
         // burn Refinery only takes the residue left over (ticket 055)
-        if ([dragData, targetNode.data('raw')].some(data => data.inbound || data.sink || data.generators || data.burn || data.demand)) return;
+        if ([dragData, targetNode.data('raw')].some(data => data.inbound || data.sink || data.generators || data.burn || data.demand || data.made_from)) return;
 
         // Let Cytoscape finish the drag before the graph is re-rendered
         setTimeout(() => callback(dragNode.id(), targetNode.id()), 50);

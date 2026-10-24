@@ -15,9 +15,11 @@ from typing import Dict, List, Optional, Tuple
 from sftools.domain.models.factory_graph import EPSILON, FactoryGraph
 from sftools.domain.models.item import Item
 from sftools.domain.models.power import FUELS, GENERATORS, WATER, burned, water_demands
+from sftools.engine.branches import Branch, as_roots, find_branches, fitted_clocks, settled
 from sftools.engine.calculator import build_plan, root_node_ids
 
 COVER_ALL = 1e12  # an inbound rate no plan uses up: the probe measures what the plan asks of each row
+PASSES = 4  # calculations at most, for the water and the branches to settle (see build_powered_plan)
 
 
 def eligible(demands: List[Tuple[str, float]], inbound: List[Tuple[str, float]]) -> bool:
@@ -45,22 +47,34 @@ def with_water(demands: List[Tuple[str, float]], burning: List[Tuple[str, float]
 
 
 def build_powered_plan(items_map: Dict, recipes_map: Dict, demands: List[Tuple[str, float]],
-                       fuel_roots: bool = False, **plan) -> FactoryGraph:
+                       fuel_roots: bool = False, clocks: Optional[Dict[str, list]] = None, **plan) -> FactoryGraph:
     """
-    build_plan, with the water its generators need: for the demanded fuels when they're burned (`fuel_roots`,
-    a limited plan), and for the fuel by-products burned (ticket 058). Those are only known once the plan is
-    calculated, so a plan burning one in generators that need water is calculated again with it. Water roots
-    make no by-products, so that settles it.
+    build_plan, with the water its generators need, and the branches made from by-products (ticket 059).
+    Water: for the demanded fuels when they're burned (`fuel_roots`, a limited plan), and for the fuel
+    by-products burned (ticket 058). Both those and the branches depend on what's left of by-products, only
+    known once the plan is calculated: it's calculated again until they settle (water roots make no
+    by-products, and a branch takes only what its maker has left, so a second or third pass does it).
     """
     burning = list(demands) if fuel_roots else []
-    rows, roots = with_water(demands, burning, fuel_roots)
-    graph = build_plan(items_map, recipes_map, rows, **plan)
-    thirsty = [(fuel, rate) for fuel, rate in burned(graph) if GENERATORS[FUELS[fuel]].water]
-    if thirsty:
+    thirsty: List[Tuple[str, float]] = []
+    found: List[Branch] = []
+    for _ in range(PASSES):
         rows, roots = with_water(demands, burning + thirsty, fuel_roots)
-        graph = build_plan(items_map, recipes_map, rows, **plan)
+        fitted = {b.root_id: fitted_clocks(b, (clocks or {}).get(b.root_id)) for b in found}
+        graph = build_plan(items_map, recipes_map, rows, clocks={**(clocks or {}), **fitted},
+                           branches=as_roots(found), **plan)
+        now_thirsty = [(fuel, rate) for fuel, rate in burned(graph) if GENERATORS[FUELS[fuel]].water]
+        now_found = find_branches(graph, recipes_map)
+        if settled(found, now_found) and _same(thirsty, now_thirsty):
+            break
+        thirsty, found = now_thirsty, now_found
     graph.generator_roots = roots
+    graph.branches = {b.root_id: b for b in found}
     return graph
+
+
+def _same(old: List[Tuple[str, float]], new: List[Tuple[str, float]]) -> bool:
+    return len(old) == len(new) and all(a == c and abs(b - d) <= 1e-6 for (a, b), (c, d) in zip(old, new, strict=True))
 
 
 def build_supply_plan(items_map: Dict, recipes_map: Dict, demands: List[Tuple[str, float]],

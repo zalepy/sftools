@@ -143,6 +143,16 @@ Click a by-product edge to see what's made, used and sunk (or burned), and switc
 
 A use that would feed a node above its own maker would be a loop. It isn't applied: the by-product goes to the Sink on a red-orange edge marked `(loop)`. **Solve Loop** on that edge balances the loop, marked `(loop, solved)`. If it can't be balanced, it stays on the Sink and the panel says why.
 
+## Make from a by-product
+
+What's left of a by-product can be made into something else, sized by the by-product itself. Click its edge, and under **Make from it** pick a recipe that takes it. Example: Rocket Fuel from 300 Crude Oil leaves 150 Polymer Resin a minute; **Plastic (Residual Plastic)** turns it into 50 Plastic a minute in 3 Refineries, with their water.
+
+- It takes what the plan doesn't use of the by-product (Use as Supply comes first), instead of burning or sinking it.
+- Its Refineries (or whatever the recipe runs in) are as many as that needs, all at the same clock, so they take exactly what's left. Its recipe is set on the by-product, and its clock follows it. Its other inputs are nodes like any other.
+- What it makes is **a supply, for the Chain tab**: a circle marked `(supply)`, which another plan can take as inbound production. Or it goes **to the Sink** (fluids can't, so they're always a supply). A plan's supplies in the Chain tab are as of its last calculation.
+- One step only: anything made further from it belongs in another plan, through the Chain tab. Its own by-products follow the usual rules.
+- **Nothing** goes back to burning or sinking it. The choice is kept per by-product: a node with two by-products can treat each differently.
+
 ## Logistics
 
 sftools plans the belts, pipes, splitters and mergers for every node.

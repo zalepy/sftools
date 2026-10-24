@@ -50,6 +50,6 @@ def test_the_byproduct_button_burns_residue(page):
     assert "can't be sunk" not in page.js(text("byproduct-hint"))
 
     page.js("document.getElementById('byproduct-toggle-btn').click()")
-    page.wait_until(f"({SAVED}.byproducts || {{}}).Plastic === 'use'")
+    page.wait_until(f"({SAVED}.byproducts || {{}})['Plastic|Heavy Oil Residue'] === 'use'")
     page.wait_until("document.getElementById('byproduct-toggle-btn').textContent === 'Burn for Power'")
     assert "is burned for power" in page.js(text("byproduct-hint"))  # nothing in this plan takes it

@@ -8,10 +8,11 @@ EPSILON = 1e-9
 # A by-product left over below this (per min) isn't sent to the Sink: it's rounding, e.g. a clock of
 # 83.333% for 5/6, and would show as 0.00/min (and, for a fluid, as a Sink that can't take it)
 NEGLIGIBLE = 0.005
-# What a node does with its by-products (tickets 031, 032, 058): cover demand elsewhere (USE, SOLVE for a
-# loop they close) or not: what's left goes to the Sink, a fuel to its generators (BURN, or SINK by default;
-# SINK chosen keeps a solid fuel for the Sink, see power.burns)
-USE, SINK, SOLVE, BURN = "use", "sink", "solve", "burn"
+# What a node does with its by-products (tickets 031, 032, 058, 059): cover demand elsewhere (USE, SOLVE for
+# a loop they close) or not: what's left goes to the Sink, a fuel to its generators (BURN, or SINK by default;
+# SINK chosen keeps a solid fuel for the Sink, see power.burns). MAKE covers demand too, and what's left feeds
+# a branch made from it (byproduct_makes; see engine/branches.py).
+USE, SINK, SOLVE, BURN, MAKE = "use", "sink", "solve", "burn", "make"
 # Solving a by-product loop (see recalculate): rounds until the amounts change by at most LOOP_TOLERANCE
 # (per min), like Google Sheets' iterative calculation, but damped
 LOOP_ROUNDS = 100
@@ -47,9 +48,12 @@ class FactoryGraph:
         # Supply-driven plans (ticket 057): root node id -> the generators (power.GENERATORS) it feeds,
         # the demanded fuels and the generators' water
         self.generator_roots: Dict[str, str] = {}
+        self.branches: Dict[str, object] = {}  # root id -> branches.Branch made from a by-product (ticket 059)
         self.is_fluid = lambda item: False  # build_plan sets it from the item categories (fluid fuels always burn)
-        # By-products (ticket 031): node id -> USE or SINK as the plan says; others get the default
+        # By-products (ticket 031): node id, or '<node id>|<item>' for one of its by-products (ticket 059, wins)
+        # -> the choice as the plan says; others get the default. For MAKE, (node id, item) -> {recipe, to}.
         self.byproduct_choices: Dict[str, str] = {}
+        self.byproduct_makes: Dict[Tuple[str, str], Dict[str, str]] = {}
         self.byproduct_default: str = SINK
         # Set by recalculate: (maker id, item) -> {consumer id: rate}, and the uses left out as loops
         self.byproduct_used: Dict[Tuple[str, str], Dict[str, float]] = {}
@@ -347,8 +351,12 @@ class FactoryGraph:
                 if in_degree[child_id] == 0:
                     queue.append(child_id)
 
-    def byproduct_choice(self, node_id: str) -> str:
-        return self.byproduct_choices.get(node_id, self.byproduct_default)
+    def byproduct_choice(self, node_id: str, item: Optional[str] = None) -> str:
+        return self.recorded_choice(node_id, item) or self.byproduct_default
+
+    def recorded_choice(self, node_id: str, item: Optional[str] = None) -> Optional[str]:
+        """The choice the plan records for the node's by-product `item` (or for all of them), if any."""
+        return self.byproduct_choices.get(f"{node_id}|{item}") or self.byproduct_choices.get(node_id)
 
     def _order_byproduct_uses(self, members: Dict[str, List[ProductionNode]],
                               order_children: Dict[str, Set[str]]) -> List[Tuple[str, str]]:
@@ -378,13 +386,16 @@ class FactoryGraph:
         uses = []
         for rep_id in sorted(members):
             rep = self.all_nodes[rep_id]
-            if rep.recipe is None or self.byproduct_choice(rep_id) not in (USE, SOLVE):
+            if rep.recipe is None:
                 continue
             for item, _ in rep.recipe.other_outputs(rep.output_item_name):
+                choice = self.byproduct_choice(rep_id, item.name)
+                if choice not in (USE, SOLVE, MAKE):
+                    continue
                 consumers = [group for group in groups_of.get(item.name, []) if group != rep_id]
                 if any(reaches(consumer, rep_id) for consumer in consumers):
                     self.byproduct_loops.add((rep_id, item.name))
-                    if self.byproduct_choice(rep_id) == SOLVE:
+                    if choice == SOLVE:
                         self.byproduct_solving.add((rep_id, item.name))
                     continue
                 for consumer in consumers:
@@ -438,16 +449,23 @@ class FactoryGraph:
         child_ids = self._initial_structure.get(node.id, {}).get("children", [])
         return [self.all_nodes[child_id] for child_id in child_ids if child_id in self.all_nodes]
 
-    def resolved_byproduct_choices(self) -> Dict[str, str]:
+    def resolved_byproduct_choices(self) -> Dict[str, object]:
         """
-        The choice of every node that makes a by-product, where the plan sets it or the default is USE:
-        the plan to keep. A default SINK isn't recorded, so a later Calculate (default USE) can still use it.
+        The choice of every node that makes a by-product, where the plan sets it or the default is USE, and
+        the choices for one of its by-products (MAKE as {choice, recipe, to}): the plan to keep. A default
+        SINK isn't recorded, so a later Calculate (default USE) can still use it.
         """
         resolved = {}
         for node in self.all_nodes.values():
             if node.is_dormant or node.absorbed_by or node.recipe is None:
                 continue
-            if node.recipe.other_outputs(node.output_item_name):
-                if node.id in self.byproduct_choices or self.byproduct_default == USE:
-                    resolved[node.id] = self.byproduct_choice(node.id)
+            others = node.recipe.other_outputs(node.output_item_name)
+            if others and (node.id in self.byproduct_choices or self.byproduct_default == USE):
+                resolved[node.id] = self.byproduct_choices.get(node.id, self.byproduct_default)
+            for item, _ in others:
+                choice = self.byproduct_choices.get(f"{node.id}|{item.name}")
+                if choice == MAKE:
+                    resolved[f"{node.id}|{item.name}"] = {"choice": MAKE, **self.byproduct_makes[(node.id, item.name)]}
+                elif choice:
+                    resolved[f"{node.id}|{item.name}"] = choice
         return resolved
