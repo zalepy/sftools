@@ -42,3 +42,4 @@ A worked example to build from: a fixed layout that turns 1350 Crude Oil/min int
 - The green pipe carries 500 for 22 Turbofuel Refineries (495) and the yellow 400 for 18 (405): they join at the bottom corners, so the test checks the Fuel per item, not per pipe.
 - The sheet's note of 160 generator places (20 × 2 × 4 floors) is kept in the note; 100 are needed.
 - Tests: `tests/unit/test_layouts.py`, `tests/js/layout-svg.test.mjs`, `tests/integration/test_layouts.py`. `scripts/screenshots.py` captures `guide/images/layouts.png` for the guide's new section.
+- A power note: what the build draws as specified (the Pressurizer at 250% with 3 pure and 3 normal extractors, a Miner Mk.3 at 250% on a normal node for each of Coal and Sulfur, 2 Sinks for the resin): about 3.1 GW of the 25. It's the reference setup, not anyone's current state; the user adjusts for their own nodes.

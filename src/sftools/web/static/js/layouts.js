@@ -1,6 +1,6 @@
 // Reference layouts (ticket 056): fixed builds to copy, in a drawer over the graph like the guide. Each is a
 // data file (static/layouts/<id>.json, listed in index.json) drawn by layout-svg.js, with its table and note.
-import { layoutSvg } from './layout-svg.js';
+import { layoutSvg, powerNote } from './layout-svg.js';
 
 const $ = id => document.getElementById(id);
 
@@ -40,7 +40,8 @@ function show(layout) {
     drawing.className = 'layout-drawing';
     drawing.innerHTML = layoutSvg(layout);  // built from our own data file, text escaped
     const note = Object.assign(document.createElement('p'), { className: 'layout-note-text', textContent: layout.note });
-    section.append(heading, summary, drawing, table(layout.table || []), note);
+    const power = Object.assign(document.createElement('p'), { className: 'layout-note-text layout-power', textContent: powerNote(layout) });
+    section.append(heading, summary, drawing, table(layout.table || []), note, power);
     return section;
 }
 

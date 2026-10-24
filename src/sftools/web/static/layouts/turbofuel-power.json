@@ -99,5 +99,13 @@
     {"step": "Polymer Resin", "buildings": "Sunk (2 Mk.4 belts)", "in": [["Polymer Resin", 675]], "out": []},
     {"step": "Compacted Coal supply (not drawn)", "recipe": "Alternate: Compacted Coal", "count": 24, "buildings": "24 Assemblers at 100%", "in": [["Coal", 600], ["Sulfur", 600]], "out": [["Compacted Coal", 600]]}
   ],
+  "power": [
+    {"what": "Refineries", "building": "Refinery", "count": 60, "base": 30, "mw": 1800},
+    {"what": "Refineries", "building": "Refinery", "count": 3, "clock": 0.83334, "base": 30, "mw": 70.7},
+    {"what": "Assemblers", "building": "Assembler", "count": 24, "base": 15, "mw": 360},
+    {"what": "Resource Well Pressurizer", "count": 1, "clock": 2.5, "base": 150, "mw": 503.7, "detail": "3 pure and 3 normal extractors: 1,350 Crude Oil"},
+    {"what": "Miners Mk.3 on normal nodes", "building": "Miner Mk.3", "count": 2, "clock": 2.5, "base": 45, "mw": 302.2, "detail": "600 Coal, 600 Sulfur"},
+    {"what": "AWESOME Sinks", "count": 2, "base": 30, "mw": 60, "detail": "the resin"}
+  ],
   "note": "The Fuel Generators are below, on up to 4 floors with a footprint matching the Refineries above (20 positions × 2 per position × 4 floors: room for 160). Each of the 4 red pipe ends dives down to 25 of them: 100 in all, 7.5 Turbofuel/min each."
 }

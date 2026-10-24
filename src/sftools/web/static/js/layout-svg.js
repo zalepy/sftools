@@ -11,6 +11,7 @@ export function escapeXml(text) {
 }
 
 const center = v => (v + 0.5) * CELL;
+const percent = clock => `${+(clock * 100).toFixed(3)}%`;
 const title = text => text ? `<title>${escapeXml(text)}</title>` : '';
 
 function trace(t) {
@@ -29,9 +30,23 @@ export function buildingTitle(building, traces) {
         const t = traces.find(t => t.id === id) || { name: id };
         return ['the', t.name, t.item, 'pipe'].filter(Boolean).join(' ');
     };
-    const clock = building.clock && building.clock !== 1 ? ` at ${+(building.clock * 100).toFixed(3)}%` : '';
+    const clock = building.clock && building.clock !== 1 ? ` at ${percent(building.clock)}` : '';
     const from = building.from ? ` from ${pipe(building.from)}` : '';
     return `Refinery ${building.label}: ${building.recipe}${clock},${from} into ${pipe(building.into)}`;
+}
+
+const mw = value => `${Math.round(value).toLocaleString('en')} MW`;
+
+/** What the build itself draws, from its `power` rows, as built (e.g. the Pressurizer at 250%). */
+export function powerNote(layout) {
+    const rows = layout.power || [];
+    if (!rows.length) return '';
+    const used = rows.reduce((sum, row) => sum + row.mw, 0);
+    const made = (layout.table || []).flatMap(row => row.generators ? row.out : []).reduce((sum, [, rate]) => sum + rate, 0);
+    const parts = rows.map(row => `${row.count} ${row.what}${row.clock ? ` at ${percent(row.clock)}` : ''}`
+        + `${row.detail ? ` (${row.detail})` : ''} ${mw(row.mw)}`);
+    const net = made ? ` of the ${mw(made)} (${mw(made - used)} net)` : '';
+    return `Power used: ${mw(used)}${net}: ${parts.join(', ')}. Power grows with clock^1.32: adjust for your own nodes and clocks.`;
 }
 
 function building(b, layout) {

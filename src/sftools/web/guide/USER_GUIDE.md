@@ -235,7 +235,7 @@ Colors are kept in your browser and in Save Book.
 
 **Layouts** in the header opens worked examples to build from: fixed layouts, not plans, so nothing in them changes with your tabs. Each one is a schematic, not to scale: one square is a building's place, pipes are raised over the striped belts on the floor, and the numbers along a pipe are what it carries after each building. Hover a building, pipe or marker to see what it is. A table of the numbers and a note follow the drawing.
 
-The first one, **Crude Oil to Turbofuel power**, refines 1350 Crude Oil/min into Fuel (23 Refineries), then Turbofuel (40 Refineries with Compacted Coal from below), which dives down to 100 Fuel Generators for 25,000 MW. Its Polymer Resin leaves on two belts, to be sunk.
+The first one, **Crude Oil to Turbofuel power**, refines 1350 Crude Oil/min into Fuel (23 Refineries), then Turbofuel (40 Refineries with Compacted Coal from below), which dives down to 100 Fuel Generators for 25,000 MW. Its Polymer Resin leaves on two belts, to be sunk. Its power note adds up what the build itself draws, about 3,100 MW, with the Resource Well Pressurizer and the Miners overclocked to 250%; adjust it for your own nodes.
 
 ![The Crude Oil to Turbofuel power layout](images/layouts.png)
 
