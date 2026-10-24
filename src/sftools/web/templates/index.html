@@ -71,6 +71,11 @@
                         </div>
                         <button type="button" id="add-inbound-btn" class="secondary" style="margin-bottom: 0.5rem;">+ Add
                             Inbound</button>
+                        <!-- Power plans: only fuels demanded, the inbound as the limit (ticket 057) -->
+                        <div id="supply-limit-group" style="display: none; margin-bottom: 0.5rem;">
+                            <label><input type="checkbox" id="supply-limit"> Use inbound as the limit <a href="#" class="help-link" data-guide="power-from-a-supply" title="Guide: power from a supply" aria-label="Guide: power from a supply">?</a></label>
+                            <div id="supply-summary" class="hint" style="display: none;"></div>
+                        </div>
                         <button type="submit" style="margin-bottom: 0.5rem;">Calculate</button>
                         <div style="display: flex; gap: 0.5rem;">
                             <button type="button" id="export-btn" class="secondary" title="Download this tab's plan">Export Plan</button>

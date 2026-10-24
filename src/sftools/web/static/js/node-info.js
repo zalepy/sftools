@@ -64,11 +64,18 @@ export function clocksText(node, separator = ' × ') {
 }
 
 /**
- * The Fuel Generators burning the residue's Fuel (ticket 055): how many, how many of them the Fuel keeps
- * running, and the power they make on average, e.g. "4× Fuel Generator, 3.33 fed".
+ * Generators (tickets 055, 057): how many, and how many of them the fuel keeps running, e.g.
+ * "4× Fuel Generator, 3.33 fed".
  */
 export function generatorsText(node) {
     return `${node.buildings}× ${node.building}, ${node.generators.fed.toFixed(2)} fed`;
+}
+
+/** What generators burn, and their water: "66.67/min Turbofuel, 20.00/min Fuel burned · 450.00/min Water". */
+export function burnedText(node) {
+    const { fuels, water } = node.generators;
+    const burned = `${fuels.map(f => `${f.rate.toFixed(2)}/min ${f.item}`).join(', ')} burned`;
+    return water ? `${burned} · ${water.toFixed(2)}/min Water` : burned;
 }
 
 /** Number of buildings: whole with clocks, otherwise the fractional scale. */

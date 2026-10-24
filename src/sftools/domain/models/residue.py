@@ -1,7 +1,7 @@
 """
 Heavy Oil Residue left over is burned for power (ticket 055): the Sink can't take fluids, so the residue no
 plan node uses goes to a Refinery running Residual Fuel (the node BURN_ID), which feeds Fuel Generators
-(graph_view.generators_node). The Refinery isn't part of the tree: FactoryGraph sizes it after everything else.
+(power.generator_nodes). The Refinery isn't part of the tree: FactoryGraph sizes it after everything else.
 """
 RESIDUE = "Heavy Oil Residue"
 BURN_RECIPE = "Residual Fuel"

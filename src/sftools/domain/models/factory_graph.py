@@ -37,6 +37,12 @@ class FactoryGraph:
         self.inbound: Dict[str, float] = {}
         self.inbound_used: Dict[str, Dict[str, float]] = {}  # item -> {consumer id: rate}, set by recalculate
         self.unused: Set[str] = set()  # nodes left with nothing to make (all covered by inbound production)
+        # item -> what the plan asks of it, before inbound production or by-products cover any (set by
+        # recalculate; supply-driven plans measure their inbound rows with it, ticket 057)
+        self.item_demand: Dict[str, float] = {}
+        # Supply-driven plans (ticket 057): root node id -> the generators (power.GENERATORS) it feeds,
+        # the demanded fuels and the generators' water
+        self.generator_roots: Dict[str, str] = {}
         # By-products (ticket 031): node id -> USE or SINK as the plan says; others get the default
         self.byproduct_choices: Dict[str, str] = {}
         self.byproduct_default: str = SINK
@@ -244,6 +250,7 @@ class FactoryGraph:
         inbound_left = dict(self.inbound)
         self.inbound_used = {item: {} for item in self.inbound}
         self.unused = set()
+        self.item_demand = {}
         idle: Set[str] = set()
         byproducts_left: Dict[str, List[List]] = {}  # item -> [[maker id, rate left], ...], in the order made
         for maker_id, item in sorted(self.byproduct_solving):
@@ -302,6 +309,7 @@ class FactoryGraph:
                     rep.parent_demands[parent_id] = rep.parent_demands.get(parent_id, 0) + rate
             group_demand[rep_id] = total
             item = rep.output_item_name
+            self.item_demand[item] = self.item_demand.get(item, 0.0) + total
             need = total
             amount = min(need, inbound_left.get(item, 0.0))
             if amount > 0:

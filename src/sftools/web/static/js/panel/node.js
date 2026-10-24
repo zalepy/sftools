@@ -1,7 +1,7 @@
 // The Node tab's selected node: its recipe and stats, input breakdown, clocks, built marks and preferred recipe.
 import { fetchRecipes } from '../api.js';
 import { getNodeData } from '../graph.js';
-import { clocksText, buildingsText, builtStatus, inboundUnused, generatorsText } from '../node-info.js';
+import { clocksText, buildingsText, builtStatus, inboundUnused, generatorsText, burnedText } from '../node-info.js';
 import { fitLastClock, clockGroups, clockBoxes } from '../clocks.js';
 import { state } from '../state.js';
 import { showNodeNote, pinNote } from '../notes.js';
@@ -70,16 +70,18 @@ function renderStats(data) {
 
     const surplusEl = $('detail-surplus-value');
     if (data.sink) {
-        // The Sink has no surplus; it flags what it can't take
-        const fluids = data.sink.fluids;
-        surplusEl.innerText = fluids.length ? `Fluids can't be sunk: ${fluids.join(', ')}` : 'All by-products sunk';
-        surplusEl.style.color = fluids.length ? 'var(--status-shortage)' : 'var(--text-secondary)';
+        // The Sink has no surplus; it flags what it can't take: fluids, and nuclear waste (ticket 057)
+        const { fluids, waste = [] } = data.sink;
+        const cant = [fluids.length && `Fluids can't be sunk: ${fluids.join(', ')}`,
+            waste.length && `Nuclear waste can't be sunk: ${waste.join(', ')}`].filter(Boolean);
+        surplusEl.innerText = cant.length ? cant.join('. ') : 'All by-products sunk';
+        surplusEl.style.color = cant.length ? 'var(--status-shortage)' : 'var(--text-secondary)';
         $('detail-clock').innerText = '-';
         return;
     }
     if (data.generators) {
-        // Generated power, the average the Fuel gives; the last Generators burn with gaps (ticket 055)
-        $('detail-output-rate').innerText = `${data.generators.fuel.toFixed(2)}/min Fuel burned`;
+        // Generated power, the average the fuel gives; the last generators burn with gaps (tickets 055, 057)
+        $('detail-output-rate').innerText = burnedText(data);
         surplusEl.innerText = `Underfed ones burn with gaps: ${data.generators.power.toFixed(2)} MW on average`;
         surplusEl.style.color = 'var(--text-secondary)';
         $('detail-clock').innerText = '-';

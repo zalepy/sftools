@@ -17,6 +17,7 @@ export const state = {
     built: {},          // node_id -> {count, recipe}: buildings already built in the game (ticket 037)
     notes: {},          // node_id -> text: the user's note on the node (ticket 046)
     planNote: '',       // the user's note on the whole plan (ticket 046)
+    supplyLimit: false, // use the inbound as the limit, when only fuels are demanded (ticket 057)
     // Logistics mode: what's unlocked, the logistics nodes the user edited ('<node id>|in' / '|out'),
     // where the nodes inside them are drawn (browser only, ticket 036), and the edges given a number of
     // belts ('<producer>><consumer>|<item>' -> count, ticket 041)
@@ -24,6 +25,7 @@ export const state = {
     colors: {},         // item -> color
     defaultColors: {},  // item -> built-in color (node_colors.json); × on the Colors tab goes back to it
     preferred: {},      // item -> recipe new nodes of it run (ticket 043); global, like the colors
+    power: { fuels: [], raw: [] },  // from the server: the fuels and the raw items (ticket 057)
     selectedNodeId: null
 };
 
@@ -41,6 +43,7 @@ export function snapshot({ items, rates, inbound }) {
         built: state.built,
         notes: state.notes,
         planNote: state.planNote,
+        supplyLimit: state.supplyLimit,
         logistics: state.logistics
     };
 }
@@ -53,6 +56,7 @@ export function applySaved(saved) {
     state.built = saved.built || {};
     state.notes = saved.notes && typeof saved.notes === 'object' ? saved.notes : {};
     state.planNote = typeof saved.planNote === 'string' ? saved.planNote : '';
+    state.supplyLimit = saved.supplyLimit === true;
     const logistics = saved.logistics || {};
     state.logistics = {
         settings: { ...DEFAULT_LOGISTICS_SETTINGS, ...logistics.settings },

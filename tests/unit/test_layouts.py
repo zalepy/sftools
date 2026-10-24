@@ -8,7 +8,7 @@ from collections import defaultdict
 import pytest
 
 from sftools.config import DATA_DIR, STATIC_DIR
-from sftools.domain.models.graph_view import GENERATOR_POWER
+from sftools.domain.models.power import GENERATORS
 from sftools.domain.models.production_node import CLOCK_POWER_EXPONENT
 from sftools.engine.game_data import get_game_data
 from sftools.engine.logistics import PIPES
@@ -68,9 +68,10 @@ def test_the_table_matches_the_buildings(layout, recipes):
         elif "generators" in row:
             # Fuel Generators: 250 MW from the item's energy
             (item, rate), = row["in"]
-            per_generator = GENERATOR_POWER * 60 / energy(item)
+            generator_power = GENERATORS["generators"].power
+            per_generator = generator_power * 60 / energy(item)
             assert row["generators"] == pytest.approx(rate / per_generator)
-            assert dict(row["out"]) == {"MW": pytest.approx(row["generators"] * GENERATOR_POWER)}
+            assert dict(row["out"]) == {"MW": pytest.approx(row["generators"] * generator_power)}
 
 
 @pytest.mark.parametrize("layout", layouts(), ids=lambda layout: layout["id"])

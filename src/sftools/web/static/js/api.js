@@ -6,7 +6,7 @@ async function errorFrom(response) {
     return new Error(detail || `HTTP ${response.status}`);
 }
 
-/** Returns {nodes, ignored, byproducts}; throws with the server's message on an error status. */
+/** Returns {nodes, ignored, byproducts, logisticsResets, supply}; throws with the server's message on an error status. */
 export async function calculate(plan) {
     const response = await fetch('/api/calculate', {
         method: 'POST',
@@ -17,7 +17,7 @@ export async function calculate(plan) {
     const data = await response.json();
     return {
         nodes: data.nodes, ignored: data.ignored || [], byproducts: data.byproducts || {},
-        logisticsResets: data.logistics_resets || []
+        logisticsResets: data.logistics_resets || [], supply: data.supply || null
     };
 }
 
@@ -30,6 +30,13 @@ export async function fetchRecipes(itemName) {
 /** Items made by more than one recipe: [{item, default, recipes: [{name, type, byproduct, ...}]}]. */
 export async function fetchRecipeChoices() {
     const response = await fetch('/api/recipe_choices');
+    if (!response.ok) throw await errorFrom(response);
+    return response.json();
+}
+
+/** {fuels, raw}: what a supply-driven plan burns, and the raw items (ticket 057). */
+export async function fetchPowerItems() {
+    const response = await fetch('/api/power_items');
     if (!response.ok) throw await errorFrom(response);
     return response.json();
 }

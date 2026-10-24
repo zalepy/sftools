@@ -47,6 +47,24 @@ Example: the Modular Frame plan needs 15 Reinforced Iron Plates a minute. Add an
 
 To feed this plan from another of your plans, see [The Chain tab](#the-chain-tab) and [Move Branch to Inbound](#move-branch-to-inbound).
 
+## Power from a supply
+
+A power plan can start from what you have instead of what you want: how much Fuel this oil field makes, and how many generators it runs. Demand **only fuels**, add the field as **inbound production**, and a checkbox appears under the inbound rows: **Use inbound as the limit**.
+
+Fuels: Fuel, Liquid Biofuel, Turbofuel, Rocket Fuel and Ionized Fuel (Fuel Generators, 250 MW); Coal, Compacted Coal and Petroleum Coke (Coal Generators, 75 MW, with 45 Water a minute each); Uranium, Plutonium and Ficsonium Fuel Rods (Nuclear Power Plants, 2,500 MW, with 240 Water a minute each).
+
+With the checkbox on:
+
+- The plan grows until the first inbound row runs out. The demand rate doesn't matter with one fuel; with several, the rates set the ratio between them (`Turbofuel 2`, `Fuel 1` stays 2 to 1).
+- Every inbound row is a limit. The summary under the checkbox names the one used up, with the power generated (gross) and what's left after the plan's own buildings (net), then a line per fuel and per row: what the plan burns and uses. A row the plan doesn't use says so.
+- An inbound row of a raw resource (Crude Oil, Coal, Uranium, Sulfur...) only sets the limit: the plan shows the Miners, Oil Extractors or wells that get it. Other rows, such as Steel Beam for fuel rods, stay inbound production.
+- What isn't an inbound row, e.g. Sulfur for Compacted Coal or the generators' Water, is made or mined as the plan needs it.
+- Each fuel goes to a round node of its generators instead of a demand circle: one node per kind, counting the generators per fuel, as for the residue (see [By-products and the Sink](#by-products-and-the-sink)). Coal Generators and Nuclear Power Plants take Water, so they come with Water Extractors. Nuclear waste goes to the Sink in red: it can't be sunk, so store it or make Plutonium from it in another plan.
+- Buildings are whole, as everywhere: the last one of each node often uses a little more than the limit, and the summary shows how much. **Fit Last Building** on a node trims it.
+- In the Chain tab, a limited plan gives no fuel to other plans (it burns it) and needs only its inbound rows that aren't raw.
+
+Example: demand `Fuel`, `1`, add inbound `Crude Oil`, `300`, Calculate, and tick the checkbox. The plan makes 200 Fuel a minute for 10 Fuel Generators, 2,500 MW.
+
 ## Reading the graph
 
 - **Nodes** are groups of the same building running one recipe. The label shows the item, the rate, and the buildings, e.g. `(5× Constructor)`. `(A)` after the item means an alternate recipe. A line like `3×100% + 1×150%` shows clock speeds, and the next line the power shards they need.
