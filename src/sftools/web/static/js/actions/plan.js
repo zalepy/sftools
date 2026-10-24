@@ -89,7 +89,7 @@ export async function requestPlan({
     edges = state.logistics.edges
 } = {}) {
     const { items, rates, inbound } = getDemands();
-    const { nodes, ignored, byproducts: resolved, logisticsResets, supply } = await api.calculate({
+    const { nodes, ignored, byproducts: resolved, logisticsResets, supply, made } = await api.calculate({
         demands: items.map((item, i) => ({ item, rate: rates[i] })),
         inbound,
         recipes,
@@ -102,6 +102,7 @@ export async function requestPlan({
         supply_limit: state.supplyLimit
     });
     state.byproducts = resolved;
+    state.made = made;
     showSupply(supply);
     // The dashed border shows the clocks of the plan just calculated; callers keep them in state afterwards
     nodes.forEach(node => { node.clocks_set = Boolean(clocks[node.id]); });

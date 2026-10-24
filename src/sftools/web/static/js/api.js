@@ -6,7 +6,7 @@ async function errorFrom(response) {
     return new Error(detail || `HTTP ${response.status}`);
 }
 
-/** Returns {nodes, ignored, byproducts, logisticsResets, supply}; throws with the server's message on an error status. */
+/** Returns {nodes, ignored, byproducts, logisticsResets, supply, made}; throws with the server's message on an error status. */
 export async function calculate(plan) {
     const response = await fetch('/api/calculate', {
         method: 'POST',
@@ -17,7 +17,7 @@ export async function calculate(plan) {
     const data = await response.json();
     return {
         nodes: data.nodes, ignored: data.ignored || [], byproducts: data.byproducts || {},
-        logisticsResets: data.logistics_resets || [], supply: data.supply || null
+        logisticsResets: data.logistics_resets || [], supply: data.supply || null, made: data.made || []
     };
 }
 
@@ -30,6 +30,13 @@ export async function fetchRecipes(itemName) {
 /** Items made by more than one recipe: [{item, default, recipes: [{name, type, byproduct, ...}]}]. */
 export async function fetchRecipeChoices() {
     const response = await fetch('/api/recipe_choices');
+    if (!response.ok) throw await errorFrom(response);
+    return response.json();
+}
+
+/** The recipes that take an item, [{name, building, product}]: what can be made from a by-product (ticket 059). */
+export async function fetchRecipesUsing(itemName) {
+    const response = await fetch(`/api/recipes_using?item_name=${encodeURIComponent(itemName)}`);
     if (!response.ok) throw await errorFrom(response);
     return response.json();
 }

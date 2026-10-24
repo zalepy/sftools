@@ -370,6 +370,15 @@
                     <div class="hint" id="byproduct-hint"></div>
                     <button type="button" id="byproduct-toggle-btn" style="margin-top: 0.5rem;">Use as Supply</button>
                     <button type="button" id="byproduct-sink-btn" class="secondary" style="margin-top: 0.5rem; display: none;">Send to Sink</button>
+                    <!-- Make something from what's left of it (ticket 059) -->
+                    <div class="form-group" id="byproduct-make-group" style="margin-top: 0.75rem;">
+                        <label for="byproduct-make">Make from it <a href="#" class="help-link" data-guide="make-from-a-by-product" title="Guide: make from a by-product" aria-label="Guide: make from a by-product">?</a></label>
+                        <select id="byproduct-make"><option value="">Nothing</option></select>
+                        <select id="byproduct-make-to" style="margin-top: 0.25rem;">
+                            <option value="supply">As a supply, for the Chain tab</option>
+                            <option value="sink">To the Sink</option>
+                        </select>
+                    </div>
                     <button type="button" id="byproduct-solve-btn" class="secondary" style="margin-top: 0.5rem; display: none;">Solve Loop</button>
                 </section>
             </div>

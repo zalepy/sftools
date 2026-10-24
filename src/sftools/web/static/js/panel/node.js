@@ -205,9 +205,10 @@ export function showNodeDetails(data) {
     $('clock-controls').style.display = data.is_supplied ? 'none' : '';
     // Inbound production is set in the Inbound Production rows, not on the node; the Sink and the
     // Generators only receive, and the burn Refinery always runs Residual Fuel (ticket 055)
-    const fixed = data.inbound || data.sink || data.generators || data.burn;
+    // Made from a by-product (ticket 059): its recipe is chosen on the by-product, its clock fitted to it
+    const fixed = data.inbound || data.sink || data.generators || data.burn || data.made_from;
     $('details-recipe-collapsible').style.display = fixed ? 'none' : '';
-    if (data.sink || data.generators) $('clock-controls').style.display = 'none';
+    if (data.sink || data.generators || data.made_from) $('clock-controls').style.display = 'none';
 
     // Unmerge is offered on merge targets
     const isMergeTarget = Object.values(state.merges).includes(data.id);

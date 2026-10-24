@@ -21,7 +21,7 @@ if TYPE_CHECKING:  # factory_graph imports this module (burn_fuel_byproducts)
 WATER = "Water"
 EPSILON = 1e-9  # as factory_graph.EPSILON
 NEGLIGIBLE = 0.005  # as factory_graph.NEGLIGIBLE: less left over is rounding, not fuel to burn
-SINK = "sink"  # as factory_graph.SINK: the by-product choice that sends a solid fuel to the Sink
+SINK, MAKE = "sink", "make"  # as factory_graph: the choices keeping a fuel from being burned
 
 
 @dataclass(frozen=True)
@@ -60,10 +60,10 @@ def water_demands(fuels: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
 
 def burns(item: str, fluid: bool, choice: str) -> bool:
     """
-    Whether what's left of a by-product is burned (ticket 058): a fuel, unless it's solid and the plan chose
-    the Sink for it. Fluid fuels can't be sunk, so they always are.
+    Whether what's left of a by-product is burned (ticket 058): a fuel, unless something is made from it
+    (ticket 059), or it's solid and the plan chose the Sink for it. Fluid fuels can't be sunk, so they always are.
     """
-    return item in FUELS and (fluid or choice != SINK)
+    return item in FUELS and choice != MAKE and (fluid or choice != SINK)
 
 
 def burn_fuel_byproducts(graph: "FactoryGraph", is_fluid):
@@ -76,7 +76,7 @@ def burn_fuel_byproducts(graph: "FactoryGraph", is_fluid):
         if node.is_dormant or node.absorbed_by or node.recipe is None:
             continue
         for item, _ in node.recipe.other_outputs(node.output_item_name):
-            if not burns(item.name, is_fluid(item), graph.byproduct_choices.get(node_id)):
+            if not burns(item.name, is_fluid(item), graph.recorded_choice(node_id, item.name)):
                 continue
             used = graph.byproduct_used.setdefault((node_id, item.name), {})
             left = graph._byproduct_made(node_id, item.name) - sum(used.values())

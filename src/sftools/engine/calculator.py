@@ -5,7 +5,7 @@ from sftools.domain.enums.demand_type import DemandType
 from sftools.domain.enums.recipe_type import RecipeType
 from sftools.domain.models.demand import Demand
 from sftools.domain.enums.item_categories import ItemCategory
-from sftools.domain.models.factory_graph import BURN, FactoryGraph, SINK, SOLVE, USE
+from sftools.domain.models.factory_graph import BURN, MAKE, FactoryGraph, SINK, SOLVE, USE
 from sftools.domain.models.item import Item
 from sftools.domain.models.production_node import ProductionNode
 from sftools.domain.models.recipe import Recipe
@@ -83,8 +83,12 @@ def child_node_id(parent: ProductionNode, item_name: str, items_map: Dict = None
 
 
 def calculate_demands(items_map, root_demands_list: List[Demand], round_up: bool = True,
-                      preferred: Optional[Dict[str, Recipe]] = None) -> FactoryGraph:
-
+                      preferred: Optional[Dict[str, Recipe]] = None,
+                      branches: Optional[List[Tuple[str, Demand, Recipe]]] = None) -> FactoryGraph:
+    """
+    The tree of nodes for the demands, and for `branches`: roots with their own id and recipe (what's made
+    from a by-product, ticket 059).
+    """
     graph = FactoryGraph()
 
     # Queue: (Demand, NodeId, ParentNode, items produced by the ancestors)
@@ -94,6 +98,8 @@ def calculate_demands(items_map, root_demands_list: List[Demand], round_up: bool
     root_ids = root_node_ids([d.item.name for d in root_demands_list])
     for d, root_id in zip(root_demands_list, root_ids, strict=True):
         queue.append((d, root_id, None, frozenset()))
+    branch_recipes = {root_id: recipe for root_id, _, recipe in branches or []}
+    queue.extend((d, root_id, None, frozenset()) for root_id, d, _ in branches or [])
 
     processed_count = 0
     max_nodes = 5000 # Safety brake
@@ -112,7 +118,7 @@ def calculate_demands(items_map, root_demands_list: List[Demand], round_up: bool
         if not item or not item.recipes:
             continue
 
-        recipe = recipe_for(item, preferred)
+        recipe = branch_recipes.get(node_id) or recipe_for(item, preferred)
         if recipe is None:
             continue
 
@@ -298,6 +304,27 @@ def _drop_unused_inputs_of_merged(graph: FactoryGraph) -> bool:
     return dropped
 
 
+def parse_byproduct_choices(byproducts: Optional[Dict], items_map: Dict, recipes_map: Dict[str, Recipe]):
+    """
+    The plan's by-product choices: ({key: choice}, {(node id, item): {recipe, to}}). Keys are node ids or
+    '<node id>|<item>' (ticket 059). Make from it, {choice: MAKE, recipe, to: sink | supply}, is kept only
+    per item, with a recipe that takes the item; a fluid product can't be sunk, so it's a supply.
+    """
+    choices, makes = {}, {}
+    for key, choice in (byproducts or {}).items():
+        if choice in (USE, SINK, SOLVE, BURN):
+            choices[key] = choice
+        elif isinstance(choice, dict) and choice.get("choice") == MAKE and "|" in key:
+            node_id, item = key.rsplit("|", 1)
+            recipe = recipes_map.get(choice.get("recipe"))
+            if recipe is None or not any(i.name == item for i, _ in recipe.ingredients) or item not in items_map:
+                continue
+            fluid = recipe.output_item.category in (ItemCategory.LIQUIDS, ItemCategory.GAS)
+            choices[key] = MAKE
+            makes[(node_id, item)] = {"recipe": recipe.name, "to": "supply" if fluid else choice.get("to", "sink")}
+    return choices, makes
+
+
 MIN_CLOCK, MAX_CLOCK = 0.01, 2.5
 
 
@@ -340,6 +367,7 @@ def build_plan(
     byproducts: Optional[Dict[str, str]] = None,
     byproducts_default: str = SINK,
     preferred: Optional[Dict[str, str]] = None,
+    branches: Optional[List[Tuple[str, str, float, str]]] = None,
 ) -> FactoryGraph:
     """
     Builds a FactoryGraph from the full plan description.
@@ -355,6 +383,7 @@ def build_plan(
     (SINK, BURN): what's left goes to the Sink, a fuel to its generators (ticket 058); nodes not listed get
     `byproducts_default` (USE for Calculate, ticket 031). `preferred` ({item: recipe name}, ticket 043) is the
     recipe new nodes of an item run instead of the default; a node's own entry in `recipes` still wins.
+    `branches` lists (root id, item, rate, recipe) made from by-products (ticket 059, see engine/branches.py).
 
     Entries that can't apply are skipped and listed in `graph.ignored` as
     {"kind": "recipe" | "merge" | "clock", "node_id", "reason"}. Entries on dropped
@@ -367,7 +396,10 @@ def build_plan(
 
     root_demands = [Demand(name, items_map[name], rate, DemandType.PRODUCE) for name, rate in demands]
     preferred_recipes = resolve_preferred(items_map, recipes_map, preferred)
-    graph = calculate_demands(items_map, root_demands, round_up=round_up, preferred=preferred_recipes)
+    branch_roots = [(root_id, Demand(item, items_map[item], rate, DemandType.PRODUCE), recipes_map[recipe])
+                    for root_id, item, rate, recipe in branches or []]
+    graph = calculate_demands(items_map, root_demands, round_up=round_up, preferred=preferred_recipes,
+                              branches=branch_roots)
 
     def report(kind: str, node_id: str, state: str, **extra):
         if state == DROPPED:
@@ -447,8 +479,7 @@ def build_plan(
     graph.inbound = {}
     for item, rate in inbound or []:
         graph.inbound[item] = graph.inbound.get(item, 0) + rate
-    graph.byproduct_choices = {node_id: choice for node_id, choice in (byproducts or {}).items()
-                               if choice in (USE, SINK, SOLVE, BURN)}
+    graph.byproduct_choices, graph.byproduct_makes = parse_byproduct_choices(byproducts, items_map, recipes_map)
     graph.is_fluid = lambda item: item.category in (ItemCategory.LIQUIDS, ItemCategory.GAS)
     graph.byproduct_default = byproducts_default
 

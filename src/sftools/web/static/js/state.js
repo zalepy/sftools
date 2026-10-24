@@ -18,6 +18,7 @@ export const state = {
     notes: {},          // node_id -> text: the user's note on the node (ticket 046)
     planNote: '',       // the user's note on the whole plan (ticket 046)
     supplyLimit: false, // use the inbound as the limit, when only fuels are demanded (ticket 057)
+    made: [],           // [{item, rate, from}] made from by-products for the Chain tab, as last calculated (ticket 059)
     // Logistics mode: what's unlocked, the logistics nodes the user edited ('<node id>|in' / '|out'),
     // where the nodes inside them are drawn (browser only, ticket 036), and the edges given a number of
     // belts ('<producer>><consumer>|<item>' -> count, ticket 041)
@@ -44,6 +45,7 @@ export function snapshot({ items, rates, inbound }) {
         notes: state.notes,
         planNote: state.planNote,
         supplyLimit: state.supplyLimit,
+        made: state.made,
         logistics: state.logistics
     };
 }
@@ -57,6 +59,7 @@ export function applySaved(saved) {
     state.notes = saved.notes && typeof saved.notes === 'object' ? saved.notes : {};
     state.planNote = typeof saved.planNote === 'string' ? saved.planNote : '';
     state.supplyLimit = saved.supplyLimit === true;
+    state.made = Array.isArray(saved.made) ? saved.made : [];
     const logistics = saved.logistics || {};
     state.logistics = {
         settings: { ...DEFAULT_LOGISTICS_SETTINGS, ...logistics.settings },

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -16,7 +16,9 @@ class PlanRequest(BaseModel):
     merges: Dict[str, str] = {}  # source node_id -> target node_id
     clocks: Dict[str, List[Dict[str, Any]]] = {}  # node_id -> [{"clock": 1.0}, {"count": 1, "clock": 0.6}]
     inbound: List[DemandIn] = []  # production supplied from outside the plan, used before producing anything
-    byproducts: Dict[str, Literal["use", "sink", "solve", "burn"]] = {}  # node_id -> what its by-products do
+    # node_id, or '<node_id>|<item>' (ticket 059) -> what its by-products do; Make from it is
+    # {"choice": "make", "recipe": ..., "to": "sink" | "supply"}
+    byproducts: Dict[str, Union[Literal["use", "sink", "solve", "burn"], Dict[str, str]]] = {}
     byproducts_default: Literal["use", "sink"] = "sink"  # for nodes not in `byproducts`: "use" for Calculate
     logistics: Dict[str, Any] = {}  # {"settings": {belt_tier, pipe_tier, smart}, "layouts": {"<id>|in|out": ...}}
     supply_limit: bool = False  # use the inbound as the limit, when only fuels are demanded (ticket 057)
@@ -34,7 +36,8 @@ class IgnoredEntry(BaseModel):
 class PlanResponse(BaseModel):
     nodes: List[Dict[str, Any]]
     ignored: List[IgnoredEntry] = []
-    byproducts: Dict[str, str] = {}  # the by-product choices to keep in the plan (see resolved_byproduct_choices)
+    byproducts: Dict[str, Any] = {}  # the by-product choices to keep in the plan (see resolved_byproduct_choices)
+    made: List[Dict[str, Any]] = []  # made from by-products for the Chain tab (ticket 059): [{item, rate, from}]
     logistics_resets: List[Dict[str, str]] = []  # edited layouts that no longer fit: [{key, reason}]
     # When the plan can use the inbound as its limit (ticket 057): {active: False}, or with supply_limit what
     # supply.build_supply_plan says, and power ({gross, net} MW)

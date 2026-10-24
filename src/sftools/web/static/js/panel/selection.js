@@ -61,12 +61,13 @@ export function hideEdgeDetails() {
 // --- Selected by-product (an edge from its maker) ---
 
 /**
- * The maker's by-products: what's made, used and sunk (or burned), and buttons to use them, burn them or send
- * them to the Sink.
+ * The maker's by-product `item` (all of them without it): what's made, used and sunk (or burned), buttons to
+ * use it, burn it or send it to the Sink, and what can be made from it (`recipes`, [{name, product}], ticket 059).
  */
-export function showByproductDetails(maker) {
-    if (!maker || !maker.byproducts || !maker.byproducts.length) return hideByproductDetails();
-    const byproducts = maker.byproducts;
+export function showByproductDetails(maker, item = null, recipes = []) {
+    const all = (maker && maker.byproducts) || [];
+    const byproducts = item ? all.filter(b => b.item === item) : all;
+    if (!byproducts.length) return hideByproductDetails();
     const made = byproducts.reduce((sum, b) => sum + b.rate, 0);
     // Left over and burned: Heavy Oil Residue by the burn Refinery (ticket 055), a fuel by its generators (058)
     const burned = byproducts.reduce((sum, b) => sum + (b.burned || 0), 0);
@@ -105,6 +106,9 @@ export function showByproductDetails(maker) {
     $('byproduct-hint').innerText = hints.join(' ');
 
     // Use as Supply, or not: then a fuel is burned (ticket 058) and anything else goes to the Sink (residue: burned)
+    // Choices are per by-product (ticket 059) when one was selected
+    ['byproduct-toggle-btn', 'byproduct-sink-btn', 'byproduct-solve-btn', 'byproduct-make', 'byproduct-make-to']
+        .forEach(id => { $(id).dataset.item = item || ''; });
     const button = $('byproduct-toggle-btn');
     button.innerText = notUsed ? 'Use as Supply' : burns ? 'Burn for Power' : 'Send to Sink';
     button.dataset.maker = maker.id;
@@ -122,8 +126,27 @@ export function showByproductDetails(maker) {
     solve.innerText = choice === 'solve' ? 'Stop Solving' : 'Solve Loop';
     solve.dataset.maker = maker.id;
     solve.dataset.choice = choice === 'solve' ? 'use' : 'solve';
+    showMake(maker, item ? byproducts[0] : null, recipes);
     $('byproduct-details').style.display = 'block';
     updateNodeEmpty();
+}
+
+/** Make from it (ticket 059): the recipes that take the by-product, and where what's made goes. */
+function showMake(maker, byproduct, recipes) {
+    $('byproduct-make-group').style.display = byproduct && recipes.length ? 'block' : 'none';
+    if (!byproduct) return;
+    const select = $('byproduct-make');
+    select.replaceChildren(new Option('Nothing', ''), ...recipes.map(r => new Option(`${r.product} (${r.name})`, r.name)));
+    select.value = byproduct.make ? byproduct.make.recipe : '';
+    select.dataset.maker = maker.id;
+    const to = $('byproduct-make-to');
+    to.value = byproduct.make ? byproduct.make.to : 'supply';
+    to.disabled = !byproduct.make;
+    to.dataset.maker = maker.id;
+    if (byproduct.make) {
+        const hint = $('byproduct-hint');
+        hint.innerText = [hint.innerText, `What's left goes to ${byproduct.make.recipe}.`].filter(Boolean).join(' ');
+    }
 }
 
 export function hideByproductDetails() {

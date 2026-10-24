@@ -1,6 +1,6 @@
 # 059 — Make something from a by-product
 
-**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** [058](done/058-burn-fuel-byproducts.md), [057](done/057-supply-driven-power.md), [031](done/031-byproducts-as-supply.md), [040](done/040-chain-tab.md)
+**Type:** feature · **Priority:** P2 · **Status:** Done · **Related:** [058](058-burn-fuel-byproducts.md), [057](057-supply-driven-power.md), [031](031-byproducts-as-supply.md), [040](040-chain-tab.md)
 
 ## Goal
 Turn what's left of a by-product into something useful, sized by the by-product itself. Example: Rocket Fuel from 300 Crude Oil leaves 150 Polymer Resin a minute from its Fuel Refineries. Residual Plastic (resin 60 + water 20 → 20 Plastic) turns it into 50 Plastic a minute, to be used by another plan through the Chain tab, or at least sunk as Plastic.
@@ -31,3 +31,8 @@ This is supply-driven planning for one branch, limited to by-products (what a by
 ## Out of scope
 - Several steps of processing in one plan.
 - A recipe taking two by-products at once (e.g. a by-product of one node and another of a second node).
+
+## Built
+- The branch's own node takes no clocks or recipe switch from the user: its recipe is chosen on the by-product, and its buildings all run at one clock fitted to what's left (rather than a fitted last building).
+- The by-product panel shows the by-product whose edge was clicked; its buttons and Make from it set that by-product's choice. Nothing removes the by-product's own choice, so the node's (or the default) applies again.
+- `GET /api/recipes_using` gives the recipes that take an item, for Make from it.

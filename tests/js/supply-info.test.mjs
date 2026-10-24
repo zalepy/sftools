@@ -47,3 +47,11 @@ test('a line per fuel and inbound row', () => {
         'Iron Ore: unused'
     ]);
 });
+
+test('what is made from by-products is a supply of the plan, limited or not (ticket 059)', () => {
+    const made = [{ item: 'Plastic', rate: 50, from: 'Rocket Fuel__Fuel|Polymer Resin' }];
+    assert.deepEqual(chainEnds({ ...plan, made }, power).supplies, [{ item: 'Plastic', rate: 50 }]);
+    assert.deepEqual(chainEnds({ ...plan, made, supplyLimit: false }, power).supplies, [
+        { item: 'Fuel', rate: 1 }, { item: 'Plastic', rate: 50 }
+    ]);
+});

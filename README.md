@@ -15,6 +15,7 @@ A production planner for the factory-building game [Satisfactory](https://www.sa
 - Expands demand targets into a graph of production nodes, with the default or a preferred recipe for each item, and alternate recipes per node.
 - Lets you shape the plan: merge nodes, switch recipes, set clock speeds (or fit the last building to the demand), take in inbound production from other factories.
 - Routes by-products to where they're needed, or to a Sink, and solves the loops they can create. Fuels left over are burned for power, and so is Heavy Oil Residue, once refined.
+- Makes something from what's left of a by-product (e.g. Plastic from Polymer Resin), for another plan to take.
 - Plans power from a supply: demand only fuels, use the inbound as the limit, and see how many generators an oil field, a coal mine or a uranium node runs.
 - Reference layouts: worked examples to build from, such as 1350 Crude Oil/min to Turbofuel power, drawn as schematics.
 - Plans the logistics of every node: belts and pipes by tier, splitters and mergers, with an editor for each node's layout.

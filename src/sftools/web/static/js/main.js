@@ -26,7 +26,8 @@ import {
 import { leaveNotes, keepSelection, saveNodeNote, savePlanNote } from './actions/notes.js';
 import { switchTab, showChain, addTab, duplicateTab, closeTab, importFile } from './actions/tabs.js';
 import {
-    applyClocks, fitClock, clearClocks, switchRecipe, mergeNodes, unmergeSelectedNode, setBuilt, setByproductChoice, moveBranch
+    applyClocks, fitClock, clearClocks, switchRecipe, mergeNodes, unmergeSelectedNode, setBuilt, setByproductChoice, moveBranch,
+    selectByproduct
 } from './actions/node.js';
 import { changeLogisticsSettings, zoomIn, setEdgeBelts } from './actions/logistics.js';
 import { setPreferred, changePreferred, preferSelected, loadColors, saveColorChanges } from './actions/preferences.js';
@@ -92,8 +93,13 @@ $('recipe-select').addEventListener('change', e => switchRecipe(e.target.value))
 $('prefer-btn').addEventListener('click', () => preferSelected(true));
 $('unprefer-btn').addEventListener('click', () => preferSelected(false));
 ['byproduct-toggle-btn', 'byproduct-sink-btn', 'byproduct-solve-btn'].forEach(id => $(id).addEventListener('click', e => {
-    const { maker, choice } = e.target.dataset;
-    setByproductChoice(maker, choice);
+    const { maker, choice, item } = e.target.dataset;
+    setByproductChoice(maker, choice, item || null);
+}));
+['byproduct-make', 'byproduct-make-to'].forEach(id => $(id).addEventListener('change', () => {
+    const { maker, item } = $('byproduct-make').dataset;
+    const recipe = $('byproduct-make').value;
+    setByproductChoice(maker, recipe ? { choice: 'make', recipe, to: $('byproduct-make-to').value } : null, item);
 }));
 $('logistics-zoom-btn').addEventListener('click', e => zoomIn(e.target.dataset.node, e.target.dataset.side));
 $('edge-belt-more').addEventListener('click', e => setEdgeBelts(e.target.dataset.key, parseInt(e.target.dataset.count, 10) + 1));
@@ -134,11 +140,12 @@ onNodeSelected(data => {
     showNodeDetails(data);
     showTab('node');
 });
-onByproductSelected(makerId => {
+onByproductSelected((makerId, item) => {
     if (!leaveNotes({ plan: false })) return keepSelection();
     hideNodeDetails();
     hideLogisticsDetails();
-    showByproductDetails(getNodeData(makerId));
+    showByproductDetails(getNodeData(makerId), item);
+    selectByproduct(makerId, item);  // again with what can be made from it, once the server says
     showTab('node');
 });
 onLogisticsSelected((nodeId, side) => {

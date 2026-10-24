@@ -42,8 +42,10 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
                               plan.logistics.get("edges") or {})
     if supply and supply["active"]:
         supply["power"] = power_summary(nodes)
+    made = [{"item": n["output_item"], "rate": n["external_demand"], "from": f"{n['made_from']['maker']}|{n['made_from']['item']}"}
+            for n in nodes if (n.get("made_from") or {}).get("to") == "supply" and n["external_demand"] > 0]
     return {"nodes": nodes, "ignored": graph.ignored, "byproducts": graph.resolved_byproduct_choices(),
-            "logistics_resets": resets, "supply": supply}
+            "logistics_resets": resets, "supply": supply, "made": made}
 
 
 @router.get("/available_recipes", response_model=List[RecipeInfo])
@@ -79,6 +81,16 @@ def recipe_choices(data: GameData = Depends(get_game_data)):
                        byproduct=not r.is_main_product(name))
             for r in recipes]))
     return choices
+
+
+@router.get("/recipes_using")
+def recipes_using(item_name: str, data: GameData = Depends(get_game_data)):
+    """The recipes that take an item: what can be made from a by-product (ticket 059)."""
+    if item_name not in data.items:
+        raise HTTPException(status_code=404, detail=f"Unknown item: {item_name}")
+    return [{"name": r.name, "building": r.building.name, "product": r.output_item.name}
+            for r in sorted(data.recipes.values(), key=lambda r: r.name)
+            if any(i.name == item_name for i, _ in r.ingredients)]
 
 
 @router.get("/power_items")

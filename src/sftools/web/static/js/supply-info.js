@@ -18,14 +18,16 @@ export function isLimited(plan, fuels) {
 }
 
 /**
- * What the plan gives and takes in the Chain tab: [{item, rate}] supplies (demand targets) and needs (inbound
- * production). A limited plan burns its fuels itself and mines its raw inbound rows, so those aren't there.
+ * What the plan gives and takes in the Chain tab: [{item, rate}] supplies (demand targets, and what's made from
+ * by-products as last calculated, ticket 059) and needs (inbound production). A limited plan burns its fuels
+ * itself and mines its raw inbound rows, so those aren't there.
  */
 export function chainEnds(plan, power) {
+    const made = (plan.made || []).map(({ item, rate }) => ({ item, rate }));
     const supplies = (plan.items || []).map((item, i) => ({ item, rate: (plan.rates || [])[i] }));
     const needs = plan.inbound || [];
-    if (!isLimited(plan, power.fuels)) return { supplies, needs };
-    return { supplies: [], needs: needs.filter(row => !power.raw.includes(row.item)) };
+    if (!isLimited(plan, power.fuels)) return { supplies: [...supplies, ...made], needs };
+    return { supplies: made, needs: needs.filter(row => !power.raw.includes(row.item)) };
 }
 
 /** The panel's line: "Limited by Crude Oil · 2,500 MW gross / 2,200 net", or why nothing limits the plan. */
