@@ -141,7 +141,9 @@ export function renderGraph(nodesData) {
             : node.generators ? generatorsText(node)
             : `${buildingsText(node)}× ${node.building}`;
         const of = node.inbound ? ` of ${parseFloat(node.inbound.rate).toFixed(2)}` : '';
-        const fluids = node.sink && node.sink.fluids.length ? '\nfluids can\'t be sunk!' : '';
+        const fluids = !node.sink ? ''
+            : node.sink.fluids.length ? '\nfluids can\'t be sunk!'
+            : (node.sink.waste || []).length ? '\nwaste can\'t be sunk!' : '';
         const unit = node.generators ? ' MW' : '/m';
         const label = `${node.output_item}${alternate}\n${parseFloat(node.throughput).toFixed(2)}${of}${unit}\n(${made})${clockLine}${fluids}`;
         const color = colorFor(node.output_item);
@@ -248,7 +250,7 @@ export function renderGraph(nodesData) {
                 group: 'edges',
                 data: { source: input.from, target: sink.id, label: `${input.rate.toFixed(2)}/m ${input.item}${loop}${beltText(belts)}`, maker: input.from,
                     edge: edgeInfo(belts, input.from, 'sink', input.item, input.rate, true) },
-                classes: ['byproduct', input.fluid && 'invalid', input.loop && 'loop'].filter(Boolean)
+                classes: ['byproduct', (input.fluid || input.waste) && 'invalid', input.loop && 'loop'].filter(Boolean)
             });
         });
     });

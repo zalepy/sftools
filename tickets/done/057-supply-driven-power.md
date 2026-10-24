@@ -1,6 +1,6 @@
 # 057 — Supply-driven power plans: use the inbound as the limit
 
-**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** [055](done/055-burn-residue.md), [056](done/056-reference-layouts.md), [040](done/040-chain-tab.md), [045](done/045-move-branch-to-inbound.md)
+**Type:** feature · **Priority:** P2 · **Status:** Done · **Related:** [055](055-burn-residue.md), [056](056-reference-layouts.md), [040](040-chain-tab.md), [045](045-move-branch-to-inbound.md)
 
 ## Goal
 Plan power from a supply: given what a coal or oil field (or a uranium node) gives, how much fuel it makes, how many generators burn it and what that powers. The main use is a small concept plan, e.g. at 1/5 of a layout such as 056, to check flows and compare options. The plan changes often, so it's an ordinary plan with all its tools (recipes, merges, clocks, logistics), not a fixed layout.
@@ -54,3 +54,8 @@ The whole plan is driven by its supply. It isn't mixed with demand-driven branch
 ## Edge cases
 - An inbound row the plan uses none of can't be a limit: it's shown as unused.
 - If no inbound row is used at all, nothing limits the plan: a notice says so and the plan runs at the typed rates.
+
+## Built
+- The demand rows keep their typed rates (the ratio); the computed rates are listed in the summary under the checkbox, with each inbound row's use, rather than written into the rows.
+- The Chain tab also leaves out a limited plan's fuels as supplies: the plan burns them.
+- Burn rates are checked against the items' energy in the game data (MW × 60 / MJ), in `tests/unit/test_supply.py`.

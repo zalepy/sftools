@@ -373,6 +373,16 @@ button.icon-square {
     margin-top: 0.25rem;
 }
 
+/* A limited power plan's summary (ticket 057): the limit and the power stand out */
+#supply-summary {
+    font-style: normal;
+}
+
+.supply-headline {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
 /* Zoom Controls */
 .zoom-controls {
     position: absolute;

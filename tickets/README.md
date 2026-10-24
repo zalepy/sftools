@@ -5,9 +5,8 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
-| [057](057-supply-driven-power.md) | Supply-driven power plans: use the inbound as the limit | feature | P2 | Open |
 
-Next: 057; when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
@@ -70,3 +69,4 @@ Moved to [done/](done/).
 | [054](done/054-split-factory-graph.md) | Split factory_graph.py: calculation and UI view | refactor | P3 | Done |
 | [055](done/055-burn-residue.md) | Burn Heavy Oil Residue for power | feature | P2 | Done |
 | [056](done/056-reference-layouts.md) | Reference layouts: crude oil to Turbofuel power | feature | P3 | Done |
+| [057](done/057-supply-driven-power.md) | Supply-driven power plans: use the inbound as the limit | feature | P2 | Done |

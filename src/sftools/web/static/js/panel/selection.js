@@ -93,12 +93,16 @@ export function showByproductDetails(maker) {
         hints.push(`More is made than the plan needs; the rest ${away}.`);
     }
     if (byproducts.some(b => b.fluid && !b.burn) && made - used > EPSILON) hints.push("Fluids can't be sunk.");
+    // Nuclear waste (ticket 057) can't be sunk or used here; it's left over for the user to deal with
+    const waste = byproducts.some(b => b.waste);
+    if (waste) hints.push("Nuclear waste can't be sunk: store it, or make Plutonium from it in another plan.");
     $('byproduct-hint').innerText = hints.join(' ');
 
     const button = $('byproduct-toggle-btn');
     button.innerText = choice === 'sink' ? 'Use as Supply' : burns ? 'Burn for Power' : 'Send to Sink';
     button.dataset.maker = maker.id;
     button.dataset.choice = choice === 'sink' ? 'use' : 'sink';
+    button.style.display = waste ? 'none' : '';
     // Solving is offered on loops only; "use" leaves a loop out
     const solve = $('byproduct-solve-btn');
     solve.style.display = loop ? 'block' : 'none';

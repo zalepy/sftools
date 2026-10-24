@@ -30,6 +30,7 @@ import {
 } from './actions/node.js';
 import { changeLogisticsSettings, zoomIn, setEdgeBelts } from './actions/logistics.js';
 import { setPreferred, changePreferred, preferSelected, loadColors, saveColorChanges } from './actions/preferences.js';
+import { setSupplyLimit, rowsChanged } from './actions/supply.js';
 
 const undo = () => leaveNotes() && showHistoryStep(history.undo());
 const redo = () => leaveNotes() && showHistoryStep(history.redo());
@@ -57,6 +58,8 @@ $('demand-form').addEventListener('submit', e => {
 });
 $('add-row-btn').addEventListener('click', addRow);
 $('add-inbound-btn').addEventListener('click', addInboundRow);
+['demand-rows', 'inbound-rows'].forEach(id => ['input', 'click'].forEach(type => $(id).addEventListener(type, rowsChanged)));
+$('supply-limit').addEventListener('change', e => setSupplyLimit(e.target.checked));
 $('new-plan-btn').addEventListener('click', newPlan);
 $('export-btn').addEventListener('click', () => downloadPlan(currentPlan(), tabs.activeTab().name));
 $('save-book-btn').addEventListener('click', () => downloadBook(tabs.getBook()));
@@ -176,6 +179,11 @@ try {
     console.error("Failed to load recipe choices", e);
 }
 initRecipeList(recipeChoices, setPreferred);
+try {
+    state.power = await api.fetchPowerItems();
+} catch (e) {
+    console.error("Failed to load the fuels", e);
+}
 $('recipe-reset-all').addEventListener('click', () => {
     if (Object.keys(state.preferred).length && confirm('Every item back to its default recipe, in every tab?')) changePreferred({});
 });

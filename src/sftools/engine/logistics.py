@@ -26,6 +26,7 @@ from typing import Dict, List, Optional, Tuple
 
 from sftools.domain.enums.item_categories import ItemCategory
 from sftools.domain.models.factory_graph import NEGLIGIBLE
+from sftools.domain.models.power import WATER
 
 BELTS = [60, 120, 270, 480, 780, 1200]  # items/min, Mk.1-6
 PIPES = [300, 600]  # m³/min, Mk.1-2
@@ -138,11 +139,7 @@ def side_specs(nodes: List[Dict], is_fluid) -> Dict[str, Dict]:
             continue
         scale = sum(clocks)
         if node.get("generators"):
-            # Fuel Generators (ticket 055) only take in
-            specs[f"{node['id']}|in"] = {"node": node["id"], "side": "in", "items": {base["item"]: {
-                "sources": entries.get(node["id"], {}).get(base["item"], []),
-                "sinks": [(f"b{i}", base["rate"] * clock, None) for i, clock in enumerate(clocks, 1)],
-            } for base in node["base_inputs"]}}
+            specs.update(_generator_sides(node, entries.get(node["id"], {}), belts))
             continue
         out: Dict[str, Dict] = {}
         main = node["output_item"]
@@ -176,6 +173,33 @@ def side_specs(nodes: List[Dict], is_fluid) -> Dict[str, Dict]:
             }
         if inputs:
             specs[f"{node['id']}|in"] = {"node": node["id"], "side": "in", "items": inputs}
+    return specs
+
+
+def _generator_sides(node: Dict, entries: Dict[str, List[Tuple]], belts) -> Dict[str, Dict]:
+    """
+    Generators (tickets 055, 057) have no output: each fuel goes to the generators burning it, water to all of
+    them, and waste (Nuclear Power Plants) out to the Sink. The last generator of each fuel is underfed
+    (see power.py), so each building takes its share of what's burned.
+    """
+    per_building = {base["item"]: base["rate"] for base in node["base_inputs"]}
+    buildings = []  # (id, fuel, load: the fraction of a generator's fuel it burns)
+    for fuel in node["generators"]["fuels"]:
+        for k in range(fuel["count"]):
+            buildings.append((f"b{len(buildings) + 1}", fuel["item"], min(1.0, fuel["fed"] - k)))
+    inputs = {item: {"sources": entries.get(item, []), "sinks": [
+        (b, rate * load, None) for b, fuel, load in buildings if item in (fuel, WATER)]}
+        for item, rate in per_building.items()}
+    specs = {f"{node['id']}|in": {"node": node["id"], "side": "in", "items": inputs}}
+    out = {}
+    for byproduct in node.get("byproducts") or []:
+        mine = [(b, load) for b, fuel, load in buildings if fuel == byproduct["fuel"]]
+        made = byproduct["rate"] / sum(load for _, load in mine)
+        item = byproduct["item"]
+        out[item] = {"sources": [(b, made * load) for b, load in mine], "sinks": [
+            ("sink", byproduct["rate"], "Sink", belts(node, "sink", byproduct), edge_key(node["id"], "sink", item))]}
+    if out:
+        specs[f"{node['id']}|out"] = {"node": node["id"], "side": "out", "items": out}
     return specs
 
 

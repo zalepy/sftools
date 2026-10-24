@@ -5,6 +5,7 @@
 import { state } from './state.js';
 import { smoothWheelZoom } from './graph.js';
 import { textColorOn } from './node-info.js';
+import { chainEnds } from './supply-info.js';
 import { showToast as toast } from './panel/messages.js';
 import { getBook, saveBook } from './tabs.js';
 
@@ -41,8 +42,9 @@ function endpoints() {
             node.rate += amount;
             nodes.set(id, node);
         };
-        (plan.items || []).forEach((item, i) => add('supply', item, (plan.rates || [])[i]));
-        (plan.inbound || []).forEach(entry => add('need', entry.item, entry.rate));
+        const { supplies, needs } = chainEnds(plan, state.power);
+        supplies.forEach(entry => add('supply', entry.item, entry.rate));
+        needs.forEach(entry => add('need', entry.item, entry.rate));
     });
     return nodes;
 }

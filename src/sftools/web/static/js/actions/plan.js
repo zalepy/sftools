@@ -11,6 +11,7 @@ import { $, nodeLabel } from '../panel/common.js';
 import { getDemands, setDemands, showLogisticsSettings } from '../panel/planner.js';
 import { hideNodeDetails, renderBuilt } from '../panel/node.js';
 import { hideByproductDetails, hideEdgeDetails, hideLogisticsDetails } from '../panel/selection.js';
+import { refreshLimitControl, showSupply } from '../panel/supply.js';
 import { showToast, showPlanNotice, hidePlanNotice } from '../panel/messages.js';
 
 export function currentPlan() {
@@ -88,7 +89,7 @@ export async function requestPlan({
     edges = state.logistics.edges
 } = {}) {
     const { items, rates, inbound } = getDemands();
-    const { nodes, ignored, byproducts: resolved, logisticsResets } = await api.calculate({
+    const { nodes, ignored, byproducts: resolved, logisticsResets, supply } = await api.calculate({
         demands: items.map((item, i) => ({ item, rate: rates[i] })),
         inbound,
         recipes,
@@ -97,9 +98,11 @@ export async function requestPlan({
         byproducts,
         byproducts_default: byproductsDefault,
         preferred: state.preferred,
-        logistics: { settings: state.logistics.settings, layouts, edges }
+        logistics: { settings: state.logistics.settings, layouts, edges },
+        supply_limit: state.supplyLimit
     });
     state.byproducts = resolved;
+    showSupply(supply);
     // The dashed border shows the clocks of the plan just calculated; callers keep them in state afterwards
     nodes.forEach(node => { node.clocks_set = Boolean(clocks[node.id]); });
     // Edited logistics nodes whose buildings or edges changed go back to the suggested layout
@@ -126,6 +129,7 @@ export async function requestPlan({
 /** Draws the graph, and the zoomed-in logistics view if it's open. */
 export function render(nodes) {
     renderGraph(nodes);
+    refreshLimitControl();
     if (logisticsView.isOpen()) {
         const view = logisticsView.current();
         logisticsView.refreshView(nodes.find(n => n.id === view.nodeId));
@@ -186,6 +190,7 @@ export function newPlan() {
     hideSelection();
     hidePlanNotice();
     renderGraph([]);
+    refreshLimitControl();
     save();
 }
 

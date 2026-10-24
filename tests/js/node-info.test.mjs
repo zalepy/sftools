@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    textColorOn, builtStatus, statusColor, clocksText, buildingsText, inboundUnused, generatorsText
+    textColorOn, builtStatus, statusColor, clocksText, buildingsText, inboundUnused, generatorsText, burnedText
 } from '../../src/sftools/web/static/js/node-info.js';
 
 test('text contrasts with the node color', () => {
@@ -45,4 +45,11 @@ test('built marks count for the recipe they were made for', () => {
 test('generators: how many, and how many the Fuel keeps running (ticket 055)', () => {
     const node = { buildings: 4, building: 'Fuel Generator', generators: { fuel: 66.6667, fed: 3.33333, power: 833.33 } };
     assert.equal(generatorsText(node), '4× Fuel Generator, 3.33 fed');
+});
+
+test('generators: what they burn, per fuel, and their water (ticket 057)', () => {
+    const fuels = [{ item: 'Turbofuel', rate: 66.6667 }, { item: 'Fuel', rate: 20 }];
+    assert.equal(burnedText({ generators: { fuels, water: 0 } }), '66.67/min Turbofuel, 20.00/min Fuel burned');
+    assert.equal(burnedText({ generators: { fuels: [{ item: 'Coal', rate: 150 }], water: 450 } }),
+        '150.00/min Coal burned · 450.00/min Water');
 });

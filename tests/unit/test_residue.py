@@ -43,7 +43,9 @@ def test_residue_left_over_is_burned(client):
     generators = node(body, "generators")
     assert generators["buildings"] == 4 and generators["clocks"] == [{"count": 4, "clock": 1.0}]
     assert generators["generators"] == {"fuel": pytest.approx(200 / 3), "fed": pytest.approx(10 / 3),
-                                        "power": pytest.approx(2500 / 3)}
+                                        "power": pytest.approx(2500 / 3), "water": 0.0, "fuels": [
+                                            {"item": "Fuel", "rate": pytest.approx(200 / 3),
+                                             "fed": pytest.approx(10 / 3), "count": 4}]}
     assert generators["power"] == pytest.approx(2500 / 3)  # generated, so positive
     assert generators["children"] == ["burn"]
 
