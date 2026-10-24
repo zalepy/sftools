@@ -60,16 +60,21 @@ export function hideEdgeDetails() {
 
 // --- Selected by-product (an edge from its maker) ---
 
-/** The maker's by-products: what's made, used and sunk, and a button to use them or send them to the Sink. */
+/**
+ * The maker's by-products: what's made, used and sunk (or burned), and buttons to use them, burn them or send
+ * them to the Sink.
+ */
 export function showByproductDetails(maker) {
     if (!maker || !maker.byproducts || !maker.byproducts.length) return hideByproductDetails();
     const byproducts = maker.byproducts;
     const made = byproducts.reduce((sum, b) => sum + b.rate, 0);
-    // Heavy Oil Residue left over is burned, as a use by the burn Refinery (ticket 055)
-    const burned = byproducts.reduce((sum, b) => sum + (b.used.burn || 0), 0);
+    // Left over and burned: Heavy Oil Residue by the burn Refinery (ticket 055), a fuel by its generators (058)
+    const burned = byproducts.reduce((sum, b) => sum + (b.burned || 0), 0);
     const used = byproducts.reduce((sum, b) => sum + Object.values(b.used).reduce((s, r) => s + r, 0), 0) - burned;
     const burns = byproducts.some(b => b.burn);
     const choice = byproducts[0].choice;
+    const notUsed = choice === 'sink' || choice === 'burn';
+    const solidFuel = byproducts.find(b => b.fuel && !b.fluid);
 
     $('byproduct-item').innerText = byproducts.map(b => b.item).join(', ');
     $('byproduct-maker').innerText = nodeLabel(maker.id);
@@ -89,20 +94,28 @@ export function showByproductDetails(maker) {
     } else if (choice === 'solve' && loop) {
         hints.push(`Loop solved (${loop.rounds} rounds).`);
     }
-    if (choice !== 'sink' && made - used > EPSILON && !(loop && choice === 'use')) {
+    if (!notUsed && made - used > EPSILON && !(loop && choice === 'use')) {
         hints.push(`More is made than the plan needs; the rest ${away}.`);
     }
     if (byproducts.some(b => b.fluid && !b.burn) && made - used > EPSILON) hints.push("Fluids can't be sunk.");
     // Nuclear waste (ticket 057) can't be sunk or used here; it's left over for the user to deal with
     const waste = byproducts.some(b => b.waste);
     if (waste) hints.push("Nuclear waste can't be sunk: store it, or make Plutonium from it in another plan.");
+    if (solidFuel && !solidFuel.burn) hints.push("Sinking a fuel makes sense only for a while, e.g. until the generators' water is routed in.");
     $('byproduct-hint').innerText = hints.join(' ');
 
+    // Use as Supply, or not: then a fuel is burned (ticket 058) and anything else goes to the Sink (residue: burned)
     const button = $('byproduct-toggle-btn');
-    button.innerText = choice === 'sink' ? 'Use as Supply' : burns ? 'Burn for Power' : 'Send to Sink';
+    button.innerText = notUsed ? 'Use as Supply' : burns ? 'Burn for Power' : 'Send to Sink';
     button.dataset.maker = maker.id;
-    button.dataset.choice = choice === 'sink' ? 'use' : 'sink';
+    button.dataset.choice = notUsed ? 'use' : byproducts.some(b => b.fuel) ? 'burn' : 'sink';
     button.style.display = waste ? 'none' : '';
+    // A solid fuel can also go to the Sink, for a while
+    const sink = $('byproduct-sink-btn');
+    sink.style.display = solidFuel ? 'block' : 'none';
+    sink.innerText = solidFuel && !solidFuel.burn ? 'Burn for Power' : 'Send to Sink';
+    sink.dataset.maker = maker.id;
+    sink.dataset.choice = solidFuel && !solidFuel.burn ? 'burn' : 'sink';
     // Solving is offered on loops only; "use" leaves a loop out
     const solve = $('byproduct-solve-btn');
     solve.style.display = loop ? 'block' : 'none';

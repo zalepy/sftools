@@ -1,13 +1,17 @@
 from typing import Dict, List, Optional, Set, Tuple
 import math
 from sftools.domain.models.production_node import ProductionNode
+from sftools.domain.models.power import burn_fuel_byproducts
 from sftools.domain.models.residue import BURN_ID, burn
 
 EPSILON = 1e-9
 # A by-product left over below this (per min) isn't sent to the Sink: it's rounding, e.g. a clock of
 # 83.333% for 5/6, and would show as 0.00/min (and, for a fluid, as a Sink that can't take it)
 NEGLIGIBLE = 0.005
-USE, SINK, SOLVE = "use", "sink", "solve"  # what a node does with its by-products (tickets 031, 032)
+# What a node does with its by-products (tickets 031, 032, 058): cover demand elsewhere (USE, SOLVE for a
+# loop they close) or not: what's left goes to the Sink, a fuel to its generators (BURN, or SINK by default;
+# SINK chosen keeps a solid fuel for the Sink, see power.burns)
+USE, SINK, SOLVE, BURN = "use", "sink", "solve", "burn"
 # Solving a by-product loop (see recalculate): rounds until the amounts change by at most LOOP_TOLERANCE
 # (per min), like Google Sheets' iterative calculation, but damped
 LOOP_ROUNDS = 100
@@ -43,6 +47,7 @@ class FactoryGraph:
         # Supply-driven plans (ticket 057): root node id -> the generators (power.GENERATORS) it feeds,
         # the demanded fuels and the generators' water
         self.generator_roots: Dict[str, str] = {}
+        self.is_fluid = lambda item: False  # build_plan sets it from the item categories (fluid fuels always burn)
         # By-products (ticket 031): node id -> USE or SINK as the plan says; others get the default
         self.byproduct_choices: Dict[str, str] = {}
         self.byproduct_default: str = SINK
@@ -147,10 +152,12 @@ class FactoryGraph:
     def recalculate(self, round_up: bool = False):
         """
         Propagates demand top-down and sets every node's scale (see _propagate), solving the by-product
-        loops the plan asks to solve (see _solve), then burns the Heavy Oil Residue left over (see residue.burn).
+        loops the plan asks to solve (see _solve), then burns the Heavy Oil Residue left over (see residue.burn)
+        and the fuel by-products left over (see power.burn_fuel_byproducts).
         """
         self._solve(round_up)
         burn(self, round_up)
+        burn_fuel_byproducts(self, self.is_fluid)
 
     def _solve(self, round_up: bool):
         """

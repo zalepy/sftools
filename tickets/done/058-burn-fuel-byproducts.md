@@ -1,6 +1,6 @@
 # 058 — Burn fuel by-products for power
 
-**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** [055](done/055-burn-residue.md), [057](done/057-supply-driven-power.md), [031](done/031-byproducts-as-supply.md), [059](059-make-from-a-byproduct.md)
+**Type:** feature · **Priority:** P2 · **Status:** Done · **Related:** [055](055-burn-residue.md), [057](057-supply-driven-power.md), [031](031-byproducts-as-supply.md), [059](../059-make-from-a-byproduct.md)
 
 ## Goal
 A fuel left over as a by-product is burned in its generators instead of going to the Sink. Example: Rocket Fuel by Nitro Rocket Fuel from 300 Crude Oil (a limited plan, 057) sends 50 Compacted Coal a minute to the Sink. It should feed 7 Coal Generators (525 MW). Today the only workaround is a second demand row for Compacted Coal at the right ratio (50 to 300, worked out by hand). That leaves a demanded Compacted Coal node at 0/min, as the by-product covers all of it.
@@ -31,3 +31,7 @@ A by-product belongs to a node, not to a recipe. Each node is there to make one 
 
 ## Notes
 - The choice stays per node here (`byproducts: {node: use|sink|solve}`); 059 makes it per node and item.
+
+## Built
+- The choice `burn` ("don't use as supply, burn what's left") is recorded when the user picks Burn for Power, so it's kept like the others; the toggle of a used fuel by-product reads Burn for Power and sets it.
+- The 0/min node is left out only when no building makes it and by-products cover all of it (inbound production covering it still shows it, with its edge).

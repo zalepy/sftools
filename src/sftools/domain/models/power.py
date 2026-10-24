@@ -1,7 +1,8 @@
 """
-Generators burning fuel for power (tickets 055, 057), shown as nodes with no output: the Fuel Generators
-burning the residue's Fuel, and in a supply-driven plan the generators burning the demanded fuels. One node
-per kind of generator; a generator burns one fuel at a time, so the node counts them per fuel.
+Generators burning fuel for power (tickets 055, 057, 058), shown as nodes with no output: the Fuel
+Generators burning the residue's Fuel, the generators burning fuel by-products left over, and in a
+supply-driven plan the generators burning the demanded fuels. One node per kind of generator; a generator
+burns one fuel at a time, so the node counts them per fuel.
 
 Only the Nuclear Power Plant is in the scraped data, so the generators are constants (satisfactory.wiki.gg,
 checked 2026-10-24). As many generators as the fuel needs at 100%, without clocks: the last ones are underfed
@@ -10,12 +11,17 @@ average; water and waste follow the fuel burned the same way.
 """
 import math
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
-from sftools.domain.models.factory_graph import EPSILON, FactoryGraph
 from sftools.domain.models.residue import BURN_ID, GENERATORS_ID
 
+if TYPE_CHECKING:  # factory_graph imports this module (burn_fuel_byproducts)
+    from sftools.domain.models.factory_graph import FactoryGraph
+
 WATER = "Water"
+EPSILON = 1e-9  # as factory_graph.EPSILON
+NEGLIGIBLE = 0.005  # as factory_graph.NEGLIGIBLE: less left over is rounding, not fuel to burn
+SINK = "sink"  # as factory_graph.SINK: the by-product choice that sends a solid fuel to the Sink
 
 
 @dataclass(frozen=True)
@@ -52,16 +58,59 @@ def water_demands(fuels: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
     return [(gen_id, water[gen_id]) for gen_id in GENERATORS if gen_id in water]
 
 
-def generator_nodes(graph: FactoryGraph, shown: List[Dict]) -> List[Dict]:
+def burns(item: str, fluid: bool, choice: str) -> bool:
     """
-    The generators fed by the shown nodes: the burn Refinery's Fuel, and the roots in `graph.generator_roots`
-    (a supply-driven plan's fuels and water). Those roots now feed the generators instead of the user's
-    demand, so they're pointed at them (no demand circle), and so are by-products covering their demand.
+    Whether what's left of a by-product is burned (ticket 058): a fuel, unless it's solid and the plan chose
+    the Sink for it. Fluid fuels can't be sunk, so they always are.
+    """
+    return item in FUELS and (fluid or choice != SINK)
+
+
+def burn_fuel_byproducts(graph: "FactoryGraph", is_fluid):
+    """
+    Fuel by-products left over after their uses go to their generators (ticket 058), recorded as a use by
+    them (`graph.byproduct_used[(maker, fuel)][<generators id>]`), so they aren't sent to the Sink. The
+    choice that keeps a solid fuel for the Sink is the one the plan records, not the default.
+    """
+    for node_id, node in graph.all_nodes.items():
+        if node.is_dormant or node.absorbed_by or node.recipe is None:
+            continue
+        for item, _ in node.recipe.other_outputs(node.output_item_name):
+            if not burns(item.name, is_fluid(item), graph.byproduct_choices.get(node_id)):
+                continue
+            used = graph.byproduct_used.setdefault((node_id, item.name), {})
+            left = graph._byproduct_made(node_id, item.name) - sum(used.values())
+            if left >= NEGLIGIBLE:
+                used[FUELS[item.name]] = left
+
+
+def burned(graph: "FactoryGraph") -> List[Tuple[str, float]]:
+    """(fuel, rate) of the fuel by-products burned (see burn_fuel_byproducts)."""
+    return [(item, used[FUELS[item]]) for (_, item), used in sorted(graph.byproduct_used.items())
+            if item in FUELS and used.get(FUELS[item], 0.0) > EPSILON]
+
+
+def generator_nodes(graph: "FactoryGraph", shown: List[Dict]) -> List[Dict]:
+    """
+    The generators fed by the shown nodes: the burn Refinery's Fuel, fuel by-products left over (ticket 058),
+    and the roots in `graph.generator_roots` (a supply-driven plan's fuels, and the generators' water).
+    Those roots now feed the generators instead of the user's demand, so they're pointed at them (no demand
+    circle), and so are by-products covering their demand. A demanded fuel by-products cover entirely has
+    nothing left to show, so it's taken out of `shown`.
     """
     feeds: Dict[str, Dict[str, float]] = {}  # generators id -> {fuel: rate}
     water: Dict[str, float] = {}
     children: Dict[str, List[str]] = {}
     rerouted: Dict[Tuple[str, str], str] = {}  # (root id, its item) -> generators id
+    demanded: Dict[str, float] = {}  # root id -> fuel it feeds its generators
+
+    def feed(gen_id: str, item: str, rate: float, node_id: str):
+        children.setdefault(gen_id, []).append(node_id)
+        if item == WATER:
+            water[gen_id] = water.get(gen_id, 0.0) + rate
+        else:
+            feeds.setdefault(gen_id, {})[item] = feeds.get(gen_id, {}).get(item, 0.0) + rate
+
     for data in shown:
         node_id, item = data["id"], data["output_item"]
         if node_id == BURN_ID:
@@ -72,21 +121,33 @@ def generator_nodes(graph: FactoryGraph, shown: List[Dict]) -> List[Dict]:
             data["parent_demands"][gen_id] = data["parent_demands"].pop("External Demand", 0.0)
             data["external_demand"] = 0.0
             rerouted[(node_id, item)] = gen_id
+            if not data["buildings"]:
+                demanded[node_id] = rate
         else:
             continue
-        if rate <= EPSILON:
-            continue
-        children.setdefault(gen_id, []).append(node_id)
-        if item == WATER:
-            water[gen_id] = water.get(gen_id, 0.0) + rate
-        else:
-            feeds.setdefault(gen_id, {})[item] = feeds.get(gen_id, {}).get(item, 0.0) + rate
+        if rate > EPSILON:
+            feed(gen_id, item, rate, node_id)
+
+    covered: Dict[str, float] = {}  # root id -> what by-products cover of it
     for data in shown:
         for byproduct in data.get("byproducts") or []:
-            byproduct["used"] = {rerouted.get((consumer, byproduct["item"]), consumer): rate
-                                 for consumer, rate in byproduct["used"].items()}
-    return [_node(gen_id, feeds[gen_id], water.get(gen_id, 0.0), children[gen_id]) for gen_id in GENERATORS
-            if gen_id in feeds]
+            item, used = byproduct["item"], {}
+            for consumer, rate in byproduct["used"].items():
+                gen_id = rerouted.get((consumer, item))
+                if gen_id is not None:  # covering a demanded fuel, counted with it
+                    covered[consumer] = covered.get(consumer, 0.0) + rate
+                    children.setdefault(gen_id, []).append(data["id"])
+                elif consumer in GENERATORS and rate > EPSILON:  # left over, burned (ticket 058)
+                    gen_id = consumer
+                    feed(gen_id, item, rate, data["id"])
+                key = gen_id or consumer
+                used[key] = used.get(key, 0.0) + rate
+            byproduct["used"] = used
+    # A demanded fuel made by no building, all of it covered by by-products, has nothing to show
+    hidden = {node_id for node_id, rate in demanded.items() if covered.get(node_id, 0.0) >= rate - NEGLIGIBLE}
+    shown[:] = [data for data in shown if data["id"] not in hidden]
+    return [_node(gen_id, feeds[gen_id], water.get(gen_id, 0.0), sorted(set(children[gen_id]) - hidden))
+            for gen_id in GENERATORS if gen_id in feeds]
 
 
 def _node(gen_id: str, feeds: Dict[str, float], water: float, children: List[str]) -> Dict:

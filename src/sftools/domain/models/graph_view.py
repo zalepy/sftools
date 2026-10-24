@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 from sftools.domain.enums.item_categories import ItemCategory
 from sftools.domain.enums.recipe_type import RecipeType
 from sftools.domain.models.factory_graph import EPSILON, NEGLIGIBLE, FactoryGraph, external_demand
-from sftools.domain.models.power import generator_nodes
+from sftools.domain.models.power import FUELS, GENERATORS, burns, generator_nodes
 from sftools.domain.models.production_node import ProductionNode
 from sftools.domain.models.residue import BURN_ID, GENERATORS_ID, RESIDUE
 
@@ -85,9 +85,10 @@ def ui_nodes(graph: FactoryGraph) -> List[Dict]:
 
 def byproducts_of(graph: FactoryGraph, node: ProductionNode) -> List[Dict]:
     """
-    The node's by-products: {item, rate made, fluid, choice (USE or SINK), loop (a use left out as a
-    loop), used ({consumer id: rate} covered by it), burn (Heavy Oil Residue: what's left over is burned,
-    used by the burn Refinery)}. What isn't used goes to the Sink.
+    The node's by-products: {item, rate made, fluid, choice (USE, SINK, BURN or SOLVE), loop (a use left out
+    as a loop), used ({consumer id: rate} covered by it), burn (what's left over is burned: Heavy Oil Residue
+    by the burn Refinery, a fuel by its generators, ticket 058), fuel, burned (the rate burned)}. What isn't
+    used or burned goes to the Sink.
     """
     if node.recipe is None:
         return []
@@ -95,7 +96,10 @@ def byproducts_of(graph: FactoryGraph, node: ProductionNode) -> List[Dict]:
         "item": item.name,
         "rate": rate * node.building_scale,
         "fluid": item.category in FLUIDS,
-        "burn": item.name == RESIDUE,
+        "burn": item.name == RESIDUE or burns(item.name, item.category in FLUIDS, graph.byproduct_choices.get(node.id)),
+        "fuel": item.name in FUELS,
+        "burned": sum(rate for consumer, rate in graph.byproduct_used.get((node.id, item.name), {}).items()
+                      if consumer == BURN_ID or consumer in GENERATORS),
         "choice": graph.byproduct_choice(node.id),
         "loop": (node.id, item.name) in graph.byproduct_loops,
         "solving": (node.id, item.name) in graph.byproduct_solving,
