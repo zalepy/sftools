@@ -61,9 +61,7 @@ def test_calculate_waits_for_startup(page):
     Calculate before startup had loaded the tabs failed ("Calculation failed": no tab to save the plan in),
     seen on the slower live demo. Startup is held at a request it waits for; Calculate does nothing until then.
     """
-    page.send("Page.navigate", url=page.base_url)
-    page.wait_until("document.readyState === 'complete'")
-    page.js("localStorage.clear()")
+    page.open(page.base_url)  # an empty plan, started up: nothing of it is saved or requested later
     page.hold_requests("*/api/power_items*")
     page.send("Page.reload")
     page.wait_until("document.readyState === 'complete' && document.querySelectorAll('.color-input').length > 0")
