@@ -9,6 +9,7 @@ import pytest
 
 from sftools.config import DATA_DIR, STATIC_DIR
 from sftools.domain.models.graph_view import GENERATOR_POWER
+from sftools.domain.models.production_node import CLOCK_POWER_EXPONENT
 from sftools.engine.game_data import get_game_data
 from sftools.engine.logistics import PIPES
 
@@ -108,3 +109,23 @@ def test_everything_is_on_the_grid(layout):
     points += [tuple(p) for t in layout["traces"] for path in t["paths"] for p in path]
     assert all(0 <= x < width and 0 <= y < height for x, y in points)
     assert len({(b["x"], b["y"]) for b in layout["buildings"]}) == len(layout["buildings"])  # one per square
+
+
+@pytest.mark.parametrize("layout", layouts(), ids=lambda layout: layout["id"])
+def test_the_power_rows_add_up(layout):
+    """Each row's MW is its buildings' draw at their clock; the Refineries and Assemblers are the layout's own."""
+    raw = json.loads((DATA_DIR / "buildings.json").read_text(encoding="utf-8"))
+    draw = {b["name"]: float(b["Power used"]) for b in raw if "Power used" in b}
+    by_clock = defaultdict(int)
+    for building in layout["buildings"]:
+        by_clock[building.get("clock", 1)] += 1
+    for row in layout.get("power", []):
+        clock = row.get("clock", 1)
+        if "building" in row and row["building"] in draw:
+            assert row["base"] == draw[row["building"]], row["what"]
+        assert row["mw"] == pytest.approx(row["count"] * row["base"] * clock ** CLOCK_POWER_EXPONENT, abs=0.1), row["what"]
+        if row.get("building") == "Refinery":
+            assert row["count"] == by_clock[clock], row["what"]
+    supplies = {row["recipe"]: row["count"] for row in layout["table"] if "count" in row}
+    assemblers = [row["count"] for row in layout.get("power", []) if row.get("building") == "Assembler"]
+    assert assemblers == ([supplies["Alternate: Compacted Coal"]] if assemblers else [])
