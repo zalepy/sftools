@@ -107,6 +107,7 @@ class Page:
         self._ids = itertools.count(1)
         self.errors = []
         self.dialogs = []
+        self.paused = []  # requests held by hold_requests, until release_requests
         for domain in ("Runtime", "Log", "Page"):
             self.send(f"{domain}.enable")
 
@@ -124,6 +125,8 @@ class Page:
                 str(arg.get("value", arg.get("description"))) for arg in params["args"]))
         elif method == "Log.entryAdded" and params["entry"]["level"] == "error":
             self.errors.append("log: " + params["entry"]["text"])
+        elif method == "Fetch.requestPaused":
+            self.paused.append(params["requestId"])
         elif method == "Page.javascriptDialogOpening":
             self.dialogs.append(params["message"])
             self.send("Page.handleJavaScriptDialog", wait=False, accept=True)
@@ -173,9 +176,19 @@ class Page:
             self.js(f"localStorage.setItem({json.dumps(key)}, JSON.stringify({json.dumps(plan)}))")
         self.send("Page.reload")
         self.wait(0.3)
-        self.wait_until("document.readyState === 'complete' && document.querySelectorAll('.color-input').length > 0")
+        self.wait_until("document.readyState === 'complete' && !document.getElementById('calculate-btn').disabled")
         if plan is not None and plan.get("items"):
             self.wait_until("document.getElementById('cy')._cyreg.cy.nodes().length > 0", timeout=30)
+
+    def hold_requests(self, url_pattern):
+        """Holds the page's requests to URLs matching `url_pattern` (e.g. '*/api/power_items') in `paused`."""
+        self.send("Fetch.enable", patterns=[{"urlPattern": url_pattern, "requestStage": "Request"}])
+
+    def release_requests(self):
+        for request_id in self.paused:
+            self.send("Fetch.continueRequest", requestId=request_id)
+        self.paused = []
+        self.send("Fetch.disable")
 
     # --- App helpers ---
 

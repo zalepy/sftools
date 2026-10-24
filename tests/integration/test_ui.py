@@ -56,6 +56,44 @@ def test_calculate_from_the_form_saves_the_plan(page):
     assert "Smart Plating" in page.node_ids()
 
 
+def test_calculate_waits_for_startup(page):
+    """
+    Calculate before startup had loaded the tabs failed ("Calculation failed": no tab to save the plan in),
+    seen on the slower live demo. Startup is held at a request it waits for; Calculate does nothing until then.
+    """
+    page.send("Page.navigate", url=page.base_url)
+    page.wait_until("document.readyState === 'complete'")
+    page.js("localStorage.clear()")
+    page.hold_requests("*/api/power_items*")
+    page.send("Page.reload")
+    page.wait_until("document.readyState === 'complete' && document.querySelectorAll('.color-input').length > 0")
+    for _ in range(100):  # startup reaches the held request
+        if page.paused:
+            break
+        page.wait(0.05)
+    assert page.paused
+    page.js("""(() => {
+        const inputs = document.querySelectorAll('#demand-rows .demand-row input');
+        inputs[0].value = 'Smart Plating';
+        inputs[1].value = '2';
+        document.getElementById('demand-form').requestSubmit();
+    })()""")
+    page.wait(0.5)
+    assert page.dialogs == [] and page.js("localStorage.getItem('sf_logistics_state')") is None
+    assert page.js("document.getElementById('calculate-btn').disabled")
+
+    page.release_requests()
+    page.wait_until("!document.getElementById('calculate-btn').disabled")
+    page.js("""(() => {
+        const inputs = document.querySelectorAll('#demand-rows .demand-row input');
+        inputs[0].value = 'Smart Plating';
+        inputs[1].value = '2';
+        document.getElementById('demand-form').requestSubmit();
+    })()""")
+    page.wait_until("localStorage.getItem('sf_logistics_state') !== null")
+    assert page.saved_plan()["items"] == ["Smart Plating"] and page.dialogs == []
+
+
 def test_demand_rows_can_be_added_and_removed(page):
     page.open(page.base_url)
     rows = "document.querySelectorAll('#demand-rows .demand-row').length"

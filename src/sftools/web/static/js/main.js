@@ -51,10 +51,12 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 // --- Planner tab ---
 
-// Calculate uses by-products as supply unless set otherwise; nothing else does (ticket 031)
+// Calculate uses by-products as supply unless set otherwise; nothing else does (ticket 031). Not before
+// startup has loaded the tabs (below): the plan would have no tab to be saved in.
+let started = false;
 $('demand-form').addEventListener('submit', e => {
     e.preventDefault();
-    recalculate({ byproductsDefault: 'use' });
+    if (started) recalculate({ byproductsDefault: 'use' });
 });
 $('add-row-btn').addEventListener('click', addRow);
 $('add-inbound-btn').addEventListener('click', addInboundRow);
@@ -172,15 +174,18 @@ notes.initNoteBox();
 // Module scripts run after the document is parsed. Colors first, so the first render uses them.
 await loadColors();
 loadPreferred();
+// Both requests at once, so startup waits for one round trip
+const recipeChoicesRequest = api.fetchRecipeChoices();
+const powerRequest = api.fetchPowerItems();
 let recipeChoices = [];
 try {
-    recipeChoices = await api.fetchRecipeChoices();
+    recipeChoices = await recipeChoicesRequest;
 } catch (e) {
     console.error("Failed to load recipe choices", e);
 }
 initRecipeList(recipeChoices, setPreferred);
 try {
-    state.power = await api.fetchPowerItems();
+    state.power = await powerRequest;
 } catch (e) {
     console.error("Failed to load the fuels", e);
 }
@@ -191,3 +196,6 @@ tabs.loadBook();
 tabs.initTabs({ onSwitch: switchTab, onClose: closeTab, onAdd: addTab, onDuplicate: duplicateTab, onChain: showChain });
 history.useTab(tabs.activeTab().id);
 loadPlan(tabs.activeTab().plan);
+started = true;
+$('calculate-btn').disabled = false;
+$('calculate-btn').title = '';
