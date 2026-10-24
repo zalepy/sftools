@@ -7,10 +7,10 @@ from sftools.api.schemas import PlanRequest, PlanResponse, RecipeChoice, RecipeI
 from sftools.config import DEFAULT_COLORS_FILE
 from sftools.domain.models.graph_view import ui_nodes
 from sftools.domain.models.power import FUELS, power_summary
-from sftools.engine.calculator import build_plan, default_recipe_for
+from sftools.engine.calculator import default_recipe_for
 from sftools.engine.game_data import GameData, get_game_data
 from sftools.engine.logistics import FLUIDS, Settings, attach_logistics
-from sftools.engine.supply import build_supply_plan, eligible, is_raw
+from sftools.engine.supply import build_powered_plan, build_supply_plan, eligible, is_raw
 
 router = APIRouter(prefix="/api")
 
@@ -27,12 +27,11 @@ def calculate(plan: PlanRequest, data: GameData = Depends(get_game_data)):
                        byproducts_default=plan.byproducts_default, preferred=plan.preferred)
     supply = None
     try:
-        if not eligible(demands, inbound):
-            graph = build_plan(data.items, data.recipes, demands, inbound=inbound, **adjustments)
-        elif plan.supply_limit:
+        if eligible(demands, inbound) and plan.supply_limit:
             graph, supply = build_supply_plan(data.items, data.recipes, demands, inbound, **adjustments)
         else:
-            graph, supply = build_plan(data.items, data.recipes, demands, inbound=inbound, **adjustments), {"active": False}
+            graph = build_powered_plan(data.items, data.recipes, demands, inbound=inbound, **adjustments)
+            supply = {"active": False} if eligible(demands, inbound) else None
     except ValueError as ex:
         # e.g. merging nodes with different output items
         raise HTTPException(status_code=400, detail=str(ex)) from ex

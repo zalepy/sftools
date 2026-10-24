@@ -1,6 +1,6 @@
 # 059 — Make something from a by-product
 
-**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** [058](058-burn-fuel-byproducts.md), [057](done/057-supply-driven-power.md), [031](done/031-byproducts-as-supply.md), [040](done/040-chain-tab.md)
+**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** [058](done/058-burn-fuel-byproducts.md), [057](done/057-supply-driven-power.md), [031](done/031-byproducts-as-supply.md), [040](done/040-chain-tab.md)
 
 ## Goal
 Turn what's left of a by-product into something useful, sized by the by-product itself. Example: Rocket Fuel from 300 Crude Oil leaves 150 Polymer Resin a minute from its Fuel Refineries. Residual Plastic (resin 60 + water 20 → 20 Plastic) turns it into 50 Plastic a minute, to be used by another plan through the Chain tab, or at least sunk as Plastic.

@@ -4,7 +4,8 @@ from typing import Dict, List, Optional, Tuple
 from sftools.domain.enums.demand_type import DemandType
 from sftools.domain.enums.recipe_type import RecipeType
 from sftools.domain.models.demand import Demand
-from sftools.domain.models.factory_graph import FactoryGraph, SINK, SOLVE, USE
+from sftools.domain.enums.item_categories import ItemCategory
+from sftools.domain.models.factory_graph import BURN, FactoryGraph, SINK, SOLVE, USE
 from sftools.domain.models.item import Item
 from sftools.domain.models.production_node import ProductionNode
 from sftools.domain.models.recipe import Recipe
@@ -350,8 +351,8 @@ def build_plan(
     (with everything under them) and builds the new ones. A merge group runs its target's recipe, so
     the absorbed nodes' inputs that it doesn't use are dropped the same way. `inbound` lists (item, rate) supplied from outside the plan: it covers demand
     for the item before anything is produced (see FactoryGraph.recalculate). `byproducts` says per node
-    whether its by-products cover demand elsewhere (USE, or SOLVE to solve a loop they'd close) or go to
-    the Sink (SINK); nodes not listed get
+    whether its by-products cover demand elsewhere (USE, or SOLVE to solve a loop they'd close) or not
+    (SINK, BURN): what's left goes to the Sink, a fuel to its generators (ticket 058); nodes not listed get
     `byproducts_default` (USE for Calculate, ticket 031). `preferred` ({item: recipe name}, ticket 043) is the
     recipe new nodes of an item run instead of the default; a node's own entry in `recipes` still wins.
 
@@ -446,7 +447,9 @@ def build_plan(
     graph.inbound = {}
     for item, rate in inbound or []:
         graph.inbound[item] = graph.inbound.get(item, 0) + rate
-    graph.byproduct_choices = {node_id: choice for node_id, choice in (byproducts or {}).items() if choice in (USE, SINK, SOLVE)}
+    graph.byproduct_choices = {node_id: choice for node_id, choice in (byproducts or {}).items()
+                               if choice in (USE, SINK, SOLVE, BURN)}
+    graph.is_fluid = lambda item: item.category in (ItemCategory.LIQUIDS, ItemCategory.GAS)
     graph.byproduct_default = byproducts_default
 
     graph.recalculate(round_up=round_up)

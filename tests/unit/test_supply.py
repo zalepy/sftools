@@ -131,7 +131,7 @@ def test_the_residue_s_fuel_joins_the_demanded_fuel():
     graph = FactoryGraph()
     graph.generator_roots = {"Fuel": "generators"}
     fuel = {"id": "Fuel", "output_item": "Fuel", "parents": [], "parent_demands": {"External Demand": 30.0},
-            "external_demand": 30.0, "byproducts": []}
+            "external_demand": 30.0, "buildings": 2, "byproducts": []}
     burn = {"id": "burn", "output_item": "Fuel", "parents": ["generators"], "parent_demands": {"generators": 15.0},
             "byproducts": []}
     nodes = generator_nodes(graph, [fuel, burn])
@@ -145,9 +145,9 @@ def test_generators_count_per_fuel_and_cover_byproducts():
     graph = FactoryGraph()
     graph.generator_roots = {"Turbofuel": "generators", "Fuel": "generators"}
     turbo = {"id": "Turbofuel", "output_item": "Turbofuel", "parents": [], "external_demand": 10.0,
-             "parent_demands": {"External Demand": 10.0}, "byproducts": []}
+             "parent_demands": {"External Demand": 10.0}, "buildings": 1, "byproducts": []}
     fuel = {"id": "Fuel", "output_item": "Fuel", "parents": [], "external_demand": 30.0,
-            "parent_demands": {"External Demand": 20.0}, "byproducts": []}
+            "parent_demands": {"External Demand": 20.0}, "buildings": 1, "byproducts": []}
     maker = {"id": "maker", "output_item": "X", "parents": [], "parent_demands": {},
              "byproducts": [{"item": "Fuel", "used": {"Fuel": 10.0}}]}
     gen, = generator_nodes(graph, [turbo, fuel, maker])

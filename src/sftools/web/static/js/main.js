@@ -91,7 +91,7 @@ $('save-node-note-btn').addEventListener('click', saveNodeNote);
 $('recipe-select').addEventListener('change', e => switchRecipe(e.target.value));
 $('prefer-btn').addEventListener('click', () => preferSelected(true));
 $('unprefer-btn').addEventListener('click', () => preferSelected(false));
-['byproduct-toggle-btn', 'byproduct-solve-btn'].forEach(id => $(id).addEventListener('click', e => {
+['byproduct-toggle-btn', 'byproduct-sink-btn', 'byproduct-solve-btn'].forEach(id => $(id).addEventListener('click', e => {
     const { maker, choice } = e.target.dataset;
     setByproductChoice(maker, choice);
 }));

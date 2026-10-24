@@ -16,7 +16,7 @@ class PlanRequest(BaseModel):
     merges: Dict[str, str] = {}  # source node_id -> target node_id
     clocks: Dict[str, List[Dict[str, Any]]] = {}  # node_id -> [{"clock": 1.0}, {"count": 1, "clock": 0.6}]
     inbound: List[DemandIn] = []  # production supplied from outside the plan, used before producing anything
-    byproducts: Dict[str, Literal["use", "sink", "solve"]] = {}  # node_id -> what its by-products do
+    byproducts: Dict[str, Literal["use", "sink", "solve", "burn"]] = {}  # node_id -> what its by-products do
     byproducts_default: Literal["use", "sink"] = "sink"  # for nodes not in `byproducts`: "use" for Calculate
     logistics: Dict[str, Any] = {}  # {"settings": {belt_tier, pipe_tier, smart}, "layouts": {"<id>|in|out": ...}}
     supply_limit: bool = False  # use the inbound as the limit, when only fuels are demanded (ticket 057)
