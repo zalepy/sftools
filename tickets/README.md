@@ -5,8 +5,10 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
+| [058](058-burn-fuel-byproducts.md) | Burn fuel by-products for power | feature | P2 | Open |
+| [059](059-make-from-a-byproduct.md) | Make something from a by-product | feature | P2 | Open |
 
-Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next: 058, then 059; when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
