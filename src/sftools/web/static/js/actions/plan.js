@@ -22,11 +22,14 @@ export function emptyPlan() {
     return { mode: PLAN_MODE, items: [], rates: [], inbound: [] };
 }
 
-/** Saves the plan in the browser (in its tab) and records it as an undo step (if it changed). */
-export function save() {
+/**
+ * Saves the plan in the browser (in its tab) and records it as an undo step (if it changed). `change` false:
+ * the plan was only shown again, so the book isn't marked as changed (ticket 060).
+ */
+export function save({ change = true } = {}) {
     dropGoneNotes();
     const plan = currentPlan();
-    tabs.saveActive(plan);
+    tabs.saveActive(plan, change);
     history.record(plan);
     updateHistoryButtons();
     refreshChain();
@@ -55,7 +58,7 @@ export function hideSelection() {
 }
 
 /** Shows a plan (from the history, or a tab's): the server recalculates it like any other. */
-export async function showPlan(plan, failure = 'Undo/redo failed') {
+export async function showPlan(plan, failure = 'Undo/redo failed', { change = true } = {}) {
     const selected = state.selectedNodeId;
     setDemands(plan.items, plan.rates, plan.inbound);
     applySaved(plan);
@@ -63,7 +66,7 @@ export async function showPlan(plan, failure = 'Undo/redo failed') {
     showLogisticsSettings();
     try {
         render(plan.items && plan.items.length ? await requestPlan() : []);
-        save();
+        save({ change });
         if (selected && getNodeData(selected)) reselectNode(selected); else hideNodeDetails();
     } catch (e) {
         console.error(failure, e);
@@ -137,11 +140,11 @@ export function render(nodes) {
     }
 }
 
-export async function recalculate(options = {}) {
+export async function recalculate({ change = true, ...options } = {}) {
     if (getDemands().items.length === 0) return;
     try {
         render(await requestPlan(options));
-        save();
+        save({ change });
     } catch (e) {
         console.error("Calculation failed", e);
         alert(`Calculation failed: ${e.message}`);
@@ -159,7 +162,7 @@ export function loadPlan(saved) {
     applySaved(saved);
     notes.showPlanNote();
     showLogisticsSettings();
-    recalculate();
+    recalculate({ change: false });  // the page loaded: the plan is shown again, not changed
 }
 
 // --- Plan-wide actions ---

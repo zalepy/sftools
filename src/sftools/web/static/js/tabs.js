@@ -1,13 +1,15 @@
 // Plan tabs (ticket 039): a book of plans, one shown at a time, and the tab strip above the graph.
 // The book is kept in the browser under its own key; the active tab's plan is also kept under the plan's
 // key, as before tabs, so older versions of the page still find it.
+// The book has a name, and remembers whether it changed since it was last saved or loaded (ticket 060).
 import { savePlan, loadSavedPlan } from './state.js';
+import { bookTitle } from './book-info.js';
 
 const BOOK_KEY = 'sf_logistics_book';
 
 const $ = id => document.getElementById(id);
 
-let book = null;  // { tabs: [{ id, name, plan }], active, chain: { links, positions } }
+let book = null;  // { name, tabs: [{ id, name, plan }], active, chain: { links, positions }, changed }
 let chainShown = false;  // the chain tab (ticket 040) is shown instead of the active plan
 let handlers = null;  // { onSwitch(id), onClose(id), onAdd(), onDuplicate(), onChain() }
 
@@ -54,11 +56,17 @@ export function cleanChain(chain) {
     };
 }
 
+/** Keeps the book after a change to it. */
 export function saveBook() {
     store();
 }
 
-function store() {
+/** Keeps the book in the browser; a change (`changed`) marks it as not saved to a file. */
+function store(changed = true) {
+    if (changed && !book.changed) {
+        book.changed = true;
+        render();
+    }
     try {
         localStorage.setItem(BOOK_KEY, JSON.stringify(book));
     } catch (e) {
@@ -74,16 +82,26 @@ export function getBook() {
     return book;
 }
 
-/** Keeps the active tab's plan (after every change). */
-export function saveActive(plan) {
+/**
+ * Keeps the active tab's plan (after every change). `changed` false: the plan was only shown again (a tab
+ * opened, the page loaded), so the book still matches its file.
+ */
+export function saveActive(plan, changed = true) {
     activeTab().plan = plan;
     savePlan(plan);
-    store();
+    store(changed);
 }
 
 export function setActive(id) {
     book.active = id;
-    store();
+    store(false);
+    render();
+}
+
+/** The book was just saved to a file (Save Book). */
+export function markSaved() {
+    book.changed = false;
+    store(false);
     render();
 }
 
@@ -97,10 +115,10 @@ export function addTab(plan, name = freeName()) {
     return tab;
 }
 
-/** Replaces the whole book (Load Book). */
-export function replaceBook(tabs, active, chain) {
-    book = { tabs, active: tabs.some(t => t.id === active) ? active : tabs[0].id, chain: cleanChain(chain) };
-    store();
+/** Replaces the whole book (a loaded book, or New Book); it matches its file, or has none yet. */
+export function replaceBook(tabs, active, chain, name) {
+    book = { name, tabs, active: tabs.some(t => t.id === active) ? active : tabs[0].id, chain: cleanChain(chain), changed: false };
+    store(false);
     render();
 }
 
@@ -134,8 +152,17 @@ function moveTab(id, targetId, after) {
 function rename(id, name) {
     const tab = book.tabs.find(t => t.id === id);
     const trimmed = name.trim();
-    if (tab && trimmed) {
+    if (tab && trimmed && trimmed !== tab.name) {
         tab.name = trimmed;
+        store();
+    }
+    render();
+}
+
+function renameBook(name) {
+    const trimmed = name.trim();
+    if (trimmed && trimmed !== bookTitle(book.name)) {
+        book.name = trimmed;
         store();
     }
     render();
@@ -154,6 +181,7 @@ export function initTabs(callbacks) {
     strip.addEventListener('dblclick', e => {
         const name = e.target.closest('.plan-tab-name');
         if (name) startRename(name.closest('.plan-tab').dataset.id);
+        else if (e.target.closest('#book-name')) editInPlace($('book-name'), bookTitle(book.name), renameBook);
     });
     initDrag($('plan-tab-list'));
     $('add-tab-btn').addEventListener('click', () => handlers.onAdd());
@@ -214,18 +242,24 @@ function initDrag(list) {
     });
 }
 
-/** Renames in place: Enter or leaving the field keeps the name, Esc cancels. */
+/** Renames a tab in place. */
 export function startRename(id) {
     const tab = book.tabs.find(t => t.id === id);
     const element = document.querySelector(`.plan-tab[data-id="${id}"] .plan-tab-name`);
     if (!tab || !element) return;
-    const input = Object.assign(document.createElement('input'), { value: tab.name, className: 'plan-tab-input' });
-    input.size = Math.max(6, tab.name.length);
+    const input = editInPlace(element, tab.name, name => rename(id, name));
+    input.closest('.plan-tab').draggable = false;  // the field's text can be selected with the mouse
+}
+
+/** Puts a field in place of `element`: Enter or leaving the field keeps the name (`keep`), Esc cancels. */
+function editInPlace(element, value, keep) {
+    const input = Object.assign(document.createElement('input'), { value, className: 'plan-tab-input' });
+    input.size = Math.max(6, value.length);
     let done = false;
-    const finish = keep => {
+    const finish = kept => {
         if (done) return;
         done = true;
-        if (keep) rename(id, input.value); else render();
+        if (kept) keep(input.value); else render();
     };
     input.addEventListener('keydown', e => {
         if (e.key === 'Enter') finish(true);
@@ -233,9 +267,9 @@ export function startRename(id) {
     });
     input.addEventListener('blur', () => finish(true));
     element.replaceWith(input);
-    input.closest('.plan-tab').draggable = false;  // the field's text can be selected with the mouse
     input.focus();
     input.select();
+    return input;
 }
 
 /** Marks the chain tab as shown (the active plan stays in the side panel, its tab marked as such). */
@@ -244,9 +278,24 @@ export function setChainShown(shown) {
     render();
 }
 
+/** The book's name, marked while it has changes not saved to a file. */
+function renderBookName() {
+    let element = $('book-name');
+    if (!element) {  // replaced by its field while renamed
+        element = Object.assign(document.createElement('span'), { id: 'book-name', className: 'book-name' });
+        const field = $('plan-tabs').querySelector(':scope > .plan-tab-input');
+        if (field) field.replaceWith(element); else $('plan-tabs').prepend(element);
+    }
+    element.textContent = bookTitle(book.name) + (book.changed ? ' •' : '');
+    element.classList.toggle('changed', Boolean(book.changed));
+    element.title = 'This book: double-click to rename. '
+        + (book.changed ? 'It has changes since it was last saved or loaded: Save Book keeps them.' : 'Saved.');
+}
+
 function render() {
     const list = $('plan-tab-list');
     if (!list || !book) return;
+    renderBookName();
     const chainButton = $('chain-tab-btn');
     chainButton.classList.toggle('active', chainShown);
     chainButton.setAttribute('aria-selected', String(chainShown));

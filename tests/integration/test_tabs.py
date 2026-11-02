@@ -1,83 +1,30 @@
 """Browser tests of plan tabs and Save Book (ticket 039)."""
 import json
-import os
-import tempfile
 
 ROTORS = {"mode": "logistics", "items": ["Rotor"], "rates": [4], "merges": {}, "recipes": {}, "clocks": {}}
 PLATES = {"mode": "logistics", "items": ["Reinforced Iron Plate"], "rates": [5], "merges": {}, "recipes": {}, "clocks": {}}
 BOOK = "JSON.parse(localStorage.getItem('sf_logistics_book'))"
 
 
-def tab_names(page):
-    return page.js("[...document.querySelectorAll('.plan-tab .plan-tab-name')].map(e => e.textContent)")
-
-
-def active_name(page):
-    return page.js("document.querySelector('.plan-tab.active .plan-tab-name').textContent")
-
-
-def click_tab(page, name):
-    page.js(f"""[...document.querySelectorAll('.plan-tab')]
-        .find(t => t.querySelector('.plan-tab-name').textContent === {json.dumps(name)}).click()""")
-    page.wait_until(f"document.querySelector('.plan-tab.active .plan-tab-name').textContent === {json.dumps(name)}")
-
-
-def has_node(page, node_id):
-    return f"document.getElementById('cy')._cyreg.cy.getElementById({json.dumps(node_id)}).length === 1"
-
-
-def calculate(page, item, rate):
-    page.js(f"""(() => {{
-        const row = document.querySelector('#demand-rows .demand-row');
-        row.querySelector('[name=items]').value = {json.dumps(item)};
-        row.querySelector('[name=rates]').value = {json.dumps(str(rate))};
-        document.querySelector('#demand-form button[type=submit]').click();
-    }})()""")
-    page.wait_until(has_node(page, item))
-
-
-def import_file(page, content):
-    """Picks a file in the Import button's file input, as the user would."""
-    fd, path = tempfile.mkstemp(suffix=".json")
-    with os.fdopen(fd, "w") as f:
-        json.dump(content, f)
-    try:
-        root = page.send("DOM.getDocument")["root"]["nodeId"]
-        node = page.send("DOM.querySelector", nodeId=root, selector="#import-input")["nodeId"]
-        page.send("DOM.setFileInputFiles", files=[path], nodeId=node)
-        page.wait(0.5)
-    finally:
-        os.remove(path)
-
-
-def capture_downloads(page):
-    page.js("""(() => {
-        window.__files = [];
-        const create = URL.createObjectURL;
-        URL.createObjectURL = blob => { window.__blob = blob; return create(blob); };
-        HTMLAnchorElement.prototype.click = function () { window.__files.push(this.download); };
-    })()""")
-
-
 def test_tabs_keep_their_own_plans_and_undo(page):
     # A plan saved before tabs becomes the first tab
     page.open(page.base_url, ROTORS)
-    assert tab_names(page) == ["Plan 1"]
+    assert page.tab_names() == ["Plan 1"]
     page.wait_until(f"{BOOK} !== null")
     assert page.js(f"{BOOK}.tabs[0].plan.items") == ["Rotor"]
 
     # A new tab is empty, and has its own plan and undo
     page.js("document.getElementById('add-tab-btn').click()")
     page.wait_until("document.getElementById('cy')._cyreg.cy.nodes().length === 0")
-    assert tab_names(page) == ["Plan 1", "Plan 2"] and active_name(page) == "Plan 2"
+    assert page.tab_names() == ["Plan 1", "Plan 2"] and page.active_name() == "Plan 2"
     assert page.js("document.getElementById('undo-btn').disabled")
-    calculate(page, "Reinforced Iron Plate", 5)
+    page.calculate("Reinforced Iron Plate", 5)
     assert page.saved_plan()["items"] == ["Reinforced Iron Plate"]  # the active tab's plan, as before tabs
 
     # Back to the first: its plan, its undo
-    click_tab(page, "Plan 1")
-    page.wait_until(has_node(page, "Rotor"))
-    assert not page.js(has_node(page, "Reinforced Iron Plate"))
+    page.click_tab("Plan 1")
+    page.wait_until(page.has_node("Rotor"))
+    assert not page.js(page.has_node("Reinforced Iron Plate"))
     assert page.js(f"{BOOK}.tabs.map(t => t.plan.items)") == [["Rotor"], ["Reinforced Iron Plate"]]
 
     # Rename by double-click
@@ -87,33 +34,33 @@ def test_tabs_keep_their_own_plans_and_undo(page):
         input.value = 'Rotors';
         input.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
     })()""")
-    assert tab_names(page) == ["Rotors", "Plan 2"]
+    assert page.tab_names() == ["Rotors", "Plan 2"]
 
     # Duplicate: the same plan in a new tab next to it
     page.js("document.getElementById('duplicate-tab-btn').click()")
     page.wait_until("document.querySelector('.plan-tab.active .plan-tab-name').textContent === 'Rotors (copy)'")
-    page.wait_until(has_node(page, "Rotor"))
-    assert tab_names(page) == ["Rotors", "Rotors (copy)", "Plan 2"]
+    page.wait_until(page.has_node("Rotor"))
+    assert page.tab_names() == ["Rotors", "Rotors (copy)", "Plan 2"]
 
     # Kept across a reload, with the active tab
     page.send("Page.reload")
     page.wait_until("document.readyState === 'complete' && document.querySelectorAll('.plan-tab').length === 3")
-    page.wait_until(has_node(page, "Rotor"))
-    assert active_name(page) == "Rotors (copy)"
+    page.wait_until(page.has_node("Rotor"))
+    assert page.active_name() == "Rotors (copy)"
 
     # Close: asks first when the tab has a plan, and shows a neighbour
     page.js("window.confirm = () => true; document.querySelector('.plan-tab.active .plan-tab-close').click()")
     page.wait_until("document.querySelectorAll('.plan-tab').length === 2")
-    assert tab_names(page) == ["Rotors", "Plan 2"]
-    page.wait_until(has_node(page, "Reinforced Iron Plate"))
-    assert active_name(page) == "Plan 2"
+    assert page.tab_names() == ["Rotors", "Plan 2"]
+    page.wait_until(page.has_node("Reinforced Iron Plate"))
+    assert page.active_name() == "Plan 2"
 
 
 def test_save_book_and_import(page):
     page.open(page.base_url, ROTORS)
     page.js("document.getElementById('add-tab-btn').click()")
-    calculate(page, "Reinforced Iron Plate", 5)
-    capture_downloads(page)
+    page.calculate("Reinforced Iron Plate", 5)
+    page.capture_downloads()
 
     # Save Book: every tab in one file
     page.js("document.getElementById('save-book-btn').click()")
@@ -130,16 +77,16 @@ def test_save_book_and_import(page):
     assert plan["items"] == ["Reinforced Iron Plate"] and plan["name"] == "Plan 2"
 
     # Importing a plan opens it in a new tab
-    import_file(page, {**PLATES, "items": ["Modular Frame"], "rates": [1], "name": "Frames"})
-    page.wait_until(has_node(page, "Modular Frame"))
-    assert tab_names(page) == ["Plan 1", "Plan 2", "Frames"]
+    page.import_file({**PLATES, "items": ["Modular Frame"], "rates": [1], "name": "Frames"})
+    page.wait_until(page.has_node("Modular Frame"))
+    assert page.tab_names() == ["Plan 1", "Plan 2", "Frames"]
 
     # Importing a book replaces all the tabs (after asking); its preferred recipes and colors are this browser's
     page.js("window.confirm = () => true")
-    import_file(page, {**book, "preferred": {"Screws": "Alternate: Cast Screws"}, "colors": {"Screws": "#123456"}})
+    page.import_file({**book, "preferred": {"Screws": "Alternate: Cast Screws"}, "colors": {"Screws": "#123456"}})
     page.wait_until("document.querySelectorAll('.plan-tab').length === 2")
-    assert tab_names(page) == ["Plan 1", "Plan 2"]
-    page.wait_until(has_node(page, "Reinforced Iron Plate"))
+    assert page.tab_names() == ["Plan 1", "Plan 2"]
+    page.wait_until(page.has_node("Reinforced Iron Plate"))
     assert page.js("JSON.parse(localStorage.getItem('sf_planner_recipes'))") == {"Screws": "Alternate: Cast Screws"}
     assert page.js("JSON.parse(localStorage.getItem('sf_planner_colors'))")["Screws"] == "#123456"
     screws = "Reinforced Iron Plate__Screws"
@@ -150,10 +97,10 @@ def test_simple_mode_files_are_refused(page):
     """Simple mode was removed: its plans and books (marked "simple", or without a mode) don't open."""
     page.open(page.base_url, ROTORS)
     simple = {**ROTORS, "mode": "simple"}
-    import_file(page, {"mode": "simple", "tabs": [{"id": "t1", "name": "S", "plan": simple}]})
-    import_file(page, {key: value for key, value in ROTORS.items() if key != "mode"})
+    page.import_file({"mode": "simple", "tabs": [{"id": "t1", "name": "S", "plan": simple}]})
+    page.import_file({key: value for key, value in ROTORS.items() if key != "mode"})
     assert page.dialogs[-2:] == ["This is a simple mode plan. Simple mode was removed, and its plans don't convert."] * 2
-    assert tab_names(page) == ["Plan 1"]
+    assert page.tab_names() == ["Plan 1"]
 
 
 # --- The chain tab (ticket 040) ---
@@ -254,7 +201,7 @@ def test_the_chain_tab_links_plans(page):
     assert links(page) == ["aw>acu:Motor"]
 
     # Saved with the book; closing a tab drops its links
-    capture_downloads(page)
+    page.capture_downloads()
     page.js("document.getElementById('save-book-btn').click()")
     saved_book = json.loads(page.js("window.__blob.text()"))
     assert [l["to"]["tab"] for l in saved_book["chain"]["links"]] == ["acu"]
@@ -329,17 +276,17 @@ def test_tabs_reorder_by_drag_and_drop(page):
     page.wait_until("document.querySelectorAll('.plan-tab').length === 2")
     page.js("document.getElementById('add-tab-btn').click()")
     page.wait_until("document.querySelectorAll('.plan-tab').length === 3")
-    assert tab_names(page) == ["Plan 1", "Plan 2", "Plan 3"]
+    assert page.tab_names() == ["Plan 1", "Plan 2", "Plan 3"]
 
     drag_tab(page, "Plan 3", "Plan 1", after=False)
-    assert tab_names(page) == ["Plan 3", "Plan 1", "Plan 2"]
+    assert page.tab_names() == ["Plan 3", "Plan 1", "Plan 2"]
     drag_tab(page, "Plan 3", "Plan 2", after=True)
-    assert tab_names(page) == ["Plan 1", "Plan 2", "Plan 3"]
+    assert page.tab_names() == ["Plan 1", "Plan 2", "Plan 3"]
     drag_tab(page, "Plan 1", "Plan 2", after=True)
-    assert tab_names(page) == ["Plan 2", "Plan 1", "Plan 3"]
+    assert page.tab_names() == ["Plan 2", "Plan 1", "Plan 3"]
     # Onto itself: nothing moves; no marks are left behind
     drag_tab(page, "Plan 1", "Plan 1", after=True)
-    assert tab_names(page) == ["Plan 2", "Plan 1", "Plan 3"]
+    assert page.tab_names() == ["Plan 2", "Plan 1", "Plan 3"]
     assert page.js("document.querySelectorAll('.drop-before, .drop-after, .dragging').length") == 0
 
     # Kept in the book, with each tab's plan
@@ -347,4 +294,4 @@ def test_tabs_reorder_by_drag_and_drop(page):
     assert next(t for t in page.js(BOOK)["tabs"] if t["name"] == "Plan 1")["plan"]["items"] == ["Rotor"]
     page.send("Page.reload")
     page.wait_until("document.querySelectorAll('.plan-tab').length === 3")
-    assert tab_names(page) == ["Plan 2", "Plan 1", "Plan 3"]
+    assert page.tab_names() == ["Plan 2", "Plan 1", "Plan 3"]

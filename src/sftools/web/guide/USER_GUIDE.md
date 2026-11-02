@@ -197,6 +197,24 @@ Each tab is one plan, with its own undo history:
 
 Logistics settings are shared by all the tabs.
 
+## Books
+
+All the tabs together are a **book**. Its name is at the start of the tab strip; double-click it to rename it. **Save Book** downloads the book as a file named after it (a book called *RAD* gives `sf_planner_RAD.json`).
+
+A **•** after the name means the book has changes since it was last saved or loaded. Opening a tab or reloading the page doesn't count as a change, and the mark stays until you Save Book, even after a reload.
+
+- **Import** a book file to switch to that book. It asks first only when the book you have open has unsaved changes. Nothing else is lost, because a saved book is in its file.
+- **New Book** (under New Plan) asks for a name and starts an empty book with one tab. Preferred recipes and colors stay.
+
+To keep a group of plans as a book of its own, e.g. everything for nuclear power:
+
+1. **Export Plan** on each tab that goes into the new book.
+2. **New Book**, then **Import** each of those plans. Split them into more tabs there with [Move Branch to Inbound](#move-branch-to-inbound) if you like, and link them on the [Chain tab](#the-chain-tab).
+3. **Save Book**.
+4. Import your main book again, close the tabs that moved, and **Save Book**.
+
+Each book has its own Chain tab, so links don't go from one book to another.
+
 ## The Chain tab
 
 The **Chain** tab, left of the plan tabs, shows how your plans feed each other.
@@ -272,7 +290,7 @@ The first one, **Crude Oil to Turbofuel power**, refines 1350 Crude Oil/min into
 ## Saving, loading and undo
 
 - **Saving:** your tabs are saved in your browser as you work.
-- **Export Plan** downloads the shown plan. **Save Book** downloads all the tabs in one file, with your preferred recipes and colors.
-- **Import** opens a plan in a new tab, or a book in place of all the tabs, asking first. A book's preferred recipes and colors become this browser's.
-- **New Plan** clears the shown plan: demands, inbound production and every adjustment. Logistics settings and colors stay.
+- **Export Plan** downloads the shown plan. **Save Book** downloads all the tabs in one file named after the book, with your preferred recipes and colors (see [Books](#books)).
+- **Import** opens a plan in a new tab, or a book in place of all the tabs, asking first when the open book has unsaved changes. A book's preferred recipes and colors become this browser's.
+- **New Plan** clears the shown plan: demands, inbound production and every adjustment. Logistics settings and colors stay. **New Book** starts an empty book.
 - **Undo and redo:** ↶ ↷ in the header, or Ctrl+Z and Ctrl+Y (or Ctrl+Shift+Z). They step through the shown plan's changes, up to 50, until the page is reloaded.
