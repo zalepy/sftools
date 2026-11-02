@@ -73,3 +73,4 @@ Moved to [done/](done/).
 | [058](done/058-burn-fuel-byproducts.md) | Burn fuel by-products for power | feature | P2 | Done |
 | [059](done/059-make-from-a-byproduct.md) | Make something from a by-product | feature | P2 | Done |
 | [060](done/060-book-name.md) | Name the book; New Book; warn before losing unsaved changes | feature | P2 | Done |
+| [061](done/061-chain-unlinked-needs.md) | Chain tab: mark inbound production no link supplies | feature | P2 | Done |
