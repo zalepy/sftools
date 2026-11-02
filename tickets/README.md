@@ -5,7 +5,6 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
-| [062](062-cover-top-down-in-merged-nodes.md) | Merged nodes: inbound and by-products cover their consumers top down | feature | P2 | Open |
 
 Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
 
@@ -75,3 +74,4 @@ Moved to [done/](done/).
 | [059](done/059-make-from-a-byproduct.md) | Make something from a by-product | feature | P2 | Done |
 | [060](done/060-book-name.md) | Name the book; New Book; warn before losing unsaved changes | feature | P2 | Done |
 | [061](done/061-chain-unlinked-needs.md) | Chain tab: mark inbound production no link supplies | feature | P2 | Done |
+| [062](done/062-cover-top-down-in-merged-nodes.md) | Merged nodes: inbound and by-products cover their consumers top down | feature | P2 | Done |

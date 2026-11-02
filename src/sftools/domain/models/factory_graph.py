@@ -268,15 +268,25 @@ class FactoryGraph:
             byproducts_left.setdefault(item, []).append([maker_id, loop_supply.get((maker_id, item), 0.0)])
         self.byproduct_used = {use: {} for use in uses + sorted(self.byproduct_solving)}
 
-        def cover(rep: ProductionNode, need: float, amount: float, used: Dict[str, float]):
+        position: Dict[str, int] = {}  # each group's place in the top-down order
+
+        def cover(rep: ProductionNode, amount: float, used: Dict[str, float]):
             """
-            Moves `amount` of the group's remaining `need` from its consumers' demand to `used`. The user's
-            own demand is recorded against the group itself, which stays shown (see below).
+            Moves `amount` of the group's demand from its consumers to `used`, top down (ticket 062): the
+            user's demand first, then the consumers in the order they were calculated, each covered fully
+            before the next. The user's own demand is recorded against the group itself, which stays shown
+            (see below).
             """
-            for consumer, rate in list(rep.parent_demands.items()):
+            consumers = sorted(rep.parent_demands, key=lambda c: -1 if c == "External Demand" else position.get(c, len(position)))
+            for consumer in consumers:
+                rate = rep.parent_demands[consumer]
+                part = min(rate, amount)
+                if part <= 0:
+                    continue
                 key = rep.id if consumer == "External Demand" else consumer
-                used[key] = used.get(key, 0) + rate * amount / need
-                rep.parent_demands[consumer] = rate * (1 - amount / need)
+                used[key] = used.get(key, 0) + part
+                rep.parent_demands[consumer] = rate - part
+                amount -= part
 
         def share(rep_id: str, member: ProductionNode) -> float:
             total = group_demand[rep_id]
@@ -305,6 +315,7 @@ class FactoryGraph:
 
         while queue:
             rep_id = queue.pop(0)
+            position[rep_id] = len(position)
             rep = self.all_nodes[rep_id]
 
             rep.parent_demands = {}
@@ -325,13 +336,13 @@ class FactoryGraph:
             amount = min(need, inbound_left.get(item, 0.0))
             if amount > 0:
                 inbound_left[item] -= amount
-                cover(rep, need, amount, self.inbound_used[item])
+                cover(rep, amount, self.inbound_used[item])
                 need -= amount
             for entry in byproducts_left.get(item, []):
                 amount = min(need, entry[1])
                 if amount > EPSILON:
                     entry[1] -= amount
-                    cover(rep, need, amount, self.byproduct_used[(entry[0], item)])
+                    cover(rep, amount, self.byproduct_used[(entry[0], item)])
                     need -= amount
             rep.parent_demands = {k: v for k, v in rep.parent_demands.items() if v > EPSILON}
             self._set_scale(rep, need, round_up)

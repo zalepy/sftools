@@ -1,6 +1,8 @@
 # 062 — Merged nodes: inbound and by-products cover their consumers top down
 
-**Type:** feature · **Priority:** P2 · **Status:** Open · **Related:** [030](done/030-inbound-production.md), [031](done/031-byproducts-as-supply.md), [021](done/021-node-splitting.md)
+**Type:** feature · **Priority:** P2 · **Status:** Done · **Related:** [030](030-inbound-production.md), [031](031-byproducts-as-supply.md), [021](021-node-splitting.md)
+
+> **Done (2026-11-02).** `cover` in `FactoryGraph.recalculate` (`domain/models/factory_graph.py`) takes the consumers in `position` order (where the top-down queue reached them; the user's demand first) and covers each fully before the next. Tests: `tests/unit/test_cover_order.py` (fail on the proportional share: 1.2/1.8, and 57.14 of the rods' 100).
 
 ## Goal
 Inbound production and by-products cover demand top down between nodes (030, 031), but inside a merged node they were shared among the node's consumers in proportion to what each asks. Example (RAD book, 2026-11-02): the Ficsonium Fuel Rods make 100 Dark Matter Residue a minute; Ficsonium needs 200 and Dark Matter Crystal 150, from one merged residue node. The rods' residue was split 57.14 / 42.86, so it couldn't all go to Ficsonium; unmerging the node was the only way.

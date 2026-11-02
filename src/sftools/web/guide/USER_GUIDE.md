@@ -41,7 +41,7 @@ The plan is saved in your browser as you go. **Save Book** downloads all your pl
 
 Each demand target is a purple circle in the graph, fed by the node that makes the item.
 
-**Inbound production** is what the plan gets from outside, e.g. from another factory, at a given rate. It covers demand for the item first, from the top of the chain down, before anything is produced here. A node left with nothing to make disappears, with its inputs.
+**Inbound production** is what the plan gets from outside, e.g. from another factory, at a given rate. It covers demand for the item first, from the top of the chain down, before anything is produced here. That holds inside a merged node too: the consumer nearest the top gets it all before the next gets any. By-products used as supply work the same way. A node left with nothing to make disappears, with its inputs.
 
 Example: the Modular Frame plan needs 15 Reinforced Iron Plates a minute. Add an inbound row `Reinforced Iron Plate`, `15` and Calculate. The plates come in on a sky-blue node, and the plate, screw and iron-plate branch is gone. Its node shows how much of the inbound is used; a green dot means some is left over.
 
