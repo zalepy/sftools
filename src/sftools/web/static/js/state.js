@@ -1,4 +1,5 @@
 // Client-side plan state and its persistence (localStorage, JSON export/import).
+import { fileName, bookFileName } from './book-info.js';
 
 // Plans and files are marked as logistics mode plans (ticket 033), the only mode since simple mode was
 // removed; simple mode plans (also those without a mode) are refused.
@@ -92,21 +93,18 @@ export function loadSavedPlan() {
     }
 }
 
-/** A file name from a tab's name: letters, digits, '-' and '_' kept. */
-function fileName(name) {
-    const safe = (name || '').trim().replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '');
-    return `sf_planner_${safe || 'save'}.json`;
-}
-
 /** Downloads one plan, named after its tab. */
 export function downloadPlan(plan, name) {
     download({ ...plan, name }, fileName(name));
 }
 
-/** Downloads every tab as one file (Save Book, ticket 039), with the preferred recipes and colors (ticket 043). */
+/**
+ * Downloads every tab as one file (Save Book, ticket 039), with the preferred recipes and colors (ticket 043),
+ * named after the book (ticket 060).
+ */
 export function downloadBook(book) {
-    download({ mode: PLAN_MODE, tabs: book.tabs, active: book.active, chain: book.chain,
-        preferred: state.preferred, colors: loadSavedColors() }, fileName('book'));
+    download({ mode: PLAN_MODE, name: book.name, tabs: book.tabs, active: book.active, chain: book.chain,
+        preferred: state.preferred, colors: loadSavedColors() }, bookFileName(book.name));
 }
 
 /** Whether a file is a book (all tabs) rather than one plan. */

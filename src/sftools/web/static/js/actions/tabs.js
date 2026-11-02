@@ -1,5 +1,7 @@
 // Plan tabs (ticket 039) and the chain tab (ticket 040): switching, adding, closing, and opening files and books.
-import { state, isBook, readPlanFile, wrongMode, saveColors, savePreferred } from '../state.js';
+// Books have a name; replacing one asks only when it has unsaved changes (ticket 060).
+import { state, isBook, readPlanFile, wrongMode, saveColors, savePreferred, downloadBook } from '../state.js';
+import { loadedBookName, replaceQuestion, loadWhat } from '../book-info.js';
 import * as notes from '../notes.js';
 import * as history from '../history.js';
 import * as tabs from '../tabs.js';
@@ -30,7 +32,8 @@ export async function switchTab(id, { ownSettings = false, reload = false } = {}
     hideSelection();
     hidePlanNotice();
     const plan = tabs.activeTab().plan || emptyPlan();
-    await showPlan(ownSettings ? plan : { ...plan, logistics: { ...plan.logistics, settings } }, 'Opening the tab failed');
+    // Opening a tab isn't a change to the book, though the plan is calculated and kept again
+    await showPlan(ownSettings ? plan : { ...plan, logistics: { ...plan.logistics, settings } }, 'Opening the tab failed', { change: false });
     updateHistoryButtons();
 }
 
@@ -69,8 +72,33 @@ export async function closeTab(id) {
     refreshChain();
 }
 
+/** Save Book: every tab in one file, named after the book; the book now matches its file. */
+export function saveBookFile() {
+    downloadBook(tabs.getBook());
+    tabs.markSaved();
+}
+
+/** Forgets what belongs to the book being replaced: notes being written, every tab's undo. */
+function leaveBook() {
+    notes.discardNodeNote();
+    notes.showPlanNote();
+    history.reset();
+}
+
+/** New Book: one empty tab, under a name the user gives; preferred recipes and colors stay. */
+export async function newBook() {
+    const name = prompt('Name of the new book:', '');
+    if (name === null) return;
+    const question = replaceQuestion(tabs.getBook(), `Start "${name.trim() || 'Book'}"`);
+    if (question && !confirm(question)) return;
+    leaveBook();
+    const id = tabs.newTabId();
+    tabs.replaceBook([{ id, name: 'Plan 1', plan: emptyPlan() }], id, null, name.trim() || undefined);
+    await switchTab(id, { reload: true });
+}
+
 /** Replaces all the tabs with a saved book's (Save Book, ticket 039). */
-async function openBook(data) {
+async function openBook(data, file) {
     const list = data.tabs.filter(tab => tab && typeof tab === 'object').map((tab, i) => ({
         id: typeof tab.id === 'string' && tab.id ? tab.id : tabs.newTabId(),
         name: typeof tab.name === 'string' && tab.name.trim() ? tab.name.trim() : `Plan ${i + 1}`,
@@ -80,11 +108,10 @@ async function openBook(data) {
         alert('This book has no plans.');
         return;
     }
-    const here = tabs.getBook().tabs.length;
-    if (!confirm(`Load this book? Its ${list.length} tab(s) replace the ${here} here; Save Book first to keep them.`)) return;
-    notes.discardNodeNote();
-    notes.showPlanNote();
-    history.reset();
+    const name = loadedBookName(data, file);
+    const question = replaceQuestion(tabs.getBook(), loadWhat(name, list.length));
+    if (question && !confirm(question)) return;
+    leaveBook();
     // A book brings its preferred recipes and colors (ticket 043), for this browser's tabs
     const isMap = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
     if (isMap(data.preferred)) {
@@ -95,7 +122,7 @@ async function openBook(data) {
         saveColors({ ...state.colors, ...data.colors });
         renderColorList();
     }
-    tabs.replaceBook(list, data.active, data.chain);
+    tabs.replaceBook(list, data.active, data.chain, name);
     await switchTab(tabs.getBook().active, { ownSettings: true, reload: true });
 }
 
@@ -118,7 +145,7 @@ export async function importFile(input) {
         return;
     }
     if (isBook(data)) {
-        await openBook(data);
+        await openBook(data, file.name);
         return;
     }
     const name = typeof data.name === 'string' && data.name.trim() ? data.name.trim() : file.name.replace(/\.json$/i, '');

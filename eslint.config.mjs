@@ -4,7 +4,7 @@
 
 const BROWSER = [
     'window', 'document', 'localStorage', 'console', 'setTimeout', 'clearTimeout', 'requestAnimationFrame',
-    'alert', 'confirm', 'fetch', 'btoa', 'Option', 'Blob', 'URL', 'FileReader', 'WheelEvent', 'Event',
+    'alert', 'confirm', 'prompt', 'fetch', 'btoa', 'Option', 'Blob', 'URL', 'FileReader', 'WheelEvent', 'Event',
     'getComputedStyle', 'navigator', 'location', 'CSS',
     'cytoscape', 'cytoscapeDagre',  // CDN scripts in index.html
 ];

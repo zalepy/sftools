@@ -154,6 +154,22 @@ h1 {
     color: var(--accent);
 }
 
+.book-name {
+    align-self: center;
+    margin-right: 0.5rem;
+    padding-bottom: 0.3rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    cursor: default;
+    user-select: none;
+}
+
+.book-name.changed {
+    color: var(--accent);
+}
+
 .chain-tab-btn {
     width: auto;
     margin-right: 0.5rem;

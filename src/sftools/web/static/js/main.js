@@ -1,6 +1,6 @@
 // Entry point: wires the page's controls to the actions (actions/), then loads the plan.
 import * as api from './api.js';
-import { state, downloadPlan, downloadBook, loadPreferred } from './state.js';
+import { state, downloadPlan, loadPreferred } from './state.js';
 import {
     hasNodes, fitView, resizeGraph, getNodeData, refreshNodeColors, onNodeSelected, onMergeDrop,
     onByproductSelected, onLogisticsSelected, onEdgeSelected
@@ -24,7 +24,7 @@ import {
     currentPlan, showHistoryStep, recalculate, loadPlan, clearAllClocks, clearMerges, newPlan, clearBuilt
 } from './actions/plan.js';
 import { leaveNotes, keepSelection, saveNodeNote, savePlanNote } from './actions/notes.js';
-import { switchTab, showChain, addTab, duplicateTab, closeTab, importFile } from './actions/tabs.js';
+import { switchTab, showChain, addTab, duplicateTab, closeTab, importFile, saveBookFile, newBook } from './actions/tabs.js';
 import {
     applyClocks, fitClock, clearClocks, switchRecipe, mergeNodes, unmergeSelectedNode, setBuilt, setByproductChoice, moveBranch,
     selectByproduct
@@ -65,7 +65,8 @@ $('add-inbound-btn').addEventListener('click', addInboundRow);
 $('supply-limit').addEventListener('change', e => setSupplyLimit(e.target.checked));
 $('new-plan-btn').addEventListener('click', newPlan);
 $('export-btn').addEventListener('click', () => downloadPlan(currentPlan(), tabs.activeTab().name));
-$('save-book-btn').addEventListener('click', () => downloadBook(tabs.getBook()));
+$('save-book-btn').addEventListener('click', saveBookFile);
+$('new-book-btn').addEventListener('click', newBook);
 $('import-btn').addEventListener('click', () => $('import-input').click());
 $('import-input').addEventListener('change', e => importFile(e.target));
 $('clear-clocks-btn').addEventListener('click', clearAllClocks);

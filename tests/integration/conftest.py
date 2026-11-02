@@ -221,6 +221,51 @@ class Page:
         self.send("Input.dispatchMouseEvent", type="mouseReleased", x=x1, y=y1, button="left", clickCount=1)
 
 
+    # --- Tabs and books (tickets 039, 060) ---
+
+    def tab_names(self):
+        return self.js("[...document.querySelectorAll('.plan-tab .plan-tab-name')].map(e => e.textContent)")
+
+    def active_name(self):
+        return self.js("document.querySelector('.plan-tab.active .plan-tab-name').textContent")
+
+    def click_tab(self, name):
+        self.js(f"""[...document.querySelectorAll('.plan-tab')]
+            .find(t => t.querySelector('.plan-tab-name').textContent === {json.dumps(name)}).click()""")
+        self.wait_until(f"document.querySelector('.plan-tab.active .plan-tab-name').textContent === {json.dumps(name)}")
+
+    def has_node(self, node_id):
+        return f"document.getElementById('cy')._cyreg.cy.getElementById({json.dumps(node_id)}).length === 1"
+
+    def calculate(self, item, rate):
+        self.js(f"""(() => {{
+            const row = document.querySelector('#demand-rows .demand-row');
+            row.querySelector('[name=items]').value = {json.dumps(item)};
+            row.querySelector('[name=rates]').value = {json.dumps(str(rate))};
+            document.querySelector('#demand-form button[type=submit]').click();
+        }})()""")
+        self.wait_until(self.has_node(item))
+
+    def import_file(self, content, file_name="import.json"):
+        """Picks a file (named `file_name`) in the Import button's file input, as the user would."""
+        with tempfile.TemporaryDirectory() as folder:
+            path = os.path.join(folder, file_name)
+            with open(path, "w") as f:
+                json.dump(content, f)
+            root = self.send("DOM.getDocument")["root"]["nodeId"]
+            node = self.send("DOM.querySelector", nodeId=root, selector="#import-input")["nodeId"]
+            self.send("DOM.setFileInputFiles", files=[path], nodeId=node)
+            self.wait(0.5)
+
+    def capture_downloads(self):
+        self.js("""(() => {
+            window.__files = [];
+            const create = URL.createObjectURL;
+            URL.createObjectURL = blob => { window.__blob = blob; return create(blob); };
+            HTMLAnchorElement.prototype.click = function () { window.__files.push(this.download); };
+        })()""")
+
+
 @pytest.fixture
 def page(browser, base_url):
     """A fresh tab; fails the test if the page logged JS errors or warnings."""
