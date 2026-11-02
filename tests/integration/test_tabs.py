@@ -161,10 +161,12 @@ def test_the_chain_tab_links_plans(page):
     page.js("document.getElementById('chain-tab-btn').click()")
     page.wait_until("!document.getElementById('chain-view').hidden")
     assert page.js("document.querySelector('.plan-tab.behind .plan-tab-name').textContent") == "AW"
-    # Each tab a box: demand targets supply, inbound production needs; unlinked nodes are neutral
+    # Each tab a box: demand targets supply, inbound production needs; an unlinked supply is neutral, an
+    # unlinked need marked (ticket 061)
     assert sorted(page.js(f"{CCY}.nodes('.supply, .need').map(n => n.id())")) == \
         ["n|acu|Motor", "n|mfg|Motor", "s|aw|Motor", "s|xyz|Motor"]
     assert classes(page, "s|aw|Motor") == ["supply"]
+    assert classes(page, "n|acu|Motor") == ["need", "unlinked"] and label_of(page, "n|acu|Motor").endswith("not linked")
 
     # One supply, two needs: each link carries what its need asks for
     link(page, "s|aw|Motor", "n|acu|Motor")
@@ -195,10 +197,11 @@ def test_the_chain_tab_links_plans(page):
     assert "short" in classes(page, "s|aw|Motor") and label_of(page, "s|aw|Motor").endswith("3.00/m short")
     assert page.js(f"{BOOK}.tabs[1].plan.inbound") == [{"item": "Motor", "rate": 6}]
 
-    # Delete a link
+    # Delete a link: its need is marked again
     page.js(f"void {CCY}.getElementById('l|aw|mfg|Motor').select()")
     page.js("document.getElementById('chain-delete').click()")
     assert links(page) == ["aw>acu:Motor"]
+    assert "unlinked" in classes(page, "n|mfg|Motor")
 
     # Saved with the book; closing a tab drops its links
     page.capture_downloads()

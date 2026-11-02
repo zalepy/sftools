@@ -226,7 +226,8 @@ Each plan is a box: its inbound production on the left, its demand targets on th
 Example: plan "Plates" demands 15 Reinforced Iron Plates a minute, and plan "Frames" has them as inbound production. Link the two, and the link shows the rate.
 
 - One plan can feed several, or several can feed one, but not both.
-- Nodes show where the rates don't add up: red is short, blue is spare (or more than needed), green matches. Unlinked ones stay plain.
+- Nodes show where the rates don't add up: red is short, blue is spare (or more than needed), green matches.
+- Inbound production that no link supplies has a dashed orange border and says *not linked*, so a need left behind when you move a link stands out. An unlinked demand target stays plain: it's a plan's own product.
 - Nothing changes a plan on its own: the Chain tab only shows and checks.
 - Select a link and press **Delete** to remove it. Drag a box to move it; double-click it to open its plan.
 - To pass on a by-product, the plan that makes it sets it as a demand target (covered by the by-product, no buildings added), and the other as inbound production.

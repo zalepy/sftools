@@ -6,12 +6,12 @@ import { state } from './state.js';
 import { smoothWheelZoom } from './graph.js';
 import { textColorOn } from './node-info.js';
 import { chainEnds } from './supply-info.js';
+import { endStatus, rate } from './chain-info.js';
 import { showToast as toast } from './panel/messages.js';
 import { getBook, saveBook } from './tabs.js';
 
 const $ = id => document.getElementById(id);
 
-const EPSILON = 1e-4;
 const ROW = 60;         // between nodes in a box
 const INSIDE = 100;     // from a box's middle to its needs (left) and supplies (right)
 const COLUMN = 480;     // between columns of boxes
@@ -20,8 +20,6 @@ const GAP = 70;         // between boxes in a column
 let ccy = null;
 let shown = null;  // { onOpenTab(id) } while the chain tab is shown
 let drag = null;   // the supply a link is being drawn from
-
-const rate = value => `${value.toFixed(2)}/m`;
 
 function chain() {
     return getBook().chain;
@@ -95,15 +93,9 @@ function flows(nodes) {
     return { links: result, flowing, count };
 }
 
-/** short: gives more than it makes, or gets less than it needs; surplus: the other way; ok: matches. */
+/** An end's highlight (see endStatus). */
 function status(node, flowing, count) {
-    if (!count[node.id]) return null;
-    const flow = flowing[node.id] || 0;
-    if (Math.abs(flow - node.rate) <= EPSILON) return { kind: 'ok', text: '' };
-    const shortfall = node.kind === 'supply' ? flow > node.rate : flow < node.rate;
-    const difference = rate(Math.abs(flow - node.rate));
-    if (node.kind === 'supply') return shortfall ? { kind: 'short', text: `${difference} short` } : { kind: 'surplus', text: `${difference} spare` };
-    return shortfall ? { kind: 'short', text: `${difference} short` } : { kind: 'surplus', text: `${difference} more` };
+    return endStatus(node, flowing[node.id] || 0, count[node.id] || 0);
 }
 
 // --- Drawing ---
@@ -135,6 +127,8 @@ function createGraph() {
             { selector: '.ok', style: { 'border-color': '#22c55e', 'border-width': 3 } },
             { selector: '.surplus', style: { 'border-color': '#3b82f6', 'border-width': 4 } },
             { selector: '.short', style: { 'border-color': '#ef4444', 'border-width': 4 } },
+            // A need nothing in the book feeds (ticket 061): stands out without reading as a link's shortfall
+            { selector: '.unlinked', style: { 'border-color': '#f97316', 'border-width': 4, 'border-style': 'dashed' } },
             {
                 selector: 'edge',
                 style: {
