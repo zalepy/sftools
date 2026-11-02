@@ -5,6 +5,7 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
+| [062](062-cover-top-down-in-merged-nodes.md) | Merged nodes: inbound and by-products cover their consumers top down | feature | P2 | Open |
 
 Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
 
