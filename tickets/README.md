@@ -5,8 +5,9 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
+| [060](060-book-name.md) | Name the book; New Book; warn before losing unsaved changes | feature | P2 | Open |
 
-Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next: 060. When wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
