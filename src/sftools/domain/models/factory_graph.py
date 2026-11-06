@@ -269,6 +269,9 @@ class FactoryGraph:
         self.byproduct_used = {use: {} for use in uses + sorted(self.byproduct_solving)}
 
         position: Dict[str, int] = {}  # each group's place in the top-down order
+        # Children in the order they were calculated: a set's order changes per process, and the order here
+        # decides which consumer a by-product or inbound production covers first
+        calculated = {rep_id: rank for rank, rep_id in enumerate(members)}
 
         def cover(rep: ProductionNode, amount: float, used: Dict[str, float]):
             """
@@ -357,7 +360,7 @@ class FactoryGraph:
                     rate = dict((i.name, r) for i, r in rep.recipe.other_outputs(item))[byproduct]
                     byproducts_left.setdefault(byproduct, []).append([rep_id, rate * rep.building_scale])
 
-            for child_id in order_children[rep_id]:
+            for child_id in sorted(order_children[rep_id], key=calculated.__getitem__):
                 in_degree[child_id] -= 1
                 if in_degree[child_id] == 0:
                     queue.append(child_id)

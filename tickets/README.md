@@ -5,8 +5,9 @@
 | # | Title | Type | Pri | Status |
 |---|-------|------|-----|--------|
 | [034](034-balancers.md) | Balancers with loop-backs (logistics mode) | feature | P3 | Open |
+| [063](063-faster-logistics.md) | Faster logistics: drop the work nobody reads | performance | P3 | Open |
 
-Next when wanted: 034. Smaller ideas live in [TODO.md](../TODO.md).
+Next when wanted: 063, then 034. Smaller ideas live in [TODO.md](../TODO.md).
 
 ## Done
 
